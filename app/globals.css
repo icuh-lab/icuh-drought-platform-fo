@@ -38,7 +38,7 @@ button { cursor: pointer; }
 
 .hdr { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
 .hdr-in { max-width: 1240px; margin: 0 auto; padding: 0 22px; display: flex; align-items: stretch; gap: 30px; }
-.brand { display: flex; align-items: center; gap: 9px; padding: 14px 0; border: 0; background: none; text-align: left; }
+.brand { display: flex; align-items: center; gap: 9px; padding: 14px 0; border: 0; background: none; text-align: left; color: inherit; text-decoration: none; }
 .brand-mark { width: 26px; height: 26px; border: 1px solid var(--brand); color: var(--brand); display: grid; place-items: center; }
 .brand-tx { font-weight: 800; line-height: 1.15; }
 .brand-tx small { display: block; font-size: 9px; color: var(--ink-3); letter-spacing: .06em; }
@@ -47,7 +47,7 @@ button { cursor: pointer; }
 .nav-grp:last-child { border-right: 0; }
 .nav-eyebrow { font-size: 9.5px; font-weight: 800; color: var(--ink-3); letter-spacing: .14em; padding: 10px 8px 0; }
 .nav-row { display: flex; }
-.nav-btn { background: none; border: 0; color: var(--ink-2); padding: 6px 10px 14px; border-bottom: 2px solid transparent; white-space: nowrap; }
+.nav-btn { background: none; border: 0; color: var(--ink-2); padding: 6px 10px 14px; border-bottom: 2px solid transparent; white-space: nowrap; text-decoration: none; }
 .nav-btn[aria-current="page"] { color: var(--brand-deep); font-weight: 800; border-bottom-color: var(--brand); }
 .fbar { position: sticky; top: 57px; z-index: 19; background: var(--surface-2); border-bottom: 1px solid var(--line); }
 .fbar-in { max-width: 1240px; margin: 0 auto; padding: 9px 22px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
