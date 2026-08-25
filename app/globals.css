@@ -55,8 +55,20 @@ button { cursor: pointer; }
 .filter-group > span { font-size: 11px; font-weight: 800; color: var(--ink-3); margin-right: 4px; }
 .chip { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 3px 9px; font-size: 12px; }
 .chip[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
-.stamp { margin-left: auto; color: var(--ink-3); font-size: 11.5px; display: flex; align-items: center; gap: 6px; }
-.pulse { width: 6px; height: 6px; border-radius: 50%; background: #2e8b6b; box-shadow: 0 0 0 3px rgba(46,139,107,.16); }
+/* 조회 기간 — 예측·지수가 월 단위로 산출되므로 연/월만 받는다.
+   .filter-group 은 자료실 필터에서 재정의되므로 별도 클래스를 쓴다. */
+.period { display: flex; align-items: center; gap: 6px; }
+.period-tag { font-size: 11px; font-weight: 800; color: var(--ink-3); letter-spacing: .02em; }
+.period-fields { display: flex; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 1px 4px; }
+.period-fields label { display: flex; align-items: baseline; gap: 1px; }
+.period-fields label + label { margin-left: 6px; padding-left: 8px; border-left: 1px solid var(--line); }
+.period-fields select { border: 0; background: none; padding: 4px 2px; font-size: 12.5px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.period-fields select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; border-radius: 2px; }
+.period-fields span { font-size: 11.5px; color: var(--ink-3); }
+.period-step { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius); color: var(--ink-2); }
+.period-step:hover:not(:disabled) { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.period-step:disabled { opacity: .35; cursor: not-allowed; }
+.period-note { margin: 0 0 0 auto; color: var(--ink-3); font-size: 11.5px; }
 .rule { height: 9px; border-bottom: 1px solid var(--line); background-image: repeating-linear-gradient(90deg,var(--line-2) 0 1px,transparent 1px 12px); opacity: .85; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 22px 22px 64px; }
 .view { animation: rise .22s ease both; }
@@ -211,7 +223,7 @@ pre { background: #10181d; color: #d7e7ea; padding: 13px; overflow: auto; }
   .admin-controls { grid-template-columns: 1fr; }
   .hdr-in { flex-direction: column; gap: 0; }
   .fbar { top: 106px; }
-  .stamp { margin-left: 0; width: 100%; }
+  .period-note { margin-left: 0; width: 100%; }
   .chart-hd, .panel-hd { flex-direction: column; }
   .fire-row { grid-template-columns: 68px 1fr 34px; }
   .fire-row .badge, .fire-row > span:nth-of-type(2) { grid-column: span 1; }

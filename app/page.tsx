@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Braces, ChevronLeft, Copy, Flame, KeyRound, Send, Sprout } from "lucide-react";
+import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send, Sprout } from "lucide-react";
 import { ForecastChart, Sparkline } from "@/components/charts";
 import {
   API_BASE_URLS,
+  OPEN_API_DEFAULT_PERIOD,
   approveAdminArticle,
   fetchFireRiskIndex,
   fetchDroughtReportDetail,
@@ -36,11 +37,13 @@ import {
   type FreshFoodKpiView,
   type HydropowerForecastView,
   type HydropowerKpiView,
+  type OpenApiPeriod,
   type PriceForecastKey,
   type PriceForecastView,
   type PriceKpiView,
   type SummaryAlert
 } from "@/lib/api-client";
+import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
 import { apiCatalog, cpiSeries, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
 
 type PriceApiState = {
@@ -274,6 +277,7 @@ export default function Page() {
   const [adminToken, setAdminToken] = useState("");
   const [adminStatusFilter, setAdminStatusFilter] = useState<AdminArticleStatus | "ALL">("PENDING");
   const [adminApi, setAdminApi] = useState<AdminApiState>(initialAdminApiState);
+  const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
   const activeForecasts = useMemo(
     () => ({
       ...forecasts,
@@ -378,7 +382,7 @@ export default function Page() {
 
     async function loadPriceForecast(key: PriceForecastKey) {
       try {
-        const response = await fetchPriceForecast(key, { signal: controller.signal });
+        const response = await fetchPriceForecast(key, { signal: controller.signal, year: period.year, month: period.month });
         const nextForecast = toPriceForecastView(key, response);
         const nextKpi = toPriceKpiView(key, response);
 
@@ -407,7 +411,7 @@ export default function Page() {
 
     async function loadHydropowerForecast() {
       try {
-        const response = await fetchHydropowerForecast({ signal: controller.signal });
+        const response = await fetchHydropowerForecast({ signal: controller.signal, year: period.year, month: period.month });
         const nextForecast = toHydropowerForecastView(response);
         const nextKpi = toHydropowerKpiView(response);
 
@@ -431,6 +435,47 @@ export default function Page() {
       }
     }
 
+
+    async function loadFreshFoodIndex() {
+      try {
+        const response = await fetchFreshFoodIndex({ signal: controller.signal, year: period.year, month: period.month });
+        const nextKpi = toFreshFoodKpiView(response);
+        const nextGauge = toFreshFoodGaugeView(response);
+
+        if (!nextKpi || !nextGauge) {
+          setFreshFoodApi({ status: "empty", kpi: null, gauge: null, latestDate: null });
+          return;
+        }
+
+        setFreshFoodApi({
+          status: "success",
+          kpi: nextKpi,
+          gauge: nextGauge,
+          latestDate: response.baseMonth
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setFreshFoodApi({ status: "error", kpi: null, gauge: null, latestDate: null });
+      }
+    }
+
+
+
+    loadPriceForecast("cabbage");
+    loadPriceForecast("onion");
+    loadHydropowerForecast();
+    loadFreshFoodIndex();
+
+    return () => controller.abort();
+  }, [period]);
+
+  // 산불위험지수는 일 단위, 종합 현황과 리포트는 조회 연월과 무관하므로 최초 1회만 불러온다.
+  useEffect(() => {
+    const controller = new AbortController();
+
     async function loadFireRiskIndex() {
       try {
         const response = await fetchFireRiskIndex({ signal: controller.signal });
@@ -452,32 +497,6 @@ export default function Page() {
         }
 
         setFireRiskApi({ status: "error", items: null, latestDate: null });
-      }
-    }
-
-    async function loadFreshFoodIndex() {
-      try {
-        const response = await fetchFreshFoodIndex({ signal: controller.signal });
-        const nextKpi = toFreshFoodKpiView(response);
-        const nextGauge = toFreshFoodGaugeView(response);
-
-        if (!nextKpi || !nextGauge) {
-          setFreshFoodApi({ status: "empty", kpi: null, gauge: null, latestDate: null });
-          return;
-        }
-
-        setFreshFoodApi({
-          status: "success",
-          kpi: nextKpi,
-          gauge: nextGauge,
-          latestDate: response.baseMonth
-        });
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setFreshFoodApi({ status: "error", kpi: null, gauge: null, latestDate: null });
       }
     }
 
@@ -521,11 +540,7 @@ export default function Page() {
       }
     }
 
-    loadPriceForecast("cabbage");
-    loadPriceForecast("onion");
-    loadHydropowerForecast();
     loadFireRiskIndex();
-    loadFreshFoodIndex();
     loadSummary();
     loadDroughtReports();
 
@@ -646,19 +661,50 @@ export default function Page() {
 
       <div className="fbar">
         <div className="fbar-in">
-          <div className="filter-group">
-            <span>지역</span>
-            {["전국", "강원", "전남", "경남"].map((region, index) => (
-              <button className="chip" aria-pressed={index === 0} key={region}>{region}</button>
-            ))}
+          <div className="period" role="group" aria-label="조회 기간">
+            <span className="period-tag">기간</span>
+            <button
+              type="button"
+              className="period-step"
+              onClick={() => setPeriod((current) => shiftPeriod(current, -1))}
+              disabled={isPeriodAtStart(period)}
+              aria-label="이전 달"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <div className="period-fields">
+              <label>
+                <select
+                  value={period.year}
+                  aria-label="조회 연도"
+                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, year: Number(event.target.value) }))}
+                >
+                  {PERIOD_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+                <span>년</span>
+              </label>
+              <label>
+                <select
+                  value={period.month}
+                  aria-label="조회 월"
+                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, month: Number(event.target.value) }))}
+                >
+                  {availableMonths(period.year).map((month) => <option key={month} value={month}>{month}</option>)}
+                </select>
+                <span>월</span>
+              </label>
+            </div>
+            <button
+              type="button"
+              className="period-step"
+              onClick={() => setPeriod((current) => shiftPeriod(current, 1))}
+              disabled={isPeriodAtEnd(period)}
+              aria-label="다음 달"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-          <div className="filter-group">
-            <span>기간</span>
-            {["1주", "1개월", "3개월", "1년"].map((period, index) => (
-              <button className="chip" aria-pressed={index === 1} key={period}>{period}</button>
-            ))}
-          </div>
-          <div className="stamp"><span className="pulse" />최종 갱신 2026-08-05 06:00 KST</div>
+          <p className="period-note">예측·지수 데이터는 월 1회 재학습되어 갱신됩니다</p>
         </div>
       </div>
       <div className="rule" />

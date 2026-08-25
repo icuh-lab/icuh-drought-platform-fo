@@ -17,6 +17,22 @@ export const API_BASE_URLS = {
 const OPEN_API_DEFAULT_YEAR = process.env.NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR ?? String(new Date().getFullYear());
 const OPEN_API_DEFAULT_MONTH = process.env.NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH ?? String(new Date().getMonth() + 1);
 
+function toPositiveInt(value: string, fallback: number) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * open-api 조회 기준 연월. 예측·지수 모델이 월 1회 재학습되므로 조회 단위도 월이다.
+ * 화면 필터의 초기값이자, year/month 를 넘기지 않은 호출의 기본값이다.
+ */
+export const OPEN_API_DEFAULT_PERIOD = {
+  year: toPositiveInt(OPEN_API_DEFAULT_YEAR, new Date().getFullYear()),
+  month: toPositiveInt(OPEN_API_DEFAULT_MONTH, new Date().getMonth() + 1)
+} as const;
+
+export type OpenApiPeriod = { year: number; month: number };
+
 export type ApiResponse<T> = {
   result: "SUCCESS" | "ERROR";
   data: T | null;
@@ -259,10 +275,14 @@ export type AdminArticlePage = {
 
 type FetchPriceForecastOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchHydropowerForecastOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchFireRiskIndexOptions = {
@@ -271,6 +291,8 @@ type FetchFireRiskIndexOptions = {
 
 type FetchFreshFoodIndexOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchSummaryOptions = {
@@ -397,11 +419,11 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
   }
 };
 
-export async function fetchPriceForecast(key: PriceForecastKey, { signal }: FetchPriceForecastOptions = {}) {
+export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, month }: FetchPriceForecastOptions = {}) {
   const config = PRICE_FORECAST_CONFIG[key];
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH,
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
     location: config.location
   });
   const data = await getOpenApiData<OpenAgriDailyPriceResponse>("/api/v1/agrimarket/daily-price", search, signal);
@@ -422,11 +444,11 @@ export async function fetchPriceForecast(key: PriceForecastKey, { signal }: Fetc
   } satisfies PriceForecastResponse;
 }
 
-export async function fetchHydropowerForecast({ signal }: FetchHydropowerForecastOptions = {}) {
+export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
   const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천댐";
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH,
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
     damName
   });
   const data = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", search, signal);
@@ -482,10 +504,10 @@ export async function fetchFireRiskIndex({ signal }: FetchFireRiskIndexOptions =
   } satisfies FireRiskIndexResponse;
 }
 
-export async function fetchFreshFoodIndex({ signal }: FetchFreshFoodIndexOptions = {}) {
+export async function fetchFreshFoodIndex({ signal, year, month }: FetchFreshFoodIndexOptions = {}) {
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month)
   });
   const data = await getOpenApiData<OpenFreshVegetableIndexResponse>("/api/v1/freshfood/fresh-vegetable", search, signal);
   const values = data.provinceData
