@@ -10,8 +10,7 @@ function normalizeBaseUrl(value: string) {
 
 export const API_BASE_URLS = {
   public: normalizeBaseUrl(process.env.NEXT_PUBLIC_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081"),
-  open: normalizeBaseUrl(process.env.NEXT_PUBLIC_OPEN_API_BASE_URL ?? "http://localhost:8083"),
-  admin: normalizeBaseUrl(process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "http://localhost:8082")
+  open: normalizeBaseUrl(process.env.NEXT_PUBLIC_OPEN_API_BASE_URL ?? "http://localhost:8083")
 } as const;
 
 const OPEN_API_DEFAULT_YEAR = process.env.NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR ?? String(new Date().getFullYear());
@@ -243,36 +242,6 @@ export type DroughtReportListResponse = {
 
 export type DroughtReportView = typeof reports[number];
 
-export type AdminArticleStatus = "PENDING" | "APPROVED" | "UPDATED_PENDING" | "UPDATED_APPROVED" | "REJECTED" | "DELETED_PENDING";
-
-export type AdminArticle = {
-  id: number;
-  title: string;
-  authorOrganization: string;
-  status: AdminArticleStatus;
-  isDeleted: boolean;
-  updatedAt: string | null;
-  views: number;
-  documentType: string;
-  subjectDomain: string;
-  source: string | null;
-  sourceUrl: string | null;
-  sourceArticleCount: number;
-  regionMentions: string[];
-  keywords: string[];
-  autoSummaryNotice: string | null;
-};
-
-export type AdminArticlePage = {
-  content: AdminArticle[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  first: boolean;
-  last: boolean;
-};
-
 type FetchPriceForecastOptions = {
   signal?: AbortSignal;
   year?: number;
@@ -306,11 +275,6 @@ type FetchDroughtReportsOptions = {
 
 type FetchDroughtReportDetailOptions = {
   signal?: AbortSignal;
-};
-
-type FetchAdminArticlesOptions = {
-  signal?: AbortSignal;
-  status?: AdminArticleStatus;
 };
 
 type OpenAgriDailyPriceResponse = {
@@ -357,16 +321,6 @@ type OpenWildFireForecastResponse = {
   targetTime: string;
   regionData: OpenWildFireRegion[];
 }[];
-
-type AdminArticleListItemResponse = {
-  id: number;
-  title: string;
-  authorOrganization: string;
-  department?: string | null;
-  author?: string | null;
-  status: AdminArticleStatus;
-  createdAt: string | null;
-};
 
 type PublicArticleListItemResponse = Omit<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice"> &
   Partial<Pick<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice">>;
@@ -568,40 +522,6 @@ export async function fetchDroughtReportDetail(id: string, { signal }: FetchDrou
     await getPublicApiData<PublicArticleDetailResponse>(`/api/v1/articles/${encodeURIComponent(id)}`, null, signal)
   );
   return articleDetailToDroughtReportDetail(detail);
-}
-
-export async function fetchAdminArticles(token: string, { signal, status }: FetchAdminArticlesOptions = {}) {
-  const statuses = status ? [status] : ["PENDING", "APPROVED", "UPDATED_PENDING", "UPDATED_APPROVED", "DELETED_PENDING"] as AdminArticleStatus[];
-  const lists = await Promise.all(statuses.map(async (nextStatus) => {
-    const response = await fetch(new URL(adminArticleListPath(nextStatus), API_BASE_URLS.admin), {
-      signal,
-      headers: adminHeaders(token)
-    });
-    if (!response.ok) {
-      throw new Error(`Admin articles API failed with ${response.status}`);
-    }
-    const items = (await response.json()) as AdminArticleListItemResponse[];
-    return items.map((item) => adminArticleListItemToView(item, nextStatus));
-  }));
-  const content = lists.flat();
-
-  return {
-    content,
-    page: 0,
-    size: content.length,
-    totalElements: content.length,
-    totalPages: content.length > 0 ? 1 : 0,
-    first: true,
-    last: true
-  } satisfies AdminArticlePage;
-}
-
-export async function approveAdminArticle(token: string, id: number) {
-  return mutateAdminArticle(token, id, "approve");
-}
-
-export async function rejectAdminArticle(token: string, id: number) {
-  return mutateAdminArticle(token, id, "reject");
 }
 
 export function toPriceForecastView(key: PriceForecastKey, response: PriceForecastResponse): PriceForecastView | null {
@@ -963,56 +883,6 @@ function isApiDroughtReportListResponse(value: unknown): value is ApiResponse<Dr
   );
 }
 
-function isApiAdminArticlePage(value: unknown): value is ApiResponse<AdminArticlePage> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isAdminArticlePage(value.data)) &&
-    "error" in value
-  );
-}
-
-function isAdminArticlePage(value: unknown): value is AdminArticlePage {
-  if (!isRecord(value)) return false;
-  return (
-    Array.isArray(value.content) &&
-    value.content.every(isAdminArticle) &&
-    typeof value.page === "number" &&
-    typeof value.size === "number" &&
-    typeof value.totalElements === "number" &&
-    typeof value.totalPages === "number" &&
-    typeof value.first === "boolean" &&
-    typeof value.last === "boolean"
-  );
-}
-
-function isAdminArticle(value: unknown): value is AdminArticle {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.id === "number" &&
-    typeof value.title === "string" &&
-    typeof value.authorOrganization === "string" &&
-    isAdminArticleStatus(value.status) &&
-    typeof value.isDeleted === "boolean" &&
-    (value.updatedAt === null || typeof value.updatedAt === "string") &&
-    typeof value.views === "number" &&
-    typeof value.documentType === "string" &&
-    typeof value.subjectDomain === "string" &&
-    (value.source === null || typeof value.source === "string") &&
-    (value.sourceUrl === null || typeof value.sourceUrl === "string") &&
-    typeof value.sourceArticleCount === "number" &&
-    Array.isArray(value.regionMentions) &&
-    value.regionMentions.every((region) => typeof region === "string") &&
-    Array.isArray(value.keywords) &&
-    value.keywords.every((keyword) => typeof keyword === "string") &&
-    (value.autoSummaryNotice === null || typeof value.autoSummaryNotice === "string")
-  );
-}
-
-function isAdminArticleStatus(value: unknown): value is AdminArticleStatus {
-  return value === "PENDING" || value === "APPROVED" || value === "UPDATED_PENDING" || value === "UPDATED_APPROVED" || value === "REJECTED" || value === "DELETED_PENDING";
-}
-
 function isDroughtReportListResponse(value: unknown): value is DroughtReportListResponse {
   if (!isRecord(value)) return false;
   return Array.isArray(value.reports) && value.reports.every(isDroughtReportSummary);
@@ -1170,52 +1040,6 @@ function isSummaryAlertSeverity(value: unknown): value is SummaryAlertSeverity {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-async function mutateAdminArticle(token: string, id: number, action: "approve" | "reject") {
-  const response = await fetch(new URL(action === "approve" ? `/api/v1/admin/articles/${id}` : `/api/v2/articles/${id}/reject`, API_BASE_URLS.admin), {
-    method: "POST",
-    headers: {
-      ...adminHeaders(token),
-      "Content-Type": "application/json"
-    },
-    body: action === "reject" ? JSON.stringify({ reason: "Rejected from admin UI" }) : undefined
-  });
-  if (!response.ok) {
-    throw new Error(`Admin article ${action} API failed with ${response.status}`);
-  }
-}
-
-function adminHeaders(token: string) {
-  return { "X-Admin-Token": token };
-}
-
-function adminArticleListPath(status: AdminArticleStatus) {
-  if (status === "APPROVED") return "/api/v1/admin/articles/approved";
-  if (status === "UPDATED_PENDING") return "/api/v1/admin/articles/updated-pending";
-  if (status === "UPDATED_APPROVED") return "/api/v1/admin/articles/updated-approved";
-  if (status === "DELETED_PENDING") return "/api/v1/admin/articles/delete-list";
-  return "/api/v1/admin/articles/pending";
-}
-
-function adminArticleListItemToView(item: AdminArticleListItemResponse, status: AdminArticleStatus): AdminArticle {
-  return {
-    id: item.id,
-    title: item.title,
-    authorOrganization: item.authorOrganization,
-    status: item.status ?? status,
-    isDeleted: status === "DELETED_PENDING",
-    updatedAt: item.createdAt,
-    views: 0,
-    documentType: "",
-    subjectDomain: "",
-    source: null,
-    sourceUrl: null,
-    sourceArticleCount: 0,
-    regionMentions: [],
-    keywords: [item.department, item.author].filter((value): value is string => Boolean(value)),
-    autoSummaryNotice: null
-  };
 }
 
 function toDroughtReportView(

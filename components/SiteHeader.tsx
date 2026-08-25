@@ -61,7 +61,6 @@ export function SiteHeader() {
             <div className="nav-eyebrow">개발자</div>
             <div className="nav-row">
               {navLink("api", "API 센터")}
-              {navLink("admin", "관리")}
             </div>
           </div>
         </nav>
