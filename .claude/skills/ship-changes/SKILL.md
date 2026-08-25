@@ -122,11 +122,47 @@ EOF
 
 PR 본문에는 **변경사항 요약을 반드시 포함한다.** 무엇을·왜 바꿨는지가 제목만으로 전달되지 않는다.
 
+#### 웹 UI로 PR을 만드는 경우
+
+`gh` 인증이 없어 GitHub 웹에서 만들 때는 **base 드롭다운이 항상 기본 브랜치(`main`)로 초기화된다.**
+직접 `develop`으로 바꿔야 한다. 라벨도 우측 Labels에서 수동 선택한다.
+
+상단이 `base: develop ← compare: <기능 브랜치>` 로 표시되는지 확인한다.
+
+> **파일 목록으로는 base 오류를 알 수 없다.** `develop`과 `main`이 같은 커밋을 가리키는
+> 시점에는 base가 무엇이든 diff가 완전히 동일하게 보인다. 반드시 드롭다운 표시를 본다.
+
+### 5. 머지 후 검증
+
+머지되었다고 끝이 아니다. **어느 브랜치가 실제로 움직였는지 확인한다.**
+
+```bash
+git fetch --prune origin
+git ls-remote --heads origin
+```
+
+`develop`이 새 커밋을 가리켜야 한다. `main`만 움직였다면 base가 잘못 지정된 것이다.
+
+`develop`에 고유 커밋이 없다면 fast-forward로 복구한다.
+
+```bash
+git log --oneline origin/develop ^origin/main   # 비어야 안전
+git push origin origin/main:refs/heads/develop
+```
+
+로컬 정리:
+
+```bash
+git checkout develop && git pull && git branch -d <기능 브랜치>
+```
+
 ## Common Mistakes
 
 | 실수 | 결과 | 대응 |
 | --- | --- | --- |
 | `--base` 생략 | PR이 `main`으로 열린다 | 항상 `--base develop` 명시 |
+| 웹 PR 폼에서 base 미변경 | `main`으로 머지된다 | 드롭다운을 `develop`으로 변경 |
+| 머지 후 확인 생략 | 잘못된 base를 놓친다 | `git ls-remote --heads origin` |
 | `main`/`develop`에서 바로 커밋 | PR을 열 수 없다 | 커밋 전 `git branch --show-current` 확인 |
 | `git add -A` 습관적 사용 | 무관한 변경이 섞인다 | 관련 파일만 지정 |
 | 커밋 메시지 영어 작성 | 규칙 위반 | 제목·본문 모두 한국어 |
