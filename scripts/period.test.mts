@@ -1,5 +1,5 @@
 import { OPEN_API_DEFAULT_PERIOD } from "../lib/api-client";
-import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "../lib/period";
+import { PERIOD_START_YEAR, PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "../lib/period";
 
 let failed = 0;
 function check(name: string, actual: unknown, expected: unknown) {
@@ -13,7 +13,9 @@ const { year: maxYear, month: maxMonth } = OPEN_API_DEFAULT_PERIOD;
 const minYear = PERIOD_YEARS[0];
 const pastYear = maxYear - 1;
 
-check("선택 연도는 기본 연도까지 3개", PERIOD_YEARS, [maxYear - 2, maxYear - 1, maxYear]);
+check("선택 연도는 2022년부터 시작", PERIOD_YEARS[0], PERIOD_START_YEAR);
+check("선택 연도는 기본 연도에서 끝난다", PERIOD_YEARS.at(-1), maxYear);
+check("선택 연도는 빈틈없이 연속", PERIOD_YEARS, Array.from({ length: maxYear - PERIOD_START_YEAR + 1 }, (_, i) => PERIOD_START_YEAR + i));
 check("지난 연도는 12개월 모두 선택 가능", availableMonths(pastYear).length, 12);
 check("기준 연도는 산출된 달까지만", availableMonths(maxYear), Array.from({ length: maxMonth }, (_, i) => i + 1));
 
