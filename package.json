@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build": "NEXT_DIST_DIR=.next-build next build",
+    "start": "NEXT_DIST_DIR=.next-build next start",
+    "lint": "next lint",
+    "clean": "rm -rf .next .next-build .next.stale-*"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
