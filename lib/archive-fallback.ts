@@ -1,4 +1,4 @@
-import type { ArticleCategories, ArticleListItem, ArticlePage } from "@/lib/archive-types";
+import type { ArticleCategories, ArticleDetail, ArticleListItem, ArticlePage } from "@/lib/archive-types";
 import { apiCatalog } from "@/lib/mock-data";
 
 export const fallbackArticleCategories: ArticleCategories = {
@@ -158,6 +158,69 @@ export function prependCapturedArchiveArticle(
     first: true,
     last: totalPages === 1
   };
+}
+
+/**
+ * 백엔드 미실행 시 상세 화면에 쓸 시연용 상세 데이터.
+ *
+ * 목록 fallback(fallbackArticles)을 그대로 재료로 써서 목록과 상세의 내용이 어긋나지 않게 한다.
+ * 목록에 없는 id 는 null 을 돌려주고, 호출부는 이를 '찾을 수 없음'으로 처리한다.
+ * 백엔드가 살아있는데 404 를 준 경우는 호출부에서 먼저 걸러지므로 여기까지 오지 않는다.
+ */
+export function buildFallbackArticleDetail(id: number): ArticleDetail | null {
+  const article = fallbackArticles.find((item) => item.id === id);
+  if (!article) return null;
+
+  return {
+    id: article.id,
+    title: article.title,
+    description: fallbackDescription(article),
+    author: "시연 담당자",
+    authorOrganization: article.authorOrganization,
+    department: "가뭄영향정보플랫폼 운영팀",
+    // 목록은 수정일만 들고 있다. 생성일은 표시 목적이므로 수정일과 같은 값을 쓴다.
+    createdAt: article.updatedAt,
+    updatedAt: article.updatedAt,
+    views: article.views,
+    classification: findCategory(fallbackArticleCategories.documentTypesResponse, article.documentType),
+    serviceType: findCategory(fallbackArticleCategories.subjectDomainsResponses, article.subjectDomain),
+    source: article.source,
+    sourceUrl: article.sourceUrl,
+    sourceArticleCount: article.sourceArticleCount,
+    regionMentions: article.regionMentions,
+    keywords: article.keywords,
+    autoSummaryNotice: article.autoSummaryNotice,
+    files: [
+      {
+        id: article.id * 10,
+        originalFilename: `${article.title}.pdf`,
+        extension: "pdf",
+        fileSize: 1024 * 1024 * 2,
+        filePath: `demo/${article.id}.pdf`
+      }
+    ]
+  };
+}
+
+function findCategory(items: ArticleCategories["documentTypesResponse"], code: string) {
+  return items.find((item) => item.code === code) ?? null;
+}
+
+/** 목록이 들고 있는 정보만으로 본문을 구성한다. 없는 사실을 지어내지 않는다. */
+function fallbackDescription(article: ArticleListItem): string {
+  const lines = [
+    article.autoSummaryNotice ?? `${article.title} 관련 자료입니다.`,
+    "",
+    `등록기관: ${article.authorOrganization}`
+  ];
+  if (article.regionMentions.length > 0) {
+    lines.push(`언급 지역: ${article.regionMentions.join(", ")}`);
+  }
+  if (article.keywords.length > 0) {
+    lines.push(`키워드: ${article.keywords.map((keyword) => `#${keyword}`).join(" ")}`);
+  }
+  lines.push("", "백엔드 연결 전 표시되는 로컬 시연 데이터입니다.");
+  return lines.join("\n");
 }
 
 export function countFilteredApis(query: string): number {
