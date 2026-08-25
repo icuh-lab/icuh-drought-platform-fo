@@ -8,13 +8,11 @@
 | --- | --- | --- | --- |
 | open-api | `NEXT_PUBLIC_OPEN_API_BASE_URL` | `http://localhost:8083` | 정형 데이터, 예측·지수, OpenAPI성 데이터 |
 | public-api | `NEXT_PUBLIC_PUBLIC_API_BASE_URL` 또는 `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8081` | 가뭄 자료실 공개 게시글/파일 |
-| admin-api | `NEXT_PUBLIC_ADMIN_API_BASE_URL` | `http://localhost:8082` | 관리자 승인/반려 |
 
 공통 응답 래퍼는 API 서버별로 다를 수 있다.
 
 - open-api 일부: `{ result, data, error }`
 - public-api: `{ status, message, data, error }` 또는 `data` 직접 반환
-- admin-api 일부 목록: 배열 직접 반환
 
 ## 화면: 종합 현황
 
@@ -394,69 +392,24 @@ type CreateArticleWithFilesRequest = {
 
 ## 화면: API 센터
 
-현재 화면은 프론트의 OpenAPI 카탈로그를 표시한다. 각 항목은 위 open-api/public-api/admin-api 엔드포인트를 문서화한 카탈로그 데이터다.
+현재 화면은 프론트의 OpenAPI 카탈로그를 표시한다. 각 항목은 위 open-api/public-api 엔드포인트를 문서화한 카탈로그 데이터다.
 
-## 화면: 관리자
+## 화면: 관리자 (제거됨)
 
-### 관리자 승인 목록
+관리 기능은 **별도 어드민 서비스**에서 제공하므로 이 프론트오피스에서 제거했다(2026-08-25).
 
-| 항목 | 내용 |
-| --- | --- |
-| API | admin-api |
-| Endpoint | 상태별 목록 API |
-| Request | `status`, 관리자 토큰 |
-| Response | 승인/수정/삭제 대기 목록 |
-
-상태별 Endpoint:
-
-| status | Endpoint |
-| --- | --- |
-| `PENDING` | `GET /api/v1/admin/articles/pending` |
-| `APPROVED` | `GET /api/v1/admin/articles/approved` |
-| `UPDATED_PENDING` | `GET /api/v1/admin/articles/updated-pending` |
-| `UPDATED_APPROVED` | `GET /api/v1/admin/articles/updated-approved` |
-| `DELETED_PENDING` | `GET /api/v1/admin/articles/delete-list` |
-
-Request Header:
+- 제거 대상: `개발자 > 관리` 메뉴, 게시글 승인/반려 화면, `admin-api` 연동 코드,
+  `NEXT_PUBLIC_ADMIN_API_BASE_URL` 환경변수
+- 당시 사용하던 엔드포인트는 아래와 같았다. 어드민 서비스 쪽 명세는 그 저장소를 참고한다.
 
 ```http
-X-Admin-Token: {adminToken}
+GET   /api/v1/admin/articles/{status}
+PATCH /api/v1/admin/articles/{id}
+PATCH /api/v2/articles/{id}/reject
 ```
 
-Response 요약:
-
-```ts
-type AdminArticleListItemResponse = {
-  id: number;
-  title: string;
-  authorOrganization: string;
-  department?: string | null;
-  author?: string | null;
-  status: string;
-  createdAt: string | null;
-};
-```
-
-### 관리자 생성 승인
-
-| 항목 | 내용 |
-| --- | --- |
-| API | admin-api |
-| Endpoint | `POST /api/v1/admin/articles/{id}` |
-| Request | `id`, 관리자 토큰 |
-| Response | 승인 결과 |
-
-### 관리자 반려
-
-| 항목 | 내용 |
-| --- | --- |
-| API | admin-api |
-| Endpoint | `POST /api/v2/articles/{id}/reject` |
-| Request | `id`, 관리자 토큰, 반려 사유 |
-| Response | 반려 결과 |
+상세 계약이 필요하면 git 이력의 `refactor: 개발자 탭의 관리 화면 제거` 커밋 이전 버전을 본다.
 
 ## 확인 필요
 
 - `open-api /v1/summary`가 실제 open-api 서버에 존재하는지 확인이 필요하다. 현재 프론트는 종합 현황 fallback을 가지고 있다.
-- 관리자 수정 승인/삭제 승인 실행 API는 현재 화면에서 목록 조회 중심으로만 사용 중이다. 버튼별 승인 API가 확정되면 이 문서에 추가한다.
-- `admin-api` 목록은 현재 프론트 기준으로 페이지네이션 없이 배열 응답으로 처리한다. 서버가 `page`, `size`를 지원하면 목록 Request에 추가한다.

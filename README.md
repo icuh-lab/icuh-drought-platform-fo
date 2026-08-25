@@ -9,7 +9,7 @@ Next.js 기반 ICUH 가뭄영향정보플랫폼 프론트오피스입니다.
 
 ## 주요 화면
 
-- `/`: 종합 현황, 예측·지수, 가뭄영향 리포트, API 센터, 관리 화면
+- `/`: 종합 현황, 예측·지수, 가뭄영향 리포트, API 센터
 - `/archive`: 가뭄 파일 데이터 및 OpenAPI 자료 검색
 - `/archive/new`: 자료 등록 및 첨부파일 업로드
 - `/archive/[id]`: 자료 상세, 다운로드, 수정/삭제 요청
@@ -35,12 +35,20 @@ npm run lint
 npm run build
 ```
 
+## 관리(어드민) 기능
+
+게시글 승인·반려 등 관리 기능은 **별도 어드민 서비스**에서 제공합니다.
+이 프론트오피스에는 관리 화면과 `admin-api` 연동 코드가 없습니다.
+
+과거에는 `개발자 > 관리` 메뉴와 `NEXT_PUBLIC_ADMIN_API_BASE_URL` 환경변수가 있었으나
+2026-08-25 제거했습니다. 되살릴 일이 생기면 git 이력에서 `refactor: 개발자 탭의 관리 화면 제거`
+커밋을 참고하세요.
+
 ## API 설정
 
 ```bash
 NEXT_PUBLIC_PUBLIC_API_BASE_URL=http://localhost:8081
 NEXT_PUBLIC_OPEN_API_BASE_URL=http://localhost:8083
-NEXT_PUBLIC_ADMIN_API_BASE_URL=http://localhost:8082
 NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR=2026
 NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH=8
 ```
@@ -48,7 +56,6 @@ NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH=8
 백엔드 멀티모듈 실행 기준:
 
 - `public-api`: 자료실/게시글/파일 업로드, 기본 포트 `8081`
-- `admin-api`: 관리자 게시글 검토, 기본 포트 `8082`
 - `open-api`: 농산물·수력·산불·신선식품 지수, 기본 포트 `8083`
 
 가뭄 자료실/파일 관리 파트는 다음 `public-api`를 기준으로 연결합니다.

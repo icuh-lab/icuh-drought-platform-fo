@@ -1,4 +1,4 @@
-export type ViewKey = "home" | "forecast" | "reports" | "detail" | "api" | "admin";
+export type ViewKey = "home" | "forecast" | "reports" | "detail" | "api";
 export type ForecastKey = "cabbage" | "onion" | "hydro";
 
 export const kpis = [

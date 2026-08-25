@@ -7,16 +7,13 @@ import { ForecastChart, Sparkline } from "@/components/charts";
 import {
   API_BASE_URLS,
   OPEN_API_DEFAULT_PERIOD,
-  approveAdminArticle,
   fetchFireRiskIndex,
   fetchDroughtReportDetail,
   fetchDroughtReports,
-  fetchAdminArticles,
   fetchFreshFoodIndex,
   fetchHydropowerForecast,
   fetchPriceForecast,
   fetchSummary,
-  rejectAdminArticle,
   latestFireRiskObservedAt,
   latestHydropowerForecastDate,
   latestPriceForecastDate,
@@ -29,8 +26,6 @@ import {
   toHydropowerKpiView,
   toPriceForecastView,
   toPriceKpiView,
-  type AdminArticle,
-  type AdminArticleStatus,
   type FireRiskView,
   type DroughtReportView,
   type FreshFoodGaugeView,
@@ -86,12 +81,6 @@ type ReportApiState = {
   status: "loading" | "success" | "empty" | "error";
   reports: DroughtReportView[] | null;
   details: Record<string, DroughtReportView>;
-};
-
-type AdminApiState = {
-  status: "idle" | "loading" | "success" | "error";
-  articles: AdminArticle[];
-  message: string | null;
 };
 
 function levelClass(level: number) {
@@ -207,11 +196,9 @@ function apiCurlExample(api: ApiCatalogItem) {
     parts.push(`-d '${apiExampleBody(api.body)}'`);
   }
 
-  const baseUrl = api.group === "관리"
-    ? API_BASE_URLS.admin
-    : api.group === "자료공유" || api.group === "파일"
-      ? API_BASE_URLS.public
-      : API_BASE_URLS.open;
+  const baseUrl = api.group === "자료공유" || api.group === "파일"
+    ? API_BASE_URLS.public
+    : API_BASE_URLS.open;
   parts.push(`"${baseUrl}${apiExamplePath(api)}"`);
   return parts.join(" \\\n  ");
 }
@@ -255,12 +242,6 @@ const initialReportApiState: ReportApiState = {
   details: {}
 };
 
-const initialAdminApiState: AdminApiState = {
-  status: "idle",
-  articles: [],
-  message: null
-};
-
 export default function Page() {
   return (
     <Suspense fallback={<main className="wrap"><p className="notice">불러오는 중…</p></main>}>
@@ -285,9 +266,6 @@ function Dashboard() {
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
-  const [adminToken, setAdminToken] = useState("");
-  const [adminStatusFilter, setAdminStatusFilter] = useState<AdminArticleStatus | "ALL">("PENDING");
-  const [adminApi, setAdminApi] = useState<AdminApiState>(initialAdminApiState);
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
   const activeForecasts = useMemo(
     () => ({
@@ -386,7 +364,6 @@ function Dashboard() {
     [selectedApiPath]
   );
   const selectedApiCurl = useMemo(() => apiCurlExample(selectedApi), [selectedApi]);
-  const selectedApiRequiresAuth = selectedApi.params.some((param) => param.in === "header");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -592,35 +569,6 @@ function Dashboard() {
     if (target) setForecast(target);
     router.push(viewHref(next));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const loadAdminArticles = async () => {
-    setAdminApi((current) => ({ ...current, status: "loading", message: null }));
-    try {
-      const response = await fetchAdminArticles(adminToken.trim(), {
-        status: adminStatusFilter === "ALL" ? undefined : adminStatusFilter
-      });
-      setAdminApi({
-        status: "success",
-        articles: response.content,
-        message: `총 ${response.totalElements}건`
-      });
-    } catch (error) {
-      setAdminApi({ status: "error", articles: [], message: "관리자 API 호출에 실패했습니다." });
-    }
-  };
-
-  const decideAdminArticle = async (id: number, action: "approve" | "reject") => {
-    try {
-      if (action === "approve") {
-        await approveAdminArticle(adminToken.trim(), id);
-      } else {
-        await rejectAdminArticle(adminToken.trim(), id);
-      }
-      await loadAdminArticles();
-    } catch (error) {
-      setAdminApi((current) => ({ ...current, status: "error", message: "상태 변경에 실패했습니다." }));
-    }
   };
 
   const copySelectedApiCurl = async () => {
@@ -953,62 +901,10 @@ function Dashboard() {
                 <label>method<input value={selectedApi.method} readOnly /></label>
                 <label>path<input value={apiExamplePath(selectedApi)} readOnly /></label>
                 <button onClick={copySelectedApiCurl}><Copy size={15} />curl 복사</button>
-                <div className="response">{selectedApiRequiresAuth ? "보호 API · 헤더 필요" : "공개 API · 로컬 서버 기준"}</div>
+                <div className="response">공개 API · 로컬 서버 기준</div>
                 <h3><KeyRound size={16} />인증 상태</h3>
-                <div className="key"><span>{selectedApiRequiresAuth ? "X-Admin-Token 필요" : "공개 조회 API"}</span></div>
+                <div className="key"><span>공개 조회 API</span></div>
               </div>
-            </div>
-          </section>
-        )}
-
-        {view === "admin" && (
-          <section className="view">
-            <SectionHead title="게시글 관리" note={adminApi.message ?? "승인 대기와 변경 요청을 검토합니다"} />
-            <div className="card api-doc">
-              <div className="admin-controls">
-                <label>관리자 토큰<input type="password" value={adminToken} onChange={(event) => setAdminToken(event.target.value)} placeholder="선택 입력" /></label>
-                <label>상태
-                  <select value={adminStatusFilter} onChange={(event) => setAdminStatusFilter(event.target.value as AdminArticleStatus | "ALL")}>
-                    <option value="PENDING">PENDING</option>
-                    <option value="UPDATED_PENDING">UPDATED_PENDING</option>
-                    <option value="DELETED_PENDING">DELETED_PENDING</option>
-                    <option value="ALL">ALL</option>
-                  </select>
-                </label>
-                <button onClick={loadAdminArticles}><Send size={15} />조회</button>
-              </div>
-              <table>
-                <thead>
-                  <tr><th>ID</th><th>제목</th><th>기관</th><th>상태</th><th>분류</th><th>출처/분석</th><th>처리</th></tr>
-                </thead>
-                <tbody>
-                  {adminApi.articles.map((article) => (
-                    <tr key={article.id}>
-                      <td>{article.id}</td>
-                      <td>{article.title}</td>
-                      <td>{article.authorOrganization}</td>
-                      <td>{article.status}</td>
-                      <td>{article.documentType} · {article.subjectDomain}</td>
-                      <td>
-                        <div className="admin-meta">
-                          <span>{article.source ?? "출처 미입력"} · 기사 {article.sourceArticleCount}건</span>
-                          {article.sourceUrl && <a href={article.sourceUrl} target="_blank" rel="noreferrer">원문</a>}
-                          <small>{article.regionMentions.join(", ") || "지역 언급 없음"}</small>
-                          <small>{article.keywords.map((keyword) => `#${keyword}`).join(" ") || "키워드 없음"}</small>
-                          <small>{article.autoSummaryNotice ?? "자동 요약 고지 없음"}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <button onClick={() => decideAdminArticle(article.id, "approve")}>승인</button>
-                        <button onClick={() => decideAdminArticle(article.id, "reject")}>반려</button>
-                      </td>
-                    </tr>
-                  ))}
-                  {adminApi.articles.length === 0 && (
-                    <tr><td colSpan={7}>{adminApi.status === "loading" ? "조회 중" : "표시할 게시글이 없습니다"}</td></tr>
-                  )}
-                </tbody>
-              </table>
             </div>
           </section>
         )}
