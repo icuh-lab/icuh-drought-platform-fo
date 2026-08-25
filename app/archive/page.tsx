@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchArticles, fetchArticleCategories } from "@/lib/api-client";
 import type { ArticlePage, ArticleCategories } from "@/lib/archive-types";
-import { buildFallbackArticlePage, countFilteredApis, fallbackArticleCategories, prependCapturedArchiveArticle } from "@/lib/archive-fallback";
+import { buildFallbackArticlePage, fallbackArticleCategories, prependCapturedArchiveArticle } from "@/lib/archive-fallback";
 import { SearchBar } from "@/components/archive/SearchBar";
 import { SearchFilters } from "@/components/archive/SearchFilters";
 import { ArticleList } from "@/components/archive/ArticleList";
-import { ApiCatalogList } from "@/components/archive/ApiCatalogList";
 import { Pagination } from "@/components/archive/Pagination";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -19,7 +18,6 @@ function ArchiveInner() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const tab = sp.get("tab") === "openapi" ? "openapi" : "files";
   const query = sp.get("query") ?? "";
   const documentType = sp.get("documentType") ?? "";
   const subjectDomain = sp.get("subjectDomain") ?? "";
@@ -60,7 +58,6 @@ function ArchiveInner() {
   }, []);
 
   useEffect(() => {
-    if (tab !== "files") return;
     const ac = new AbortController();
     setLoading(true);
     setError(null);
@@ -78,25 +75,15 @@ function ArchiveInner() {
       })
       .finally(() => setLoading(false));
     return () => ac.abort();
-  }, [tab, query, documentType, subjectDomain, source, page, pageSize]);
+  }, [query, documentType, subjectDomain, source, page, pageSize]);
 
   const activeCategories = categories ?? fallbackArticleCategories;
-  const openApiCount = countFilteredApis(query);
 
   return (
     <main className="wrap">
       <div className="sec-hd">
         <h1>가뭄 자료실</h1>
         <Link href="/archive/new" className="nav-btn">자료 등록</Link>
-      </div>
-
-      <div className="tabs" role="tablist" aria-label="가뭄 자료실 탭">
-        <button role="tab" aria-selected={tab === "files"} onClick={() => push({ tab: "", page: 1 })}>
-          파일 데이터 검색결과 {data && tab === "files" ? `(${data.totalElements}건)` : ""}
-        </button>
-        <button role="tab" aria-selected={tab === "openapi"} onClick={() => push({ tab: "openapi", page: 1 })}>
-          OpenAPI 검색결과 ({openApiCount}건)
-        </button>
       </div>
 
       <div className="archive-toolbar">
@@ -109,28 +96,22 @@ function ArchiveInner() {
         </label>
       </div>
 
-      {tab === "files" ? (
+      <SearchFilters
+        documentTypes={activeCategories.documentTypesResponse}
+        subjectDomains={activeCategories.subjectDomainsResponses}
+        value={{ documentType, subjectDomain, source }}
+        onChange={(v) => push({ ...v, page: 1 })}
+        onReset={() => router.push("/archive")}
+      />
+      {error ? <p className="alert">{error}</p> : null}
+      {loading ? <p className="notice">불러오는 중…</p> : null}
+      {data ? (
         <>
-          <SearchFilters
-            documentTypes={activeCategories.documentTypesResponse}
-            subjectDomains={activeCategories.subjectDomainsResponses}
-            value={{ documentType, subjectDomain, source }}
-            onChange={(v) => push({ ...v, page: 1 })}
-            onReset={() => router.push("/archive")}
-          />
-          {error ? <p className="alert">{error}</p> : null}
-          {loading ? <p className="notice">불러오는 중…</p> : null}
-          {data ? (
-            <>
-              <p className="data-note">총 {data.totalElements}건 · {page} / {data.totalPages} 페이지</p>
-              <ArticleList items={data.content} categoryNames={categoryNames} />
-              <Pagination page={page} totalPages={data.totalPages} onChange={(p) => push({ page: p })} />
-            </>
-          ) : null}
+          <p className="data-note">총 {data.totalElements}건 · {page} / {data.totalPages} 페이지</p>
+          <ArticleList items={data.content} categoryNames={categoryNames} />
+          <Pagination page={page} totalPages={data.totalPages} onChange={(p) => push({ page: p })} />
         </>
-      ) : (
-        <ApiCatalogList query={query} />
-      )}
+      ) : null}
     </main>
   );
 }

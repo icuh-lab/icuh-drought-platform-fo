@@ -1,5 +1,4 @@
 import type { ArticleCategories, ArticleDetail, ArticleListItem, ArticlePage } from "@/lib/archive-types";
-import { apiCatalog } from "@/lib/mock-data";
 
 export const fallbackArticleCategories: ArticleCategories = {
   documentTypesResponse: [
@@ -221,16 +220,6 @@ function fallbackDescription(article: ArticleListItem): string {
   }
   lines.push("", "백엔드 연결 전 표시되는 로컬 시연 데이터입니다.");
   return lines.join("\n");
-}
-
-export function countFilteredApis(query: string): number {
-  const q = query.trim().toLowerCase();
-  if (!q) return apiCatalog.length;
-  return apiCatalog.filter((api) =>
-    api.name.toLowerCase().includes(q) ||
-    api.path.toLowerCase().includes(q) ||
-    api.group.toLowerCase().includes(q)
-  ).length;
 }
 
 function matchesArticle(
