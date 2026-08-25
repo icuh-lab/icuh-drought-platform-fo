@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send, Sprout } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send } from "lucide-react";
 import { ForecastChart, Sparkline } from "@/components/charts";
 import {
   API_BASE_URLS,
@@ -43,6 +43,7 @@ import {
   type PriceKpiView,
   type SummaryAlert
 } from "@/lib/api-client";
+import { parseView, viewHref } from "@/lib/dashboard-view";
 import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
 import { apiCatalog, cpiSeries, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
 
@@ -261,7 +262,17 @@ const initialAdminApiState: AdminApiState = {
 };
 
 export default function Page() {
-  const [view, setView] = useState<ViewKey>("home");
+  return (
+    <Suspense fallback={<main className="wrap"><p className="notice">불러오는 중…</p></main>}>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+function Dashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const view = parseView(searchParams.get("view"));
   const [forecast, setForecast] = useState<ForecastKey>("cabbage");
   const [selectedReportId, setSelectedReportId] = useState("r1");
   const [selectedApiPath, setSelectedApiPath] = useState(apiCatalog[0].path);
@@ -579,7 +590,7 @@ export default function Page() {
 
   const go = (next: ViewKey, target?: ForecastKey) => {
     if (target) setForecast(target);
-    setView(next);
+    router.push(viewHref(next));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -622,42 +633,6 @@ export default function Page() {
 
   return (
     <>
-      <header className="hdr">
-        <div className="hdr-in">
-          <button className="brand" onClick={() => go("home")} aria-label="홈으로">
-            <span className="brand-mark">
-              <Sprout size={18} />
-            </span>
-            <span className="brand-tx">
-              가뭄영향정보플랫폼
-              <small>DROUGHT IMPACT PLATFORM</small>
-            </span>
-          </button>
-          <nav className="nav" aria-label="주요 메뉴">
-            <div className="nav-grp">
-              <div className="nav-eyebrow">정형 데이터</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "home" ? "page" : undefined} onClick={() => go("home")}>종합 현황</button>
-                <button className="nav-btn" aria-current={view === "forecast" ? "page" : undefined} onClick={() => go("forecast")}>예측·지수</button>
-              </div>
-            </div>
-            <div className="nav-grp">
-              <div className="nav-eyebrow">비정형 데이터</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "reports" || view === "detail" ? "page" : undefined} onClick={() => go("reports")}>가뭄영향 리포트</button>
-                <Link href="/archive" className="nav-btn">가뭄 자료실</Link>
-              </div>
-            </div>
-            <div className="nav-grp">
-              <div className="nav-eyebrow">개발자</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "api" ? "page" : undefined} onClick={() => go("api")}>API 센터</button>
-                <button className="nav-btn" aria-current={view === "admin" ? "page" : undefined} onClick={() => go("admin")}>관리</button>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </header>
 
       <div className="fbar">
         <div className="fbar-in">
