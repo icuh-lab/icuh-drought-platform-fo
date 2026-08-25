@@ -1,5 +1,4 @@
 import type { ArticleCategories, ArticleListItem, ArticlePage } from "@/lib/archive-types";
-import { apiCatalog } from "@/lib/mock-data";
 
 export const fallbackArticleCategories: ArticleCategories = {
   documentTypesResponse: [
@@ -158,16 +157,6 @@ export function prependCapturedArchiveArticle(
     first: true,
     last: totalPages === 1
   };
-}
-
-export function countFilteredApis(query: string): number {
-  const q = query.trim().toLowerCase();
-  if (!q) return apiCatalog.length;
-  return apiCatalog.filter((api) =>
-    api.name.toLowerCase().includes(q) ||
-    api.path.toLowerCase().includes(q) ||
-    api.group.toLowerCase().includes(q)
-  ).length;
 }
 
 function matchesArticle(
