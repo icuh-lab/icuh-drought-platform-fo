@@ -78,10 +78,14 @@ EOF
 **제목 50자 검증** — 세지 말고 확인한다:
 
 ```bash
-git log -1 --pretty=%s | awk '{print length": "$0}'
+git log -1 --pretty=%s | tr -d '\n' | wc -m
 ```
 
 50을 넘으면 `git commit --amend`로 줄인다.
+
+> **`awk '{print length}'` 를 쓰지 말 것.** 로케일에 따라 문자가 아니라 바이트를 센다.
+> 한글은 UTF-8 에서 3바이트라 28자 제목이 63으로 나와, 멀쩡한 제목을 넘쳤다고 오판한다.
+> `wc -m` 은 문자 단위로 세므로 한글 제목에서도 정확하다.
 
 ### 3. 푸시
 
@@ -166,7 +170,7 @@ git checkout develop && git pull && git branch -d <기능 브랜치>
 | `main`/`develop`에서 바로 커밋 | PR을 열 수 없다 | 커밋 전 `git branch --show-current` 확인 |
 | `git add -A` 습관적 사용 | 무관한 변경이 섞인다 | 관련 파일만 지정 |
 | 커밋 메시지 영어 작성 | 규칙 위반 | 제목·본문 모두 한국어 |
-| 제목이 50자 초과 | 목록에서 잘린다 | `awk '{print length}'`로 확인 후 amend |
+| 제목이 50자 초과 | 목록에서 잘린다 | `wc -m` 으로 확인 후 amend |
 | 검증 없이 커밋 | 깨진 코드가 올라간다 | `npm run lint` 먼저 |
 
 ## 이 저장소 정보
