@@ -1,0 +1,16 @@
+node_modules
+.next
+.next-build
+.next.stale-*
+.git
+.github
+.env
+.env*.local
+docs
+scripts
+README.md
+ONBOARDING.md
+FRONTEND_INTEGRATION_PLAN.md
+Dockerfile
+.dockerignore
+Caddyfile

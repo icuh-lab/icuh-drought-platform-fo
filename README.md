@@ -35,6 +35,13 @@ npm run lint
 npm run build
 ```
 
+## 배포
+
+`infradna.io.kr` 로 운영 배포합니다. 구성과 절차는 [docs/deployment.md](docs/deployment.md) 를 참고하세요.
+
+`main` 에 머지되면 GitHub Actions 가 Docker Hub 로 이미지를 올리고 EC2 컨테이너를 교체합니다.
+평소 작업은 `develop` 에 모으고, 배포 시점에 `develop` → `main` 을 머지합니다.
+
 ## 관리(어드민) 기능
 
 게시글 승인·반려 등 관리 기능은 **별도 어드민 서비스**에서 제공합니다.
