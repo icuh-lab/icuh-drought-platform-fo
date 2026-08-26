@@ -16,6 +16,8 @@ export type ArticleListItem = {
   documentType: string;
   subjectDomain: string;
   source: string | null;
+  /** 첨부파일 확장자. 목록 API 가 내려주지 않으면 빈 배열이다. */
+  extensions: string[];
   sourceUrl: string | null;
   sourceArticleCount: number;
   regionMentions: string[];
