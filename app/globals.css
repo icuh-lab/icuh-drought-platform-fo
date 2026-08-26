@@ -21,6 +21,17 @@
   --r3-dot: #ce7b2b;
   --r4-bg: #f3d6d2;
   --r4-fg: #8b2a1f;
+  /* 자료 분류 태그 3색. 기존 자료실 프로젝트의 파랑/초록/보라 구분을
+     이 프로젝트 팔레트 채도에 맞춰 옮긴 값이다. 위험등급(--r1~r4)과 겹치지 않는다. */
+  --tag-doc-bg: #e4eef3;
+  --tag-doc-fg: #1b5570;
+  --tag-doc-line: #c3d8e2;
+  --tag-domain-bg: #e2ede9;
+  --tag-domain-fg: #2c574f;
+  --tag-domain-line: #c4dbd3;
+  --tag-source-bg: #eae5ef;
+  --tag-source-fg: #5c4370;
+  --tag-source-line: #d6cbe0;
   --radius: 3px;
   --shadow: 0 1px 2px rgba(17, 26, 31, 0.05);
 }
@@ -105,6 +116,15 @@ button { cursor: pointer; }
 .report-card small, .report-row small { color: var(--ink-3); }
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tags span, .tags i { font-style: normal; background: var(--brand-soft); color: var(--brand-deep); padding: 1px 7px; font-size: 11px; font-weight: 800; }
+
+/* 분류 태그 — 문서성격/주제영역/출처를 색으로 구분한다. 라벨은 흐리게, 값은 진하게. */
+.tag { display: inline-flex; align-items: baseline; gap: 4px; border: 1px solid; border-radius: var(--radius); padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.tag em { font-style: normal; font-weight: 700; opacity: .68; }
+.tag b { font-weight: 800; }
+.tag-doc { background: var(--tag-doc-bg); color: var(--tag-doc-fg); border-color: var(--tag-doc-line); }
+.tag-domain { background: var(--tag-domain-bg); color: var(--tag-domain-fg); border-color: var(--tag-domain-line); }
+.tag-source { background: var(--tag-source-bg); color: var(--tag-source-fg); border-color: var(--tag-source-line); }
+.tag-ext { background: var(--surface-2); color: var(--ink-2); border-color: var(--line-2); font-weight: 800; letter-spacing: .02em; }
 .devbar { border: 1px dashed var(--line-2); background: var(--surface); padding: 13px 16px; display: flex; align-items: center; gap: 13px; }
 .devbar span { flex: 1; color: var(--ink-2); }
 .tabs { display: flex; border-bottom: 1px solid var(--line); }
@@ -275,6 +295,8 @@ pre { background: #10181d; color: #d7e7ea; padding: 13px; overflow: auto; }
 .progress-bar { height: 100%; background: var(--brand); transition: width .2s; }
 .tabs button[aria-current="page"] { background: var(--surface); color: var(--brand); border-bottom: 2px solid var(--brand); }
 .archive-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin: 14px 0 0; }
+.filter-reset { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; color: var(--ink-2); font-size: 12px; font-weight: 700; padding: 6px 2px; }
+.filter-reset:hover { color: var(--brand); }
 .page-size { display: flex; align-items: center; gap: 7px; color: var(--ink-3); font-size: 12px; white-space: nowrap; }
 .page-size select { border: 1px solid var(--line-2); background: var(--surface); padding: 7px 9px; }
 

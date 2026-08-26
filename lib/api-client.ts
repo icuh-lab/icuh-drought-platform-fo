@@ -322,8 +322,8 @@ type OpenWildFireForecastResponse = {
   regionData: OpenWildFireRegion[];
 }[];
 
-type PublicArticleListItemResponse = Omit<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice"> &
-  Partial<Pick<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice">>;
+type PublicArticleListItemResponse = Omit<ArticleListItem, "extensions" | "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice"> &
+  Partial<Pick<ArticleListItem, "extensions" | "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice">>;
 
 type PublicArticlePageResponse = {
   content: PublicArticleListItemResponse[];
@@ -1147,6 +1147,7 @@ function normalizeArticleListItem(article: PublicArticleListItemResponse): Artic
     documentType: article.documentType,
     subjectDomain: article.subjectDomain,
     source: article.source ?? null,
+    extensions: article.extensions ?? [],
     sourceUrl: article.sourceUrl ?? null,
     sourceArticleCount: article.sourceArticleCount ?? 0,
     regionMentions: article.regionMentions ?? [],
@@ -1188,6 +1189,8 @@ function articleDetailToDroughtReportDetail(article: ArticleDetail): DroughtRepo
     documentType: article.classification?.code ?? article.classification?.name ?? "",
     subjectDomain: article.serviceType?.code ?? article.serviceType?.name ?? "",
     source: article.source,
+    // 리포트 변환에는 확장자를 쓰지 않지만 목록 항목 형태를 맞춘다.
+    extensions: article.files.map((file) => file.extension ?? "").filter(Boolean),
     sourceUrl: article.sourceUrl,
     sourceArticleCount: article.sourceArticleCount,
     regionMentions: article.regionMentions,

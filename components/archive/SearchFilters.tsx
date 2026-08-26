@@ -1,4 +1,5 @@
 "use client";
+import { RefreshCw } from "lucide-react";
 import type { CategoryItem } from "@/lib/archive-types";
 
 type Props = {
@@ -31,7 +32,10 @@ export function SearchFilters({ documentTypes, subjectDomains, value, onChange, 
           <option value="foreign">해외</option>
         </select>
       </label>
-      <button type="button" className="nav-btn" onClick={onReset}>초기화</button>
+      <button type="button" className="filter-reset" onClick={onReset}>
+        <RefreshCw size={14} />
+        검색 초기화
+      </button>
     </div>
   );
 }
