@@ -1,10 +1,21 @@
 # 가뭄영향정보플랫폼 리버스 프록시
 #
-# Caddy 가 Let's Encrypt 인증서를 자동 발급·갱신한다. 발급은 80 포트를 통해
-# 이뤄지므로 보안그룹에 80 과 443 이 모두 열려 있어야 한다.
+# Caddy 가 Let's Encrypt 인증서를 자동 발급·갱신한다. 발급과 90일 주기 갱신이 모두 80 포트를
+# 통해 이뤄지므로 보안그룹에 80 과 443 이 함께 열려 있어야 한다. 80 을 닫으면 첫 발급이
+# 실패하고, 이미 발급됐더라도 갱신이 조용히 실패한다.
 #
-# 앱 컨테이너는 호스트 포트를 열지 않는다. 같은 docker 네트워크(web)에 붙여
-# 컨테이너 이름으로 접근하므로 외부에서 3000 으로 직접 들어올 경로가 없다.
+# 앱 컨테이너는 호스트 포트를 외부에 열지 않는다. 같은 docker 네트워크(web)에 붙여 컨테이너
+# 이름으로 접근하므로 외부에서 직접 들어올 경로가 없다. 백엔드 컨테이너는 호스트 루프백에만
+# 바인딩돼 있어(127.0.0.1:8081 / 127.0.0.1:8083) 배포 헬스체크는 그대로 동작한다.
+#
+# 세 이름 모두 Route 53 A 레코드가 54.180.165.127 을 가리킨다.
+#
+#   infradna.io.kr          → 프론트 (Next.js)
+#   api.infradna.io.kr      → public-api  (자료실: articles, 파일, 카테고리)
+#   open-api.infradna.io.kr → open-api    (지수·예측 + /v1/summary)
+#
+# admin-api(8082)는 여기에 없다. 인증이 전혀 없는 앱이라 프록시로 가는 경로 자체를 만들지
+# 않는다 — web 네트워크에도 붙이지 않았다. 접근이 필요하면 SSH 터널을 쓴다.
 
 infradna.io.kr {
 	reverse_proxy icuh-drought-platform-fo:3000
@@ -12,16 +23,46 @@ infradna.io.kr {
 	encode gzip zstd
 
 	log {
-		output file /var/log/caddy/access.log {
+		output file /var/log/caddy/fo.access.log {
 			roll_size 10MiB
 			roll_keep 5
 		}
 	}
 }
 
-# 기존 프론트(icuh-platform-fo)를 되살릴 때는 아래를 참고해 블록을 추가한다.
-# 그 컨테이너는 -p 80:80 으로 뜨도록 되어 있어 그대로 실행하면 Caddy 와 충돌한다.
-# 반드시 호스트 포트 매핑 없이 --network web 으로 띄운 뒤 이름으로 연결한다.
+api.infradna.io.kr {
+	reverse_proxy icuh-public-api:8081
+
+	encode gzip zstd
+
+	log {
+		output file /var/log/caddy/public-api.access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}
+
+open-api.infradna.io.kr {
+	reverse_proxy icuh-open-api:8083
+
+	encode gzip zstd
+
+	log {
+		output file /var/log/caddy/open-api.access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}
+
+# 구 프론트(icuh-platform-fo)는 되살리지 않기로 했다. 그 컨테이너는 -p 80:80 으로 뜨도록
+# 되어 있어 Caddy 와 80 번을 두고 충돌하기 때문이다. 저장소의 배포 워크플로는 이미
+# 비활성화했고(2026-08-27), 멈춰 있는 컨테이너도 80/tcp 바인딩을 그대로 갖고 있으니
+# docker start 로도 되살리지 않는다.
+#
+# 그래도 되살려야 한다면 반드시 호스트 포트 매핑 없이 --network web 으로 띄운 뒤 아래처럼
+# 이름으로 연결한다.
 #
 # platform.infradna.io.kr {
 # 	reverse_proxy icuh-platform-fo:80
