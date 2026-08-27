@@ -69,9 +69,35 @@ docker logs -f caddy      # 인증서 발급 확인
 
 **Variables** (민감하지 않아 평문으로 두는 편이 관리에 낫다)
 
-`NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR`, `NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH`,
-`NEXT_PUBLIC_AGRI_CABBAGE_LOCATION`, `NEXT_PUBLIC_AGRI_ONION_LOCATION`,
-`NEXT_PUBLIC_HYDROPOWER_DAM_NAME`
+값은 모두 운영 open-api 에 직접 물어 확인했다(2026-08-27).
+
+| 이름 | 값 | 확인한 것 |
+| --- | --- | --- |
+| `NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR` | `2026` | |
+| `NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH` | `5` | 네 항목이 모두 데이터를 갖는 가장 최신 월 |
+| `NEXT_PUBLIC_AGRI_CABBAGE_LOCATION` | `강릉` | `calendarData` 31건 |
+| `NEXT_PUBLIC_AGRI_ONION_LOCATION` | `합천` | `calendarData` 26건 |
+| `NEXT_PUBLIC_HYDROPOWER_DAM_NAME` | `합천` | **`합천댐` 은 E404** |
+
+### 값을 짐작하지 말 것
+
+두 번 틀렸던 자리다.
+
+**댐 이름은 `합천` 이다.** 화면에는 "합천댐"으로 표시되지만 open-api 가 찾는
+이름은 `합천` 이고, `합천댐` 으로 물으면 `E404 Data Not Found` 를 준다.
+
+**기준 연월은 신선물가가 정한다.** 다른 셋은 2026-08 에도 데이터가 있지만
+신선물가만 비어 있다. 2026-06·07 은 아예 `E500` 이다.
+
+| 연월 | 배추(강릉) | 양파(합천) | 신선물가 | 수력발전(합천) |
+| --- | --- | --- | --- | --- |
+| 2026-08 | 31건 | 26건 | **0건** | 8건 |
+| 2026-07 | 31건 | 26건 | **E500** | 8건 |
+| 2026-06 | 30건 | 25건 | **E500** | 8건 |
+| 2026-05 | 31건 | 26건 | 18건 | 8건 |
+
+값을 바꿀 때는 먼저 실제로 호출해 데이터가 있는지 확인한다. 비어 있어도
+화면은 조용히 빈 카드를 보여줄 뿐 오류를 내지 않으므로 눈치채기 어렵다.
 
 ## 배포 흐름
 

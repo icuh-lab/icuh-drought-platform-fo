@@ -399,7 +399,9 @@ export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, 
 }
 
 export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
-  const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천댐";
+  // open-api 가 찾는 댐 이름은 "합천" 이다. "합천댐" 으로 물으면 E404 를 준다.
+  // 화면 문구의 "합천댐" 은 사람이 읽는 이름이라 그대로 두고, 질의 값만 맞춘다.
+  const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천";
   const search = new URLSearchParams({
     year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
     month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
