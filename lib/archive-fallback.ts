@@ -1,20 +1,26 @@
 import type { ArticleCategories, ArticleDetail, ArticleListItem, ArticlePage } from "@/lib/archive-types";
 
+/**
+ * 운영 DB 의 실제 분류다(2026-08-27 백엔드 확인, status='ACTIVE' 기준 각 6종).
+ * 백엔드가 응답하지 않을 때만 쓰이지만, 코드 체계가 실제와 달라지면
+ * 필터가 조용히 어긋나므로 지어내지 않고 실제 값을 그대로 둔다.
+ */
 export const fallbackArticleCategories: ArticleCategories = {
   documentTypesResponse: [
-    { id: 1, code: "DROUGHT_REPORT", name: "가뭄영향 리포트", enName: "drought_report" },
-    { id: 2, code: "API_SPEC", name: "API 명세서", enName: "api_spec" },
-    { id: 3, code: "STATISTICAL_DATA", name: "통계/분석 자료", enName: "statistical_data" },
-    { id: 4, code: "PLAN_DOC", name: "기획/계획 문서", enName: "plan_doc" },
-    { id: 5, code: "POLICY_STANDARD", name: "정책/기준 문서", enName: "policy_standard" }
+    { id: 1, code: "DT001", name: "연구/조사 자료", enName: "RESEARCH_SURVEY" },
+    { id: 2, code: "DT002", name: "정책/기준 문서", enName: "POLICY_STANDARD" },
+    { id: 3, code: "DT003", name: "보고서", enName: "REPORT" },
+    { id: 4, code: "DT004", name: "데이터/기술 자료", enName: "DATA_TECHNICAL" },
+    { id: 5, code: "DT005", name: "기획/계획 문서", enName: "PLANNING_PROPOSAL" },
+    { id: 6, code: "DT006", name: "기타", enName: "OTHERS" }
   ],
   subjectDomainsResponses: [
-    { id: 1, code: "AGRICULTURE", name: "농업", enName: "agriculture" },
-    { id: 2, code: "ENERGY", name: "에너지", enName: "energy" },
-    { id: 3, code: "DROUGHT_MONITORING", name: "가뭄 모니터링", enName: "drought_monitoring" },
-    { id: 4, code: "CLIMATE_CHANGE", name: "기후변화", enName: "climate_change" },
-    { id: 5, code: "WILDFIRE", name: "산불", enName: "wildfire" },
-    { id: 6, code: "SOCIO_ECONOMIC_IMPACT", name: "사회/경제적 영향", enName: "socio_economic_impact" }
+    { id: 1, code: "SD001", name: "기후 영향 산업 분야", enName: "CLIMATE_IMPACT_INDUSTRY" },
+    { id: 2, code: "SD002", name: "자원 및 환경 관리", enName: "RESOURCE_ENVIRONMENTAL_MANAGEMENT" },
+    { id: 3, code: "SD003", name: "재난 및 기후 리스크", enName: "DISASTER_CLIMATE_RISK" },
+    { id: 4, code: "SD004", name: "사회/경제적 영향", enName: "SOCIO_ECONOMIC_IMPACT" },
+    { id: 5, code: "SD005", name: "지역/외부 참조 정보", enName: "REGIONAL_EXTERNAL_REFERENCE" },
+    { id: 6, code: "SD006", name: "기타", enName: "OTHERS" }
   ]
 };
 
@@ -24,8 +30,8 @@ export const capturedArchiveArticle: ArticleListItem = {
   authorOrganization: "충남연구원",
   updatedAt: "2026-08-21T00:00:00Z",
   views: 9,
-  documentType: "POLICY_STANDARD",
-  subjectDomain: "SOCIO_ECONOMIC_IMPACT",
+  documentType: "DT002",
+  subjectDomain: "SD004",
   source: "domestic",
   extensions: ["pdf"],
   sourceUrl: null,
@@ -43,8 +49,8 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "(재)인프라재난관리진흥원",
     updatedAt: "2026-08-20T08:30:00Z",
     views: 25,
-    documentType: "API_SPEC",
-    subjectDomain: "DROUGHT_MONITORING",
+    documentType: "DT004",
+    subjectDomain: "SD003",
     source: "domestic",
     extensions: ["pdf"],
     sourceUrl: null,
@@ -59,8 +65,8 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "운영 DB 연결 전 로컬 시연",
     updatedAt: "2026-08-19T11:00:00Z",
     views: 14,
-    documentType: "DROUGHT_REPORT",
-    subjectDomain: "DROUGHT_MONITORING",
+    documentType: "DT003",
+    subjectDomain: "SD003",
     source: "domestic",
     extensions: ["pdf"],
     sourceUrl: "https://example.com/drought-report",
@@ -75,8 +81,8 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "한국수자원공사",
     updatedAt: "2026-08-18T15:10:00Z",
     views: 9,
-    documentType: "STATISTICAL_DATA",
-    subjectDomain: "ENERGY",
+    documentType: "DT004",
+    subjectDomain: "SD001",
     source: "domestic",
     extensions: ["pdf"],
     sourceUrl: null,
