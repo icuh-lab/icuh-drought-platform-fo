@@ -10,12 +10,27 @@ function normalizeBaseUrl(value: string) {
 
 export const API_BASE_URLS = {
   public: normalizeBaseUrl(process.env.NEXT_PUBLIC_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081"),
-  open: normalizeBaseUrl(process.env.NEXT_PUBLIC_OPEN_API_BASE_URL ?? "http://localhost:8083"),
-  admin: normalizeBaseUrl(process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "http://localhost:8082")
+  open: normalizeBaseUrl(process.env.NEXT_PUBLIC_OPEN_API_BASE_URL ?? "http://localhost:8083")
 } as const;
 
 const OPEN_API_DEFAULT_YEAR = process.env.NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR ?? String(new Date().getFullYear());
 const OPEN_API_DEFAULT_MONTH = process.env.NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH ?? String(new Date().getMonth() + 1);
+
+function toPositiveInt(value: string, fallback: number) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * open-api 조회 기준 연월. 예측·지수 모델이 월 1회 재학습되므로 조회 단위도 월이다.
+ * 화면 필터의 초기값이자, year/month 를 넘기지 않은 호출의 기본값이다.
+ */
+export const OPEN_API_DEFAULT_PERIOD = {
+  year: toPositiveInt(OPEN_API_DEFAULT_YEAR, new Date().getFullYear()),
+  month: toPositiveInt(OPEN_API_DEFAULT_MONTH, new Date().getMonth() + 1)
+} as const;
+
+export type OpenApiPeriod = { year: number; month: number };
 
 export type ApiResponse<T> = {
   result: "SUCCESS" | "ERROR";
@@ -227,42 +242,16 @@ export type DroughtReportListResponse = {
 
 export type DroughtReportView = typeof reports[number];
 
-export type AdminArticleStatus = "PENDING" | "APPROVED" | "UPDATED_PENDING" | "UPDATED_APPROVED" | "REJECTED" | "DELETED_PENDING";
-
-export type AdminArticle = {
-  id: number;
-  title: string;
-  authorOrganization: string;
-  status: AdminArticleStatus;
-  isDeleted: boolean;
-  updatedAt: string | null;
-  views: number;
-  documentType: string;
-  subjectDomain: string;
-  source: string | null;
-  sourceUrl: string | null;
-  sourceArticleCount: number;
-  regionMentions: string[];
-  keywords: string[];
-  autoSummaryNotice: string | null;
-};
-
-export type AdminArticlePage = {
-  content: AdminArticle[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  first: boolean;
-  last: boolean;
-};
-
 type FetchPriceForecastOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchHydropowerForecastOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchFireRiskIndexOptions = {
@@ -271,6 +260,8 @@ type FetchFireRiskIndexOptions = {
 
 type FetchFreshFoodIndexOptions = {
   signal?: AbortSignal;
+  year?: number;
+  month?: number;
 };
 
 type FetchSummaryOptions = {
@@ -284,11 +275,6 @@ type FetchDroughtReportsOptions = {
 
 type FetchDroughtReportDetailOptions = {
   signal?: AbortSignal;
-};
-
-type FetchAdminArticlesOptions = {
-  signal?: AbortSignal;
-  status?: AdminArticleStatus;
 };
 
 type OpenAgriDailyPriceResponse = {
@@ -336,18 +322,8 @@ type OpenWildFireForecastResponse = {
   regionData: OpenWildFireRegion[];
 }[];
 
-type AdminArticleListItemResponse = {
-  id: number;
-  title: string;
-  authorOrganization: string;
-  department?: string | null;
-  author?: string | null;
-  status: AdminArticleStatus;
-  createdAt: string | null;
-};
-
-type PublicArticleListItemResponse = Omit<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice"> &
-  Partial<Pick<ArticleListItem, "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice">>;
+type PublicArticleListItemResponse = Omit<ArticleListItem, "extensions" | "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice"> &
+  Partial<Pick<ArticleListItem, "extensions" | "sourceUrl" | "sourceArticleCount" | "regionMentions" | "keywords" | "autoSummaryNotice">>;
 
 type PublicArticlePageResponse = {
   content: PublicArticleListItemResponse[];
@@ -397,11 +373,11 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
   }
 };
 
-export async function fetchPriceForecast(key: PriceForecastKey, { signal }: FetchPriceForecastOptions = {}) {
+export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, month }: FetchPriceForecastOptions = {}) {
   const config = PRICE_FORECAST_CONFIG[key];
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH,
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
     location: config.location
   });
   const data = await getOpenApiData<OpenAgriDailyPriceResponse>("/api/v1/agrimarket/daily-price", search, signal);
@@ -422,11 +398,13 @@ export async function fetchPriceForecast(key: PriceForecastKey, { signal }: Fetc
   } satisfies PriceForecastResponse;
 }
 
-export async function fetchHydropowerForecast({ signal }: FetchHydropowerForecastOptions = {}) {
-  const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천댐";
+export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
+  // open-api 가 찾는 댐 이름은 "합천" 이다. "합천댐" 으로 물으면 E404 를 준다.
+  // 화면 문구의 "합천댐" 은 사람이 읽는 이름이라 그대로 두고, 질의 값만 맞춘다.
+  const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천";
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH,
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
     damName
   });
   const data = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", search, signal);
@@ -482,10 +460,10 @@ export async function fetchFireRiskIndex({ signal }: FetchFireRiskIndexOptions =
   } satisfies FireRiskIndexResponse;
 }
 
-export async function fetchFreshFoodIndex({ signal }: FetchFreshFoodIndexOptions = {}) {
+export async function fetchFreshFoodIndex({ signal, year, month }: FetchFreshFoodIndexOptions = {}) {
   const search = new URLSearchParams({
-    year: OPEN_API_DEFAULT_YEAR,
-    month: OPEN_API_DEFAULT_MONTH
+    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
+    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month)
   });
   const data = await getOpenApiData<OpenFreshVegetableIndexResponse>("/api/v1/freshfood/fresh-vegetable", search, signal);
   const values = data.provinceData
@@ -546,40 +524,6 @@ export async function fetchDroughtReportDetail(id: string, { signal }: FetchDrou
     await getPublicApiData<PublicArticleDetailResponse>(`/api/v1/articles/${encodeURIComponent(id)}`, null, signal)
   );
   return articleDetailToDroughtReportDetail(detail);
-}
-
-export async function fetchAdminArticles(token: string, { signal, status }: FetchAdminArticlesOptions = {}) {
-  const statuses = status ? [status] : ["PENDING", "APPROVED", "UPDATED_PENDING", "UPDATED_APPROVED", "DELETED_PENDING"] as AdminArticleStatus[];
-  const lists = await Promise.all(statuses.map(async (nextStatus) => {
-    const response = await fetch(new URL(adminArticleListPath(nextStatus), API_BASE_URLS.admin), {
-      signal,
-      headers: adminHeaders(token)
-    });
-    if (!response.ok) {
-      throw new Error(`Admin articles API failed with ${response.status}`);
-    }
-    const items = (await response.json()) as AdminArticleListItemResponse[];
-    return items.map((item) => adminArticleListItemToView(item, nextStatus));
-  }));
-  const content = lists.flat();
-
-  return {
-    content,
-    page: 0,
-    size: content.length,
-    totalElements: content.length,
-    totalPages: content.length > 0 ? 1 : 0,
-    first: true,
-    last: true
-  } satisfies AdminArticlePage;
-}
-
-export async function approveAdminArticle(token: string, id: number) {
-  return mutateAdminArticle(token, id, "approve");
-}
-
-export async function rejectAdminArticle(token: string, id: number) {
-  return mutateAdminArticle(token, id, "reject");
 }
 
 export function toPriceForecastView(key: PriceForecastKey, response: PriceForecastResponse): PriceForecastView | null {
@@ -941,56 +885,6 @@ function isApiDroughtReportListResponse(value: unknown): value is ApiResponse<Dr
   );
 }
 
-function isApiAdminArticlePage(value: unknown): value is ApiResponse<AdminArticlePage> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isAdminArticlePage(value.data)) &&
-    "error" in value
-  );
-}
-
-function isAdminArticlePage(value: unknown): value is AdminArticlePage {
-  if (!isRecord(value)) return false;
-  return (
-    Array.isArray(value.content) &&
-    value.content.every(isAdminArticle) &&
-    typeof value.page === "number" &&
-    typeof value.size === "number" &&
-    typeof value.totalElements === "number" &&
-    typeof value.totalPages === "number" &&
-    typeof value.first === "boolean" &&
-    typeof value.last === "boolean"
-  );
-}
-
-function isAdminArticle(value: unknown): value is AdminArticle {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.id === "number" &&
-    typeof value.title === "string" &&
-    typeof value.authorOrganization === "string" &&
-    isAdminArticleStatus(value.status) &&
-    typeof value.isDeleted === "boolean" &&
-    (value.updatedAt === null || typeof value.updatedAt === "string") &&
-    typeof value.views === "number" &&
-    typeof value.documentType === "string" &&
-    typeof value.subjectDomain === "string" &&
-    (value.source === null || typeof value.source === "string") &&
-    (value.sourceUrl === null || typeof value.sourceUrl === "string") &&
-    typeof value.sourceArticleCount === "number" &&
-    Array.isArray(value.regionMentions) &&
-    value.regionMentions.every((region) => typeof region === "string") &&
-    Array.isArray(value.keywords) &&
-    value.keywords.every((keyword) => typeof keyword === "string") &&
-    (value.autoSummaryNotice === null || typeof value.autoSummaryNotice === "string")
-  );
-}
-
-function isAdminArticleStatus(value: unknown): value is AdminArticleStatus {
-  return value === "PENDING" || value === "APPROVED" || value === "UPDATED_PENDING" || value === "UPDATED_APPROVED" || value === "REJECTED" || value === "DELETED_PENDING";
-}
-
 function isDroughtReportListResponse(value: unknown): value is DroughtReportListResponse {
   if (!isRecord(value)) return false;
   return Array.isArray(value.reports) && value.reports.every(isDroughtReportSummary);
@@ -1150,52 +1044,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-async function mutateAdminArticle(token: string, id: number, action: "approve" | "reject") {
-  const response = await fetch(new URL(action === "approve" ? `/api/v1/admin/articles/${id}` : `/api/v2/articles/${id}/reject`, API_BASE_URLS.admin), {
-    method: "POST",
-    headers: {
-      ...adminHeaders(token),
-      "Content-Type": "application/json"
-    },
-    body: action === "reject" ? JSON.stringify({ reason: "Rejected from admin UI" }) : undefined
-  });
-  if (!response.ok) {
-    throw new Error(`Admin article ${action} API failed with ${response.status}`);
-  }
-}
-
-function adminHeaders(token: string) {
-  return { "X-Admin-Token": token };
-}
-
-function adminArticleListPath(status: AdminArticleStatus) {
-  if (status === "APPROVED") return "/api/v1/admin/articles/approved";
-  if (status === "UPDATED_PENDING") return "/api/v1/admin/articles/updated-pending";
-  if (status === "UPDATED_APPROVED") return "/api/v1/admin/articles/updated-approved";
-  if (status === "DELETED_PENDING") return "/api/v1/admin/articles/delete-list";
-  return "/api/v1/admin/articles/pending";
-}
-
-function adminArticleListItemToView(item: AdminArticleListItemResponse, status: AdminArticleStatus): AdminArticle {
-  return {
-    id: item.id,
-    title: item.title,
-    authorOrganization: item.authorOrganization,
-    status: item.status ?? status,
-    isDeleted: status === "DELETED_PENDING",
-    updatedAt: item.createdAt,
-    views: 0,
-    documentType: "",
-    subjectDomain: "",
-    source: null,
-    sourceUrl: null,
-    sourceArticleCount: 0,
-    regionMentions: [],
-    keywords: [item.department, item.author].filter((value): value is string => Boolean(value)),
-    autoSummaryNotice: null
-  };
-}
-
 function toDroughtReportView(
   report: DroughtReportSummary,
   body: string[] = [report.summary],
@@ -1278,7 +1126,7 @@ function articleListItemToDroughtReportSummary(article: ArticleListItem): Drough
 
 function normalizeArticlePage(page: PublicArticlePageResponse, uiPage: number, size: number): ArticlePage {
   const totalPages = Math.max(1, page.totalPages);
-  const normalizedPage = Math.min(Math.max(1, uiPage), totalPages);
+  const normalizedPage = clampUiPage(uiPage, totalPages);
 
   return {
     content: page.content.map(normalizeArticleListItem),
@@ -1301,6 +1149,7 @@ function normalizeArticleListItem(article: PublicArticleListItemResponse): Artic
     documentType: article.documentType,
     subjectDomain: article.subjectDomain,
     source: article.source ?? null,
+    extensions: article.extensions ?? [],
     sourceUrl: article.sourceUrl ?? null,
     sourceArticleCount: article.sourceArticleCount ?? 0,
     regionMentions: article.regionMentions ?? [],
@@ -1342,6 +1191,8 @@ function articleDetailToDroughtReportDetail(article: ArticleDetail): DroughtRepo
     documentType: article.classification?.code ?? article.classification?.name ?? "",
     subjectDomain: article.serviceType?.code ?? article.serviceType?.name ?? "",
     source: article.source,
+    // 리포트 변환에는 확장자를 쓰지 않지만 목록 항목 형태를 맞춘다.
+    extensions: article.files.map((file) => file.extension ?? "").filter(Boolean),
     sourceUrl: article.sourceUrl,
     sourceArticleCount: article.sourceArticleCount,
     regionMentions: article.regionMentions,
@@ -1494,6 +1345,18 @@ const FIRE_RISK_SIDO: Record<string, string> = {
 export function toApiPage(uiPage: number | undefined): number {
   if (!uiPage || uiPage < 1) return 0;
   return uiPage - 1;
+}
+
+/**
+ * 범위를 벗어난 page 를 실제 존재하는 범위로 되돌린다.
+ *
+ * 서버는 page 를 보정하지 않고 요청값을 그대로 되돌려준다(page=999 → 200, content:[], page:999).
+ * 그래서 응답만 믿으면 "999 / 9 페이지" 같은 표기가 나온다. totalPages 와 대조해 여기서 접는다.
+ * totalPages 가 0 인 응답(자료 0건)도 1 페이지로 본다.
+ */
+export function clampUiPage(uiPage: number | undefined, totalPages: number): number {
+  if (!uiPage || uiPage < 1) return 1;
+  return Math.min(uiPage, Math.max(1, totalPages));
 }
 
 type Envelope<T> = { result: string; data: T | null; error: unknown };

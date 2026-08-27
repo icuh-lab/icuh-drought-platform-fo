@@ -1,21 +1,26 @@
-import type { ArticleCategories, ArticleListItem, ArticlePage } from "@/lib/archive-types";
-import { apiCatalog } from "@/lib/mock-data";
+import type { ArticleCategories, ArticleDetail, ArticleListItem, ArticlePage } from "@/lib/archive-types";
 
+/**
+ * 운영 DB 의 실제 분류다(2026-08-27 백엔드 확인, status='ACTIVE' 기준 각 6종).
+ * 백엔드가 응답하지 않을 때만 쓰이지만, 코드 체계가 실제와 달라지면
+ * 필터가 조용히 어긋나므로 지어내지 않고 실제 값을 그대로 둔다.
+ */
 export const fallbackArticleCategories: ArticleCategories = {
   documentTypesResponse: [
-    { id: 1, code: "DROUGHT_REPORT", name: "가뭄영향 리포트", enName: "drought_report" },
-    { id: 2, code: "API_SPEC", name: "API 명세서", enName: "api_spec" },
-    { id: 3, code: "STATISTICAL_DATA", name: "통계/분석 자료", enName: "statistical_data" },
-    { id: 4, code: "PLAN_DOC", name: "기획/계획 문서", enName: "plan_doc" },
-    { id: 5, code: "POLICY_STANDARD", name: "정책/기준 문서", enName: "policy_standard" }
+    { id: 1, code: "DT001", name: "연구/조사 자료", enName: "RESEARCH_SURVEY" },
+    { id: 2, code: "DT002", name: "정책/기준 문서", enName: "POLICY_STANDARD" },
+    { id: 3, code: "DT003", name: "보고서", enName: "REPORT" },
+    { id: 4, code: "DT004", name: "데이터/기술 자료", enName: "DATA_TECHNICAL" },
+    { id: 5, code: "DT005", name: "기획/계획 문서", enName: "PLANNING_PROPOSAL" },
+    { id: 6, code: "DT006", name: "기타", enName: "OTHERS" }
   ],
   subjectDomainsResponses: [
-    { id: 1, code: "AGRICULTURE", name: "농업", enName: "agriculture" },
-    { id: 2, code: "ENERGY", name: "에너지", enName: "energy" },
-    { id: 3, code: "DROUGHT_MONITORING", name: "가뭄 모니터링", enName: "drought_monitoring" },
-    { id: 4, code: "CLIMATE_CHANGE", name: "기후변화", enName: "climate_change" },
-    { id: 5, code: "WILDFIRE", name: "산불", enName: "wildfire" },
-    { id: 6, code: "SOCIO_ECONOMIC_IMPACT", name: "사회/경제적 영향", enName: "socio_economic_impact" }
+    { id: 1, code: "SD001", name: "기후 영향 산업 분야", enName: "CLIMATE_IMPACT_INDUSTRY" },
+    { id: 2, code: "SD002", name: "자원 및 환경 관리", enName: "RESOURCE_ENVIRONMENTAL_MANAGEMENT" },
+    { id: 3, code: "SD003", name: "재난 및 기후 리스크", enName: "DISASTER_CLIMATE_RISK" },
+    { id: 4, code: "SD004", name: "사회/경제적 영향", enName: "SOCIO_ECONOMIC_IMPACT" },
+    { id: 5, code: "SD005", name: "지역/외부 참조 정보", enName: "REGIONAL_EXTERNAL_REFERENCE" },
+    { id: 6, code: "SD006", name: "기타", enName: "OTHERS" }
   ]
 };
 
@@ -25,9 +30,10 @@ export const capturedArchiveArticle: ArticleListItem = {
   authorOrganization: "충남연구원",
   updatedAt: "2026-08-21T00:00:00Z",
   views: 9,
-  documentType: "POLICY_STANDARD",
-  subjectDomain: "SOCIO_ECONOMIC_IMPACT",
+  documentType: "DT002",
+  subjectDomain: "SD004",
   source: "domestic",
+  extensions: ["pdf"],
   sourceUrl: null,
   sourceArticleCount: 0,
   regionMentions: ["충청남도"],
@@ -43,9 +49,10 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "(재)인프라재난관리진흥원",
     updatedAt: "2026-08-20T08:30:00Z",
     views: 25,
-    documentType: "API_SPEC",
-    subjectDomain: "DROUGHT_MONITORING",
+    documentType: "DT004",
+    subjectDomain: "SD003",
     source: "domestic",
+    extensions: ["pdf"],
     sourceUrl: null,
     sourceArticleCount: 0,
     regionMentions: ["강릉", "합천", "고흥"],
@@ -58,9 +65,10 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "운영 DB 연결 전 로컬 시연",
     updatedAt: "2026-08-19T11:00:00Z",
     views: 14,
-    documentType: "DROUGHT_REPORT",
-    subjectDomain: "DROUGHT_MONITORING",
+    documentType: "DT003",
+    subjectDomain: "SD003",
     source: "domestic",
+    extensions: ["pdf"],
     sourceUrl: "https://example.com/drought-report",
     sourceArticleCount: 4,
     regionMentions: ["강릉"],
@@ -73,9 +81,10 @@ const fallbackArticles: ArticleListItem[] = [
     authorOrganization: "한국수자원공사",
     updatedAt: "2026-08-18T15:10:00Z",
     views: 9,
-    documentType: "STATISTICAL_DATA",
-    subjectDomain: "ENERGY",
+    documentType: "DT004",
+    subjectDomain: "SD001",
     source: "domestic",
+    extensions: ["pdf"],
     sourceUrl: null,
     sourceArticleCount: 0,
     regionMentions: ["합천"],
@@ -160,14 +169,67 @@ export function prependCapturedArchiveArticle(
   };
 }
 
-export function countFilteredApis(query: string): number {
-  const q = query.trim().toLowerCase();
-  if (!q) return apiCatalog.length;
-  return apiCatalog.filter((api) =>
-    api.name.toLowerCase().includes(q) ||
-    api.path.toLowerCase().includes(q) ||
-    api.group.toLowerCase().includes(q)
-  ).length;
+/**
+ * 백엔드 미실행 시 상세 화면에 쓸 시연용 상세 데이터.
+ *
+ * 목록 fallback(fallbackArticles)을 그대로 재료로 써서 목록과 상세의 내용이 어긋나지 않게 한다.
+ * 목록에 없는 id 는 null 을 돌려주고, 호출부는 이를 '찾을 수 없음'으로 처리한다.
+ * 백엔드가 살아있는데 404 를 준 경우는 호출부에서 먼저 걸러지므로 여기까지 오지 않는다.
+ */
+export function buildFallbackArticleDetail(id: number): ArticleDetail | null {
+  const article = fallbackArticles.find((item) => item.id === id);
+  if (!article) return null;
+
+  return {
+    id: article.id,
+    title: article.title,
+    description: fallbackDescription(article),
+    author: "시연 담당자",
+    authorOrganization: article.authorOrganization,
+    department: "가뭄영향정보플랫폼 운영팀",
+    // 목록은 수정일만 들고 있다. 생성일은 표시 목적이므로 수정일과 같은 값을 쓴다.
+    createdAt: article.updatedAt,
+    updatedAt: article.updatedAt,
+    views: article.views,
+    classification: findCategory(fallbackArticleCategories.documentTypesResponse, article.documentType),
+    serviceType: findCategory(fallbackArticleCategories.subjectDomainsResponses, article.subjectDomain),
+    source: article.source,
+    sourceUrl: article.sourceUrl,
+    sourceArticleCount: article.sourceArticleCount,
+    regionMentions: article.regionMentions,
+    keywords: article.keywords,
+    autoSummaryNotice: article.autoSummaryNotice,
+    files: [
+      {
+        id: article.id * 10,
+        originalFilename: `${article.title}.pdf`,
+        extension: "pdf",
+        fileSize: 1024 * 1024 * 2,
+        filePath: `demo/${article.id}.pdf`
+      }
+    ]
+  };
+}
+
+function findCategory(items: ArticleCategories["documentTypesResponse"], code: string) {
+  return items.find((item) => item.code === code) ?? null;
+}
+
+/** 목록이 들고 있는 정보만으로 본문을 구성한다. 없는 사실을 지어내지 않는다. */
+function fallbackDescription(article: ArticleListItem): string {
+  const lines = [
+    article.autoSummaryNotice ?? `${article.title} 관련 자료입니다.`,
+    "",
+    `등록기관: ${article.authorOrganization}`
+  ];
+  if (article.regionMentions.length > 0) {
+    lines.push(`언급 지역: ${article.regionMentions.join(", ")}`);
+  }
+  if (article.keywords.length > 0) {
+    lines.push(`키워드: ${article.keywords.map((keyword) => `#${keyword}`).join(" ")}`);
+  }
+  lines.push("", "백엔드 연결 전 표시되는 로컬 시연 데이터입니다.");
+  return lines.join("\n");
 }
 
 function matchesArticle(

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchArticleDetail, updateArticle } from "@/lib/api-client";
+import { fetchArticleDetail, updateArticle, ArchiveApiError } from "@/lib/api-client";
+import { buildFallbackArticleDetail } from "@/lib/archive-fallback";
 import type { ArticleDetail, ArticleFormValues } from "@/lib/archive-types";
 import { ArticleForm } from "@/components/archive/ArticleForm";
 
@@ -13,25 +14,42 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   const [detail, setDetail] = useState<ArticleDetail | null>(null);
   const [initial, setInitial] = useState<Partial<ArticleFormValues> | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // 조회 성공과 fallback 이 같은 방식으로 폼을 채우도록 공통화한다.
+  function applyDetail(d: ArticleDetail) {
+    setDetail(d);
+    setInitial({
+      title: d.title,
+      description: d.description,
+      author: d.author,
+      authorOrganization: d.authorOrganization,
+      department: d.department,
+      source: d.source ?? "",
+      documentTypeCode: d.classification?.code ?? "",
+      subjectDomainCode: d.serviceType?.code ?? "",
+    });
+  }
 
   useEffect(() => {
     const ac = new AbortController();
     fetchArticleDetail(id, { signal: ac.signal })
-      .then((d) => {
-        setDetail(d);
-        setInitial({
-          title: d.title,
-          description: d.description,
-          author: d.author,
-          authorOrganization: d.authorOrganization,
-          department: d.department,
-          source: d.source ?? "",
-          documentTypeCode: d.classification?.code ?? "",
-          subjectDomainCode: d.serviceType?.code ?? "",
-        });
-      })
-      .catch((e) => { if (e?.name !== "AbortError") setError("게시글을 불러오지 못했습니다."); });
+      .then(applyDetail)
+      .catch((e) => {
+        if (e?.name === "AbortError") return;
+        if (e instanceof ArchiveApiError && e.status === 404) {
+          setError("게시글을 찾을 수 없습니다.");
+          return;
+        }
+        const fallback = buildFallbackArticleDetail(id);
+        if (!fallback) {
+          setError("게시글을 찾을 수 없습니다.");
+          return;
+        }
+        applyDetail(fallback);
+        setNotice("자료 API 연결 전입니다. 로컬 시연 데이터를 표시합니다. 수정 요청 제출은 백엔드 연결 후 가능합니다.");
+      });
     return () => ac.abort();
   }, [id]);
 
@@ -52,6 +70,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
       <Link href={`/archive/${id}`} className="back">← 상세로</Link>
       <div className="sec-hd"><h1>자료 수정 요청</h1></div>
       {error ? <p className="alert">{error}</p> : null}
+      {notice ? <p className="alert">{notice}</p> : null}
       {!initial && !error ? <p className="notice">불러오는 중…</p> : null}
       {initial && detail ? (
         <ArticleForm

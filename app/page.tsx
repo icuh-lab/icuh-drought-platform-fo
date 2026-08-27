@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, Braces, ChevronLeft, Copy, Flame, KeyRound, Send, Sprout } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send } from "lucide-react";
 import { ForecastChart, Sparkline } from "@/components/charts";
 import {
   API_BASE_URLS,
-  approveAdminArticle,
+  OPEN_API_DEFAULT_PERIOD,
   fetchFireRiskIndex,
   fetchDroughtReportDetail,
   fetchDroughtReports,
-  fetchAdminArticles,
   fetchFreshFoodIndex,
   fetchHydropowerForecast,
   fetchPriceForecast,
   fetchSummary,
-  rejectAdminArticle,
   latestFireRiskObservedAt,
   latestHydropowerForecastDate,
   latestPriceForecastDate,
@@ -28,19 +26,20 @@ import {
   toHydropowerKpiView,
   toPriceForecastView,
   toPriceKpiView,
-  type AdminArticle,
-  type AdminArticleStatus,
   type FireRiskView,
   type DroughtReportView,
   type FreshFoodGaugeView,
   type FreshFoodKpiView,
   type HydropowerForecastView,
   type HydropowerKpiView,
+  type OpenApiPeriod,
   type PriceForecastKey,
   type PriceForecastView,
   type PriceKpiView,
   type SummaryAlert
 } from "@/lib/api-client";
+import { parseView, viewHref } from "@/lib/dashboard-view";
+import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
 import { apiCatalog, cpiSeries, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
 
 type PriceApiState = {
@@ -82,12 +81,6 @@ type ReportApiState = {
   status: "loading" | "success" | "empty" | "error";
   reports: DroughtReportView[] | null;
   details: Record<string, DroughtReportView>;
-};
-
-type AdminApiState = {
-  status: "idle" | "loading" | "success" | "error";
-  articles: AdminArticle[];
-  message: string | null;
 };
 
 function levelClass(level: number) {
@@ -203,11 +196,9 @@ function apiCurlExample(api: ApiCatalogItem) {
     parts.push(`-d '${apiExampleBody(api.body)}'`);
   }
 
-  const baseUrl = api.group === "관리"
-    ? API_BASE_URLS.admin
-    : api.group === "자료공유" || api.group === "파일"
-      ? API_BASE_URLS.public
-      : API_BASE_URLS.open;
+  const baseUrl = api.group === "자료공유" || api.group === "파일"
+    ? API_BASE_URLS.public
+    : API_BASE_URLS.open;
   parts.push(`"${baseUrl}${apiExamplePath(api)}"`);
   return parts.join(" \\\n  ");
 }
@@ -251,14 +242,18 @@ const initialReportApiState: ReportApiState = {
   details: {}
 };
 
-const initialAdminApiState: AdminApiState = {
-  status: "idle",
-  articles: [],
-  message: null
-};
-
 export default function Page() {
-  const [view, setView] = useState<ViewKey>("home");
+  return (
+    <Suspense fallback={<main className="wrap"><p className="notice">불러오는 중…</p></main>}>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+function Dashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const view = parseView(searchParams.get("view"));
   const [forecast, setForecast] = useState<ForecastKey>("cabbage");
   const [selectedReportId, setSelectedReportId] = useState("r1");
   const [selectedApiPath, setSelectedApiPath] = useState(apiCatalog[0].path);
@@ -271,9 +266,7 @@ export default function Page() {
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
-  const [adminToken, setAdminToken] = useState("");
-  const [adminStatusFilter, setAdminStatusFilter] = useState<AdminArticleStatus | "ALL">("PENDING");
-  const [adminApi, setAdminApi] = useState<AdminApiState>(initialAdminApiState);
+  const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
   const activeForecasts = useMemo(
     () => ({
       ...forecasts,
@@ -371,14 +364,13 @@ export default function Page() {
     [selectedApiPath]
   );
   const selectedApiCurl = useMemo(() => apiCurlExample(selectedApi), [selectedApi]);
-  const selectedApiRequiresAuth = selectedApi.params.some((param) => param.in === "header");
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadPriceForecast(key: PriceForecastKey) {
       try {
-        const response = await fetchPriceForecast(key, { signal: controller.signal });
+        const response = await fetchPriceForecast(key, { signal: controller.signal, year: period.year, month: period.month });
         const nextForecast = toPriceForecastView(key, response);
         const nextKpi = toPriceKpiView(key, response);
 
@@ -407,7 +399,7 @@ export default function Page() {
 
     async function loadHydropowerForecast() {
       try {
-        const response = await fetchHydropowerForecast({ signal: controller.signal });
+        const response = await fetchHydropowerForecast({ signal: controller.signal, year: period.year, month: period.month });
         const nextForecast = toHydropowerForecastView(response);
         const nextKpi = toHydropowerKpiView(response);
 
@@ -431,6 +423,47 @@ export default function Page() {
       }
     }
 
+
+    async function loadFreshFoodIndex() {
+      try {
+        const response = await fetchFreshFoodIndex({ signal: controller.signal, year: period.year, month: period.month });
+        const nextKpi = toFreshFoodKpiView(response);
+        const nextGauge = toFreshFoodGaugeView(response);
+
+        if (!nextKpi || !nextGauge) {
+          setFreshFoodApi({ status: "empty", kpi: null, gauge: null, latestDate: null });
+          return;
+        }
+
+        setFreshFoodApi({
+          status: "success",
+          kpi: nextKpi,
+          gauge: nextGauge,
+          latestDate: response.baseMonth
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setFreshFoodApi({ status: "error", kpi: null, gauge: null, latestDate: null });
+      }
+    }
+
+
+
+    loadPriceForecast("cabbage");
+    loadPriceForecast("onion");
+    loadHydropowerForecast();
+    loadFreshFoodIndex();
+
+    return () => controller.abort();
+  }, [period]);
+
+  // 산불위험지수는 일 단위, 종합 현황과 리포트는 조회 연월과 무관하므로 최초 1회만 불러온다.
+  useEffect(() => {
+    const controller = new AbortController();
+
     async function loadFireRiskIndex() {
       try {
         const response = await fetchFireRiskIndex({ signal: controller.signal });
@@ -452,32 +485,6 @@ export default function Page() {
         }
 
         setFireRiskApi({ status: "error", items: null, latestDate: null });
-      }
-    }
-
-    async function loadFreshFoodIndex() {
-      try {
-        const response = await fetchFreshFoodIndex({ signal: controller.signal });
-        const nextKpi = toFreshFoodKpiView(response);
-        const nextGauge = toFreshFoodGaugeView(response);
-
-        if (!nextKpi || !nextGauge) {
-          setFreshFoodApi({ status: "empty", kpi: null, gauge: null, latestDate: null });
-          return;
-        }
-
-        setFreshFoodApi({
-          status: "success",
-          kpi: nextKpi,
-          gauge: nextGauge,
-          latestDate: response.baseMonth
-        });
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setFreshFoodApi({ status: "error", kpi: null, gauge: null, latestDate: null });
       }
     }
 
@@ -521,11 +528,7 @@ export default function Page() {
       }
     }
 
-    loadPriceForecast("cabbage");
-    loadPriceForecast("onion");
-    loadHydropowerForecast();
     loadFireRiskIndex();
-    loadFreshFoodIndex();
     loadSummary();
     loadDroughtReports();
 
@@ -564,37 +567,8 @@ export default function Page() {
 
   const go = (next: ViewKey, target?: ForecastKey) => {
     if (target) setForecast(target);
-    setView(next);
+    router.push(viewHref(next));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const loadAdminArticles = async () => {
-    setAdminApi((current) => ({ ...current, status: "loading", message: null }));
-    try {
-      const response = await fetchAdminArticles(adminToken.trim(), {
-        status: adminStatusFilter === "ALL" ? undefined : adminStatusFilter
-      });
-      setAdminApi({
-        status: "success",
-        articles: response.content,
-        message: `총 ${response.totalElements}건`
-      });
-    } catch (error) {
-      setAdminApi({ status: "error", articles: [], message: "관리자 API 호출에 실패했습니다." });
-    }
-  };
-
-  const decideAdminArticle = async (id: number, action: "approve" | "reject") => {
-    try {
-      if (action === "approve") {
-        await approveAdminArticle(adminToken.trim(), id);
-      } else {
-        await rejectAdminArticle(adminToken.trim(), id);
-      }
-      await loadAdminArticles();
-    } catch (error) {
-      setAdminApi((current) => ({ ...current, status: "error", message: "상태 변경에 실패했습니다." }));
-    }
   };
 
   const copySelectedApiCurl = async () => {
@@ -607,58 +581,53 @@ export default function Page() {
 
   return (
     <>
-      <header className="hdr">
-        <div className="hdr-in">
-          <button className="brand" onClick={() => go("home")} aria-label="홈으로">
-            <span className="brand-mark">
-              <Sprout size={18} />
-            </span>
-            <span className="brand-tx">
-              가뭄영향정보플랫폼
-              <small>DROUGHT IMPACT PLATFORM</small>
-            </span>
-          </button>
-          <nav className="nav" aria-label="주요 메뉴">
-            <div className="nav-grp">
-              <div className="nav-eyebrow">정형 데이터</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "home" ? "page" : undefined} onClick={() => go("home")}>종합 현황</button>
-                <button className="nav-btn" aria-current={view === "forecast" ? "page" : undefined} onClick={() => go("forecast")}>예측·지수</button>
-              </div>
-            </div>
-            <div className="nav-grp">
-              <div className="nav-eyebrow">비정형 데이터</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "reports" || view === "detail" ? "page" : undefined} onClick={() => go("reports")}>가뭄영향 리포트</button>
-                <Link href="/archive" className="nav-btn">가뭄 자료실</Link>
-              </div>
-            </div>
-            <div className="nav-grp">
-              <div className="nav-eyebrow">개발자</div>
-              <div className="nav-row">
-                <button className="nav-btn" aria-current={view === "api" ? "page" : undefined} onClick={() => go("api")}>API 센터</button>
-                <button className="nav-btn" aria-current={view === "admin" ? "page" : undefined} onClick={() => go("admin")}>관리</button>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </header>
 
       <div className="fbar">
         <div className="fbar-in">
-          <div className="filter-group">
-            <span>지역</span>
-            {["전국", "강원", "전남", "경남"].map((region, index) => (
-              <button className="chip" aria-pressed={index === 0} key={region}>{region}</button>
-            ))}
+          <div className="period" role="group" aria-label="조회 기간">
+            <span className="period-tag">기간</span>
+            <button
+              type="button"
+              className="period-step"
+              onClick={() => setPeriod((current) => shiftPeriod(current, -1))}
+              disabled={isPeriodAtStart(period)}
+              aria-label="이전 달"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <div className="period-fields">
+              <label>
+                <select
+                  value={period.year}
+                  aria-label="조회 연도"
+                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, year: Number(event.target.value) }))}
+                >
+                  {PERIOD_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+                <span>년</span>
+              </label>
+              <label>
+                <select
+                  value={period.month}
+                  aria-label="조회 월"
+                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, month: Number(event.target.value) }))}
+                >
+                  {availableMonths(period.year).map((month) => <option key={month} value={month}>{month}</option>)}
+                </select>
+                <span>월</span>
+              </label>
+            </div>
+            <button
+              type="button"
+              className="period-step"
+              onClick={() => setPeriod((current) => shiftPeriod(current, 1))}
+              disabled={isPeriodAtEnd(period)}
+              aria-label="다음 달"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-          <div className="filter-group">
-            <span>기간</span>
-            {["1주", "1개월", "3개월", "1년"].map((period, index) => (
-              <button className="chip" aria-pressed={index === 1} key={period}>{period}</button>
-            ))}
-          </div>
-          <div className="stamp"><span className="pulse" />최종 갱신 2026-08-05 06:00 KST</div>
+          <p className="period-note">예측·지수 데이터는 월 1회 재학습되어 갱신됩니다</p>
         </div>
       </div>
       <div className="rule" />
@@ -932,62 +901,10 @@ export default function Page() {
                 <label>method<input value={selectedApi.method} readOnly /></label>
                 <label>path<input value={apiExamplePath(selectedApi)} readOnly /></label>
                 <button onClick={copySelectedApiCurl}><Copy size={15} />curl 복사</button>
-                <div className="response">{selectedApiRequiresAuth ? "보호 API · 헤더 필요" : "공개 API · 로컬 서버 기준"}</div>
+                <div className="response">공개 API · 로컬 서버 기준</div>
                 <h3><KeyRound size={16} />인증 상태</h3>
-                <div className="key"><span>{selectedApiRequiresAuth ? "X-Admin-Token 필요" : "공개 조회 API"}</span></div>
+                <div className="key"><span>공개 조회 API</span></div>
               </div>
-            </div>
-          </section>
-        )}
-
-        {view === "admin" && (
-          <section className="view">
-            <SectionHead title="게시글 관리" note={adminApi.message ?? "승인 대기와 변경 요청을 검토합니다"} />
-            <div className="card api-doc">
-              <div className="admin-controls">
-                <label>관리자 토큰<input type="password" value={adminToken} onChange={(event) => setAdminToken(event.target.value)} placeholder="선택 입력" /></label>
-                <label>상태
-                  <select value={adminStatusFilter} onChange={(event) => setAdminStatusFilter(event.target.value as AdminArticleStatus | "ALL")}>
-                    <option value="PENDING">PENDING</option>
-                    <option value="UPDATED_PENDING">UPDATED_PENDING</option>
-                    <option value="DELETED_PENDING">DELETED_PENDING</option>
-                    <option value="ALL">ALL</option>
-                  </select>
-                </label>
-                <button onClick={loadAdminArticles}><Send size={15} />조회</button>
-              </div>
-              <table>
-                <thead>
-                  <tr><th>ID</th><th>제목</th><th>기관</th><th>상태</th><th>분류</th><th>출처/분석</th><th>처리</th></tr>
-                </thead>
-                <tbody>
-                  {adminApi.articles.map((article) => (
-                    <tr key={article.id}>
-                      <td>{article.id}</td>
-                      <td>{article.title}</td>
-                      <td>{article.authorOrganization}</td>
-                      <td>{article.status}</td>
-                      <td>{article.documentType} · {article.subjectDomain}</td>
-                      <td>
-                        <div className="admin-meta">
-                          <span>{article.source ?? "출처 미입력"} · 기사 {article.sourceArticleCount}건</span>
-                          {article.sourceUrl && <a href={article.sourceUrl} target="_blank" rel="noreferrer">원문</a>}
-                          <small>{article.regionMentions.join(", ") || "지역 언급 없음"}</small>
-                          <small>{article.keywords.map((keyword) => `#${keyword}`).join(" ") || "키워드 없음"}</small>
-                          <small>{article.autoSummaryNotice ?? "자동 요약 고지 없음"}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <button onClick={() => decideAdminArticle(article.id, "approve")}>승인</button>
-                        <button onClick={() => decideAdminArticle(article.id, "reject")}>반려</button>
-                      </td>
-                    </tr>
-                  ))}
-                  {adminApi.articles.length === 0 && (
-                    <tr><td colSpan={7}>{adminApi.status === "loading" ? "조회 중" : "표시할 게시글이 없습니다"}</td></tr>
-                  )}
-                </tbody>
-              </table>
             </div>
           </section>
         )}
