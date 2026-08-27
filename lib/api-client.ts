@@ -1124,7 +1124,7 @@ function articleListItemToDroughtReportSummary(article: ArticleListItem): Drough
 
 function normalizeArticlePage(page: PublicArticlePageResponse, uiPage: number, size: number): ArticlePage {
   const totalPages = Math.max(1, page.totalPages);
-  const normalizedPage = Math.min(Math.max(1, uiPage), totalPages);
+  const normalizedPage = clampUiPage(uiPage, totalPages);
 
   return {
     content: page.content.map(normalizeArticleListItem),
@@ -1343,6 +1343,18 @@ const FIRE_RISK_SIDO: Record<string, string> = {
 export function toApiPage(uiPage: number | undefined): number {
   if (!uiPage || uiPage < 1) return 0;
   return uiPage - 1;
+}
+
+/**
+ * 범위를 벗어난 page 를 실제 존재하는 범위로 되돌린다.
+ *
+ * 서버는 page 를 보정하지 않고 요청값을 그대로 되돌려준다(page=999 → 200, content:[], page:999).
+ * 그래서 응답만 믿으면 "999 / 9 페이지" 같은 표기가 나온다. totalPages 와 대조해 여기서 접는다.
+ * totalPages 가 0 인 응답(자료 0건)도 1 페이지로 본다.
+ */
+export function clampUiPage(uiPage: number | undefined, totalPages: number): number {
+  if (!uiPage || uiPage < 1) return 1;
+  return Math.min(uiPage, Math.max(1, totalPages));
 }
 
 type Envelope<T> = { result: string; data: T | null; error: unknown };

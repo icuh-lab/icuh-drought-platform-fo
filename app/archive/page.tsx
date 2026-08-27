@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchArticles, fetchArticleCategories } from "@/lib/api-client";
+import { fetchArticles, fetchArticleCategories, clampUiPage } from "@/lib/api-client";
 import type { ArticlePage, ArticleCategories } from "@/lib/archive-types";
 import { buildFallbackArticlePage, fallbackArticleCategories, prependCapturedArchiveArticle } from "@/lib/archive-fallback";
 import { SearchBar } from "@/components/archive/SearchBar";
@@ -79,6 +79,18 @@ function ArchiveInner() {
 
   const activeCategories = categories ?? fallbackArticleCategories;
 
+  // 서버는 범위를 벗어난 page 를 그대로 되돌려주므로(200 + 빈 목록) 화면이 직접 접어야 한다.
+  const effectivePage = data ? clampUiPage(page, data.totalPages) : page;
+
+  // 표기만 접으면 목록이 빈 채로 남는다. URL 도 되돌려 실제 내용을 다시 불러온다.
+  const searchString = sp.toString();
+  useEffect(() => {
+    if (!data || effectivePage === page) return;
+    const params = new URLSearchParams(searchString);
+    params.set("page", String(effectivePage));
+    router.replace(`/archive?${params.toString()}`);
+  }, [data, effectivePage, page, searchString, router]);
+
   return (
     <main className="wrap">
       <div className="sec-hd">
@@ -107,9 +119,9 @@ function ArchiveInner() {
       {loading ? <p className="notice">불러오는 중…</p> : null}
       {data ? (
         <>
-          <p className="data-note">총 {data.totalElements}건 · {page} / {data.totalPages} 페이지</p>
+          <p className="data-note">총 {data.totalElements}건 · {effectivePage} / {data.totalPages} 페이지</p>
           <ArticleList items={data.content} categoryNames={categoryNames} />
-          <Pagination page={page} totalPages={data.totalPages} onChange={(p) => push({ page: p })} />
+          <Pagination page={effectivePage} totalPages={data.totalPages} onChange={(p) => push({ page: p })} />
         </>
       ) : null}
     </main>
