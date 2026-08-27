@@ -112,7 +112,7 @@ type OpenAgriDailyPriceResponse = {
 Request 예시:
 
 ```http
-GET /api/v1/hydropower/monthly-generation?year=2026&month=8&damName=합천댐
+GET /api/v1/hydropower/monthly-generation?year=2026&month=5&damName=합천
 ```
 
 Response 요약:

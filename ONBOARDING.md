@@ -197,10 +197,10 @@ NEXT_PUBLIC_OPEN_API_BASE_URL=http://localhost:8083     # 지수·예측
 NEXT_PUBLIC_ADMIN_API_BASE_URL=http://localhost:8082    # 관리자 승인
 
 NEXT_PUBLIC_OPEN_API_DEFAULT_YEAR=2026                  # open-api 조회 기준 연월
-NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH=8
+NEXT_PUBLIC_OPEN_API_DEFAULT_MONTH=5
 NEXT_PUBLIC_AGRI_CABBAGE_LOCATION=강릉                   # 대시보드 표시 지역
 NEXT_PUBLIC_AGRI_ONION_LOCATION=합천
-NEXT_PUBLIC_HYDROPOWER_DAM_NAME=합천댐
+NEXT_PUBLIC_HYDROPOWER_DAM_NAME=합천
 ```
 
 백엔드를 붙이려면 멀티모듈 3개(`public-api` 8081, `admin-api` 8082, `open-api` 8083)를 각각 띄워야 합니다.
