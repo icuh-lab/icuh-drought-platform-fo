@@ -14,6 +14,10 @@
 #   api.infradna.io.kr      → public-api  (자료실: articles, 파일, 카테고리)
 #   open-api.infradna.io.kr → open-api    (지수·예측 + /v1/summary)
 #
+# API 도 HTTPS 여야 한다. 프론트는 모든 API 를 브라우저에서 직접 호출하는데(호출부가 전부
+# 클라이언트 컴포넌트), 페이지가 HTTPS 라 http:// 주소를 부르면 mixed content 로 차단된다.
+# CORS 는 각 API 가 직접 내려주므로 여기서 헤더를 건드리지 않는다.
+#
 # admin-api(8082)는 여기에 없다. 인증이 전혀 없는 앱이라 프록시로 가는 경로 자체를 만들지
 # 않는다 — web 네트워크에도 붙이지 않았다. 접근이 필요하면 SSH 터널을 쓴다.
 
