@@ -21,6 +21,8 @@
   --r3-dot: #ce7b2b;
   --r4-bg: #f3d6d2;
   --r4-fg: #8b2a1f;
+  /* 지수를 제공하지 않는 시군구. 등급 색과 헷갈리지 않게 무채색으로 둔다. */
+  --nodata: #e7ecef;
   /* 자료 분류 태그 3색. 기존 자료실 프로젝트의 파랑/초록/보라 구분을
      이 프로젝트 팔레트 채도에 맞춰 옮긴 값이다. 위험등급(--r1~r4)과 겹치지 않는다. */
   --tag-doc-bg: #e4eef3;
@@ -146,7 +148,7 @@ button { cursor: pointer; }
 .legend .dash { border-top: 2px dashed var(--up); }
 .legend .band { background: var(--brand-soft); }
 .source-line span { color: var(--line-2); }
-.split { display: grid; grid-template-columns: 1.35fr .85fr; gap: 14px; }
+.split { display: grid; grid-template-columns: 1.35fr .85fr; gap: 14px; align-items: start; }
 .panel-hd { display: flex; justify-content: space-between; padding: 15px 16px 5px; }
 .panel-hd h3, .gauge h3 { margin: 0; font-size: 15px; }
 .mini-stat { text-align: right; }
@@ -157,6 +159,44 @@ button { cursor: pointer; }
 .fire-name small { color: var(--ink-3); }
 .fire-spark { height: 32px; }
 .fire-value { font-size: 21px; text-align: right; }
+
+/* 산불위험지수 전국 지도. 경계는 public/korea-sigungu.json 에서 받아온다. */
+.fire-panel { display: grid; grid-template-columns: 1.15fr 1fr; align-items: start; }
+.fire-map { padding: 2px 16px 14px; min-width: 0; }
+.fire-map-days { display: flex; align-items: flex-end; gap: 6px; padding: 4px 0 12px; }
+.fire-map-day { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 5px 10px; text-align: left; cursor: pointer; color: var(--ink-2); font: inherit; }
+.fire-map-day b { display: block; font-size: 12.5px; }
+.fire-map-day small { display: block; font-size: 10.5px; color: var(--ink-3); }
+.fire-map-day[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.fire-map-day[aria-selected="true"] small { color: rgba(255, 255, 255, .78); }
+.fire-map-summary { margin-left: auto; text-align: right; }
+.fire-map-summary span, .fire-map-summary small { display: block; font-size: 11px; color: var(--ink-3); }
+.fire-map-summary b { font-size: 22px; }
+.fire-map-frame { position: relative; }
+.fire-map-svg { display: block; width: 100%; height: auto; }
+.fire-map-area { stroke: var(--surface); stroke-width: .5; }
+.fire-map-area.is-hovered { stroke: var(--ink); stroke-width: 1.5; }
+.fire-map-note { color: var(--ink-3); font-size: 12px; padding: 60px 0; text-align: center; margin: 0; }
+.fire-map-tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); box-shadow: var(--shadow); padding: 8px 10px; min-width: 130px; transform: translate(14px, -50%); }
+.fire-map-tip.flip { transform: translate(calc(-100% - 14px), -50%); }
+.fire-map-tip > b { display: block; font-size: 12.5px; margin-bottom: 5px; }
+.fire-map-tip-none { font-size: 11.5px; color: var(--ink-3); font-weight: 700; }
+.fire-map-tip-days { display: flex; gap: 10px; margin-top: 7px; border-top: 1px solid var(--line); padding-top: 6px; }
+.fire-map-tip-days span { text-align: center; }
+.fire-map-tip-days small { display: block; font-size: 10px; color: var(--ink-3); }
+.fire-map-tip-days b { font-size: 13px; color: var(--ink-3); }
+.fire-map-tip-days .is-active b { color: var(--ink); }
+.fire-map-legend { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 10px; font-size: 11.5px; color: var(--ink-2); }
+.fire-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.fire-map-legend i { width: 13px; height: 13px; border: 1px solid var(--line-2); }
+.fire-map-legend i.is-nodata { background: repeating-linear-gradient(45deg, var(--nodata) 0 3px, var(--line-2) 3px 4px); }
+/* 지도 아래 상위 위험 지역. 181 개를 다 늘어놓지 않고 눈에 띄는 곳만 남긴다. */
+.fire-top { border-left: 1px solid var(--line); min-width: 0; }
+/* API 가 막혀 목업만 보여줄 때는 지도 없이 홀로 선다. */
+.fire-top.is-standalone { border-left: 0; border-top: 1px solid var(--line); }
+.fire-top-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 14px 16px 2px; }
+.fire-top-hd h4 { margin: 0; font-size: 12.5px; }
+.fire-top-hd small { font-size: 11px; color: var(--ink-3); }
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
 .lv1 { background: var(--r1-bg); color: var(--r1-fg); }
 .lv2 { background: var(--r2-bg); color: var(--r2-fg); }
@@ -240,6 +280,8 @@ pre { background: #10181d; color: #d7e7ea; padding: 13px; overflow: auto; }
 
 @media (max-width: 980px) {
   .kpis, .report-grid, .split, .cols, .api-grid, .report-visual-grid, .mention-grid { grid-template-columns: 1fr; }
+  .fire-panel { grid-template-columns: 1fr; }
+  .fire-top { border-left: 0; border-top: 1px solid var(--line); }
   .admin-controls { grid-template-columns: 1fr; }
   .hdr-in { flex-direction: column; gap: 0; }
   .fbar { top: 106px; }

@@ -223,12 +223,29 @@ npm run build      # 타입 체크 + 프로덕션 빌드
 # 순수 함수 단위 검증 (백엔드 불필요)
 npx tsx scripts/archive-upload.test.mts          # 파일 파트 분할 경계값 7건
 npx tsx scripts/archive-page-conversion.test.mts # 페이지 인덱스 변환 6건
+npx tsx scripts/fire-region.test.mts             # 산불 시군구 코드 정규화 + 지도/이름 커버리지 26건
 
 # 실제 서버 연동 확인 (public-api 실행 중이어야 함)
 node scripts/archive-smoke.mjs
 ```
 
 > **주의**: 현재 로컬 Node는 v20이라 `node --experimental-strip-types`가 동작하지 않습니다(Node 22.6+ 필요). `.mts` 파일은 위처럼 `npx tsx`로 실행하세요.
+
+### 산불위험지수 지도 데이터
+
+전국 시군구 지도는 미리 구워둔 정적 파일입니다. **평소에는 다시 만들 필요가 없습니다.**
+
+```bash
+npx tsx scripts/build-fire-map.mts
+```
+
+- 원본: 국가공간정보포털 시군구 경계 `TL_SCCO_SIG` (21MB shapefile, 좌표계 EPSG:5179)
+- 산출물: [public/korea-sigungu.json](public/korea-sigungu.json) 경계 · [lib/fire-region-names.ts](lib/fire-region-names.ts) 지역명 — 둘 다 커밋합니다
+- 21MB 원본을 CI가 내려받지 않도록 `npm run build` 에는 넣지 않았습니다. **행정구역이 개편돼 코드가 바뀔 때만** 다시 돌리세요
+
+산불 API 는 시군구 코드만 주고 지역명을 주지 않아, 이름도 이 경계 데이터에서 가져옵니다.
+API 코드와 경계 코드가 어긋나는 세 지점(일반구↔시, 강원특별자치도 51xxx, 군위군 27720)은
+[lib/fire-region.ts](lib/fire-region.ts) 한 곳에 모아두었고 위 테스트가 181개 전부 덮이는지 검증합니다.
 
 ### 코드 컨벤션
 

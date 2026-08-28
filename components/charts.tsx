@@ -65,3 +65,13 @@ export function ForecastChart({ actual, predicted, band }: { actual: number[]; p
   );
 }
 
+/** 위험 등급을 4칸(리포트는 3칸) 눈금으로 보여준다. 숫자만으로는 등급 폭이 안 읽혀서 함께 쓴다. */
+export function Blocks({ count, total = 4 }: { count: number; total?: number }) {
+  return (
+    <span className="steps">
+      {Array.from({ length: total }).map((_, index) => (
+        <i key={index} className={index < count ? "filled" : ""} />
+      ))}
+    </span>
+  );
+}
