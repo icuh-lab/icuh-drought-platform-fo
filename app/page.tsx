@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send } from "lucide-react";
+import { AlertTriangle, Braces, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, Flame, KeyRound, Send } from "lucide-react";
 import { Blocks, ForecastChart, Sparkline } from "@/components/charts";
 import { FireRiskMap } from "@/components/FireRiskMap";
 import {
@@ -268,6 +268,7 @@ function Dashboard() {
   const [fireRiskApi, setFireRiskApi] = useState<FireRiskApiState>(initialFireRiskApiState);
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
   const [freshFoodKind, setFreshFoodKind] = useState<FreshFoodKind>("vegetable");
+  const [freshFoodExpanded, setFreshFoodExpanded] = useState(false);
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
@@ -795,9 +796,23 @@ function Dashboard() {
                       </span>
                     </div>
                     <div className="gauge-regions">
-                      {activeFreshFoodGauge.top.map((province) => <ProvinceBar key={province.code} province={province} />)}
-                      {activeFreshFoodGauge.omitted > 0 && <div className="gauge-omitted">가운데 {activeFreshFoodGauge.omitted}곳 생략</div>}
-                      {activeFreshFoodGauge.bottom.map((province) => <ProvinceBar key={province.code} province={province} />)}
+                      {/* 18곳을 다 늘어놓으면 카드가 옆 지도보다 세 배 길어진다. 기본은 양 끝만 보이고 펼쳐서 전부 본다. */}
+                      {freshFoodExpanded || activeFreshFoodGauge.omitted === 0 ? (
+                        activeFreshFoodGauge.all.map((province) => <ProvinceBar key={province.code} province={province} />)
+                      ) : (
+                        <>
+                          {activeFreshFoodGauge.top.map((province) => <ProvinceBar key={province.code} province={province} />)}
+                          <button className="gauge-more" onClick={() => setFreshFoodExpanded(true)}>
+                            가운데 {activeFreshFoodGauge.omitted}곳 더 보기<ChevronDown size={14} />
+                          </button>
+                          {activeFreshFoodGauge.bottom.map((province) => <ProvinceBar key={province.code} province={province} />)}
+                        </>
+                      )}
+                      {freshFoodExpanded && activeFreshFoodGauge.omitted > 0 && (
+                        <button className="gauge-more" onClick={() => setFreshFoodExpanded(false)}>
+                          접기<ChevronUp size={14} />
+                        </button>
+                      )}
                     </div>
                   </>
                 )}

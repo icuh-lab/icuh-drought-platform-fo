@@ -232,10 +232,13 @@ button { cursor: pointer; }
 .gauge-regions-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 18px 0 2px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; }
 .gauge-grades { display: flex; gap: 4px; flex-wrap: wrap; }
 .gauge-regions { margin-top: 4px; }
-.gauge-omitted { padding: 7px 0; margin: 2px 0; border-top: 1px dashed var(--line-2); border-bottom: 1px dashed var(--line-2); font-size: 11px; color: var(--ink-3); font-weight: 700; text-align: center; }
+/* 접힘/펼침 토글. 접힌 상태에서는 상·하위 사이에 끼어 생략된 곳 수를 알린다. */
+.gauge-more { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 7px 0; margin: 2px 0; border: 0; border-top: 1px dashed var(--line-2); border-bottom: 1px dashed var(--line-2); background: none; font-size: 11px; color: var(--ink-3); font-weight: 700; cursor: pointer; }
+.gauge-more:hover { color: var(--brand); }
 
-.province-row { display: grid; grid-template-columns: 40px 1fr 44px 52px; align-items: center; gap: 8px; padding: 6px 0; }
-.province-name { font-size: 12px; font-weight: 800; color: var(--ink-2); }
+/* 이름 열은 "전남광주"(2026-06 신설 시도) 4 글자가 한 줄에 들어가야 한다. */
+.province-row { display: grid; grid-template-columns: 56px 1fr 44px 52px; align-items: center; gap: 8px; padding: 5px 0; }
+.province-name { font-size: 12px; font-weight: 800; color: var(--ink-2); white-space: nowrap; }
 /* 지수는 95~110 에 몰려 있어 0 을 바닥으로 그리면 막대가 전부 같아 보인다.
    길이는 그 달의 최소~최대를 양 끝으로 늘린 값이다(lib/fresh-food.ts). */
 .province-track { height: 8px; background: var(--surface-2); border: 1px solid var(--line); }
