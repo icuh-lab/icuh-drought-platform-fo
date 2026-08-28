@@ -38,6 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 기본 docker 드라이버는 캐시 export 를 지원하지 않는다. 아래 cache-to 를 쓰려면
+      # docker-container 드라이버가 필요하고, 그것을 만들어 주는 것이 이 액션이다.
+      # 빠지면 "Cache export is not supported for the docker driver" 로 빌드가 죽는다.
+      - uses: docker/setup-buildx-action@v3
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
