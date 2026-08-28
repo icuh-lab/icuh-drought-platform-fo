@@ -32,6 +32,7 @@ import {
   type FireRiskMapView,
   type DroughtReportView,
   type FreshFoodGaugeView,
+  type FreshFoodProvinceRow,
   type FreshFoodKpiView,
   type HydropowerForecastView,
   type HydropowerKpiView,
@@ -43,7 +44,8 @@ import {
 } from "@/lib/api-client";
 import { parseView, viewHref } from "@/lib/dashboard-view";
 import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
-import { apiCatalog, cpiSeries, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
+import { apiCatalog, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
+import { freshFoodStatusText, type FreshFoodKind } from "@/lib/fresh-food";
 
 type PriceApiState = {
   status: "loading" | "success" | "empty" | "error";
@@ -75,6 +77,11 @@ type FreshFoodApiState = {
   gauge: FreshFoodGaugeView | null;
   latestDate: string | null;
 };
+
+const FRESH_FOOD_TABS: { key: FreshFoodKind; label: string }[] = [
+  { key: "vegetable", label: "채소" },
+  { key: "fruit", label: "과일" }
+];
 
 type SummaryApiState = {
   status: "loading" | "success" | "empty" | "error";
@@ -260,6 +267,7 @@ function Dashboard() {
   const [hydropowerApi, setHydropowerApi] = useState<HydropowerApiState>(initialHydropowerApiState);
   const [fireRiskApi, setFireRiskApi] = useState<FireRiskApiState>(initialFireRiskApiState);
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
+  const [freshFoodKind, setFreshFoodKind] = useState<FreshFoodKind>("vegetable");
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
@@ -303,13 +311,7 @@ function Dashboard() {
       damageDetail: null
     }));
   const activeFireRisk = fireRiskApi.items ?? fireRisk;
-  const activeFreshFoodGauge = freshFoodApi.gauge ?? {
-    value: "121.7",
-    baseMonth: "2026-08",
-    monthOverMonthRate: "+1.8%",
-    yearOverYearRate: "+9.2%",
-    series: cpiSeries
-  };
+  const activeFreshFoodGauge = freshFoodApi.gauge;
   const highestFireRisk = activeFireRisk.reduce((highest, current) => current.value > highest.value ? current : highest, activeFireRisk[0]);
   // 181 개 시군구를 다 늘어놓는 대신 지도로 전체를 보여주고, 목록은 눈에 띄는 곳만 남긴다.
   const topFireRisk = [...activeFireRisk].sort((left, right) => right.value - left.value).slice(0, 5);
@@ -319,7 +321,7 @@ function Dashboard() {
   };
   const hydropowerStatus = apiStatusText(hydropowerApi);
   const fireRiskStatus = apiStatusText(fireRiskApi);
-  const freshFoodStatus = apiStatusText(freshFoodApi);
+  const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
   const summaryStatus = summaryStatusText(summaryApi);
   const reportStatus = reportStatusText(reportApi);
   const fallbackSummaryAlerts: SummaryAlert[] = [
@@ -422,9 +424,30 @@ function Dashboard() {
     }
 
 
+
+    loadPriceForecast("cabbage");
+    loadPriceForecast("onion");
+    loadHydropowerForecast();
+
+    return () => controller.abort();
+  }, [period]);
+
+  // 채소·과일 탭을 바꾸면 이 지표만 다시 부른다. 위 이펙트에 묶어 두면 탭만 눌러도
+  // 배추·양파·수력까지 전부 다시 부르게 된다.
+  useEffect(() => {
+    const controller = new AbortController();
+
     async function loadFreshFoodIndex() {
+      setFreshFoodApi(initialFreshFoodApiState);
+
       try {
-        const response = await fetchFreshFoodIndex({ signal: controller.signal, year: period.year, month: period.month });
+        const response = await fetchFreshFoodIndex({ signal: controller.signal, year: period.year, month: period.month, kind: freshFoodKind });
+
+        if (!response) {
+          setFreshFoodApi({ status: "empty", kpi: null, gauge: null, latestDate: null });
+          return;
+        }
+
         const nextKpi = toFreshFoodKpiView(response);
         const nextGauge = toFreshFoodGaugeView(response);
 
@@ -433,12 +456,7 @@ function Dashboard() {
           return;
         }
 
-        setFreshFoodApi({
-          status: "success",
-          kpi: nextKpi,
-          gauge: nextGauge,
-          latestDate: response.baseMonth
-        });
+        setFreshFoodApi({ status: "success", kpi: nextKpi, gauge: nextGauge, latestDate: response.baseMonth });
       } catch (error) {
         if (controller.signal.aborted) {
           return;
@@ -448,15 +466,10 @@ function Dashboard() {
       }
     }
 
-
-
-    loadPriceForecast("cabbage");
-    loadPriceForecast("onion");
-    loadHydropowerForecast();
     loadFreshFoodIndex();
 
     return () => controller.abort();
-  }, [period]);
+  }, [period, freshFoodKind]);
 
   // 산불위험지수는 일 단위, 종합 현황과 리포트는 조회 연월과 무관하므로 최초 1회만 불러온다.
   useEffect(() => {
@@ -752,12 +765,42 @@ function Dashboard() {
                 )}
               </div>
               <div className="card gauge">
-                <h3>신선식품물가지수</h3>
-                <p>전국 단위 지표 · 지역별 세분은 제공되지 않습니다</p>
-                {freshFoodApi.status !== "success" && <div className="data-note">{freshFoodStatus}</div>}
-                <div className="gauge-value">{activeFreshFoodGauge.value}<span>2020년 = 100 · {activeFreshFoodGauge.baseMonth}</span></div>
-                <div className="gauge-deltas"><span>전월대비 <b>{activeFreshFoodGauge.monthOverMonthRate}</b></span><span>전년동월대비 <b>{activeFreshFoodGauge.yearOverYearRate}</b></span></div>
-                <Sparkline data={activeFreshFoodGauge.series} className="cpi" />
+                <div className="gauge-hd">
+                  <h3>신선식품물가지수</h3>
+                  <div className="tabs sm">
+                    {FRESH_FOOD_TABS.map((tab) => (
+                      <button key={tab.key} className={freshFoodKind === tab.key ? "on" : ""} onClick={() => setFreshFoodKind(tab.key)}>{tab.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <p>통계청 소비자물가조사 · 시도별 지수</p>
+                {activeFreshFoodGauge === null ? (
+                  <div className="data-note">{freshFoodStatus}</div>
+                ) : (
+                  <>
+                    <div className="gauge-value">{activeFreshFoodGauge.value}<span>2020년 = 100 · {activeFreshFoodGauge.baseMonth}</span></div>
+                    <div className="gauge-deltas">
+                      <span>전월대비 <b className={activeFreshFoodGauge.monthOverMonthDirection ?? ""}>{activeFreshFoodGauge.monthOverMonthRate}</b></span>
+                      <span>전년동월대비 <b className={activeFreshFoodGauge.yearOverYearDirection ?? ""}>{activeFreshFoodGauge.yearOverYearRate}</b></span>
+                    </div>
+                    <Sparkline data={activeFreshFoodGauge.series} className="cpi" />
+                    <div className="gauge-axis"><span>{activeFreshFoodGauge.rangeStart}</span><span>{activeFreshFoodGauge.rangeEnd}</span></div>
+
+                    <div className="gauge-regions-hd">
+                      <b>시도별 {activeFreshFoodGauge.provinceCount}곳</b>
+                      <span className="gauge-grades">
+                        {activeFreshFoodGauge.grades.map((grade) => (
+                          <span key={grade.label} className={`badge ${grade.className}`}>{grade.label} {grade.count}</span>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="gauge-regions">
+                      {activeFreshFoodGauge.top.map((province) => <ProvinceBar key={province.code} province={province} />)}
+                      {activeFreshFoodGauge.omitted > 0 && <div className="gauge-omitted">가운데 {activeFreshFoodGauge.omitted}곳 생략</div>}
+                      {activeFreshFoodGauge.bottom.map((province) => <ProvinceBar key={province.code} province={province} />)}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </section>
@@ -920,6 +963,17 @@ function Dashboard() {
         )}
       </main>
     </>
+  );
+}
+
+function ProvinceBar({ province }: { province: FreshFoodProvinceRow }) {
+  return (
+    <div className="province-row">
+      <span className="province-name">{province.name}</span>
+      <span className="province-track"><i style={{ width: `${(province.ratio * 100).toFixed(1)}%` }} /></span>
+      <b className="province-value">{province.value}</b>
+      <span className={`badge ${province.gradeClass}`}>{province.gradeLabel}</span>
+    </div>
   );
 }
 

@@ -94,7 +94,6 @@ export const fireRisk = [
   { name: "고흥", sido: "전남", value: 42, delta: "-1", series: [38, 40, 39, 41, 43, 42, 42] }
 ];
 
-export const cpiSeries = [111.2, 112.8, 114.1, 113.6, 115.9, 117.2, 116.4, 118.1, 119.3, 118.7, 119.6, 121.7];
 
 export const reports = [
   {
