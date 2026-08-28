@@ -158,8 +158,11 @@ export type FreshFoodGaugeView = {
   rangeEnd: string;
   provinceCount: number;
   grades: { label: string; className: string; count: number }[];
+  /** 접힌 상태에서 보여줄 위·아래 조각 */
   top: FreshFoodProvinceRow[];
   bottom: FreshFoodProvinceRow[];
+  /** 펼쳤을 때 보여줄 전체 목록. top·bottom 과 같은 정렬이라 펼쳐도 줄 순서가 튀지 않는다. */
+  all: FreshFoodProvinceRow[];
   omitted: number;
 };
 
@@ -844,6 +847,7 @@ export function toFreshFoodGaugeView(index: FreshFoodIndex): FreshFoodGaugeView 
     })),
     top: ranked.top.map((province) => toProvinceRow(province, min, max)),
     bottom: ranked.bottom.map((province) => toProvinceRow(province, min, max)),
+    all: ranked.all.map((province) => toProvinceRow(province, min, max)),
     omitted: ranked.omitted
   };
 }

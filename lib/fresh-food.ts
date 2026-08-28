@@ -290,5 +290,6 @@ export function topAndBottomProvinces(provinces: FreshFoodProvince[], count: num
   // 정렬을 뒤집지 않는다. 상위 -> 생략 -> 하위가 이어진 하나의 순위표로 읽혀야 한다.
   const bottom = rest.slice(-count);
 
-  return { top, bottom, omitted: rest.length - bottom.length };
+  // all 은 펼쳤을 때 쓴다. 같은 정렬을 화면에서 다시 하지 않도록 여기서 함께 넘긴다.
+  return { all: sorted, top, bottom, omitted: rest.length - bottom.length };
 }

@@ -164,6 +164,11 @@ const provinces = [
   { code: 5, name: "마", fullName: "마", value: 95.8, grade: "low" as const }
 ];
 const ranked = topAndBottomProvinces(provinces, 2);
+// 펼쳤을 때 쓸 전체 목록. 같은 정렬을 두 번 하지 않도록 여기서 함께 돌려준다.
+checkJson("전체 목록도 값 내림차순", ranked.all.map((p) => p.name), ["가", "나", "다", "라", "마"]);
+check("전체 목록은 하나도 빠지지 않는다", ranked.all.length, provinces.length);
+// 접힌 목록과 펼친 목록의 순서가 어긋나면 펼칠 때 줄이 튄다.
+checkJson("접힘 = 펼침의 앞뒤 조각", [...ranked.top, ...ranked.bottom].map((p) => p.name), ["가", "나", "라", "마"]);
 checkJson("상위는 값이 큰 순", ranked.top.map((p) => p.name), ["가", "나"]);
 // 상위 -> 생략 -> 하위가 이어진 하나의 순위표로 읽혀야 한다. 하위만 오름차순이면
 // 생략 줄 다음에 최하위가 튀어나오고 막대가 거꾸로 길어진다.
