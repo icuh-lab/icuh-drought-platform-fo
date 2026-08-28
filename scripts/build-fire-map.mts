@@ -16,7 +16,7 @@
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { canonicalRegionCode, parentCityCode } from "../lib/fire-region";
+import { canonicalRegionCode, parentCityCode, RENAMED_REGION_NAMES } from "../lib/fire-region";
 
 /** 원본을 그대로 받아쓸 수 있는 미러. 다른 사본을 쓰려면 FIRE_MAP_SOURCE 로 덮어쓴다. */
 const SOURCE = process.env.FIRE_MAP_SOURCE ?? "https://raw.githubusercontent.com/siestageek/datasets/master/sig/TL_SCCO_SIG";
@@ -170,7 +170,8 @@ for (let i = 0; i < rows.length; i++) {
   const sigCode = rows[i].SIG_CD;
   const sigName = rows[i].SIG_KOR_NM;
   const code = canonicalRegionCode(sigCode);
-  const name = parentCityCode(sigCode) ? cityNameOf(sigName) : sigName;
+  // 개편으로 이름이 바뀐 곳(인천 제물포구 등)은 경계 데이터의 옛 이름을 쓰면 안 된다.
+  const name = RENAMED_REGION_NAMES[code] ?? (parentCityCode(sigCode) ? cityNameOf(sigName) : sigName);
   const unit = units.get(code);
   if (unit) unit.rings.push(...shapes[i]);
   else units.set(code, { name, rings: [...shapes[i]] });
