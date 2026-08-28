@@ -102,7 +102,7 @@ docker logs -f caddy      # 인증서 발급 확인
 ## 배포 흐름
 
 ```
-develop 에 작업 누적 → main 으로 머지 → 자동 배포
+기능 브랜치 → develop 로 PR 머지 → 자동 배포
 ```
 
 | 단계 | 내용 |
