@@ -23,11 +23,11 @@ description: Use when a unit of work is finished in this repository and the chan
 
 | 항목 | 규칙 |
 | --- | --- |
-| 브랜치 전략 | 기능 브랜치 + PR. `main`/`develop`에 직접 커밋 금지 |
+| 브랜치 전략 | 기능 브랜치 + PR. `develop`에 직접 커밋 금지 |
 | 브랜치 이름 | `<type>/<영문-케밥-요약>` 예: `feat/article-search-filter` |
 | 커밋 형식 | Conventional Commits, **본문 포함 전체 한국어** |
 | 커밋 제목 | `<type>: <요약>` **50자 이내** (타입 접두사 포함) |
-| PR base | **`develop`** (`main` 아님) |
+| PR base | **`develop`** — 저장소 기본 브랜치이자 배포 브랜치 |
 | PR 라벨 | **`enhancement`** |
 | 푸시 | 커밋 후 바로 푸시 |
 
@@ -43,7 +43,7 @@ description: Use when a unit of work is finished in this repository and the chan
 git branch --show-current
 ```
 
-`main` 또는 `develop`이면 **먼저 기능 브랜치를 만든다.**
+`develop`이면 **먼저 기능 브랜치를 만든다.**
 
 ```bash
 git checkout -b feat/article-search-filter develop
@@ -128,13 +128,10 @@ PR 본문에는 **변경사항 요약을 반드시 포함한다.** 무엇을·�
 
 #### 웹 UI로 PR을 만드는 경우
 
-`gh` 인증이 없어 GitHub 웹에서 만들 때는 **base 드롭다운이 항상 기본 브랜치(`main`)로 초기화된다.**
-직접 `develop`으로 바꿔야 한다. 라벨도 우측 Labels에서 수동 선택한다.
+기본 브랜치가 `develop`이라 base 드롭다운도 `develop`으로 초기화된다. 라벨만 우측
+Labels에서 수동 선택하면 된다.
 
 상단이 `base: develop ← compare: <기능 브랜치>` 로 표시되는지 확인한다.
-
-> **파일 목록으로는 base 오류를 알 수 없다.** `develop`과 `main`이 같은 커밋을 가리키는
-> 시점에는 base가 무엇이든 diff가 완전히 동일하게 보인다. 반드시 드롭다운 표시를 본다.
 
 ### 5. 머지 후 검증
 
@@ -145,13 +142,13 @@ git fetch --prune origin
 git ls-remote --heads origin
 ```
 
-`develop`이 새 커밋을 가리켜야 한다. `main`만 움직였다면 base가 잘못 지정된 것이다.
+`develop`이 새 커밋을 가리켜야 한다.
 
-`develop`에 고유 커밋이 없다면 fast-forward로 복구한다.
+**머지와 동시에 배포가 시작된다.** 실행을 확인한다.
 
 ```bash
-git log --oneline origin/develop ^origin/main   # 비어야 안전
-git push origin origin/main:refs/heads/develop
+gh run list --limit 1
+gh run watch <run-id> --exit-status
 ```
 
 로컬 정리:
@@ -164,10 +161,10 @@ git checkout develop && git pull && git branch -d <기능 브랜치>
 
 | 실수 | 결과 | 대응 |
 | --- | --- | --- |
-| `--base` 생략 | PR이 `main`으로 열린다 | 항상 `--base develop` 명시 |
-| 웹 PR 폼에서 base 미변경 | `main`으로 머지된다 | 드롭다운을 `develop`으로 변경 |
+| 검증 없이 develop 머지 | 깨진 코드가 **바로 운영에 나간다** | 머지 전 lint·build·테스트 |
+| 빈 디렉터리를 커밋했다고 착각 | git은 빈 폴더를 저장하지 않아 CI에서만 깨진다 | `.gitkeep` 추가 |
 | 머지 후 확인 생략 | 잘못된 base를 놓친다 | `git ls-remote --heads origin` |
-| `main`/`develop`에서 바로 커밋 | PR을 열 수 없다 | 커밋 전 `git branch --show-current` 확인 |
+| `develop`에서 바로 커밋 | PR을 열 수 없다 | 커밋 전 `git branch --show-current` 확인 |
 | `git add -A` 습관적 사용 | 무관한 변경이 섞인다 | 관련 파일만 지정 |
 | 커밋 메시지 영어 작성 | 규칙 위반 | 제목·본문 모두 한국어 |
 | 제목이 50자 초과 | 목록에서 잘린다 | `wc -m` 으로 확인 후 amend |
@@ -176,7 +173,7 @@ git checkout develop && git pull && git branch -d <기능 브랜치>
 ## 이 저장소 정보
 
 - 원격: `git@github.com:icuh-lab/icuh-drought-platform-fo.git`
-- 기본 브랜치: `main` (배포) / `develop` (통합, PR base)
+- 기본 브랜치: `develop` — 통합이자 배포. 머지 즉시 운영에 나간다 (`main` 없음)
 - 검증 명령: `npm run lint`, `npm run build`
 - 테스트: `npx tsx scripts/*.test.mts` (Node v20이라 `--experimental-strip-types` 불가)
 
@@ -200,4 +197,4 @@ gh label create enhancement --color a2eeef --description "새 기능 또는 개�
 
 - `git push --force` / `--force-with-lease`
 - PR 머지, 브랜치 삭제
-- `main`으로의 직접 푸시
+- `develop`으로의 직접 푸시 (배포가 걸린다)

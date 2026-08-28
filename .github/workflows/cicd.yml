@@ -1,10 +1,12 @@
 name: icuh-drought-platform-fo CI/CD
 
-# main 에 올라간 것만 배포한다. 평소 작업은 develop 에 모으고,
-# 배포 시점에 develop → main 을 머지한다.
+# develop 에 올라간 것이 곧 운영이다. main 은 없앴다.
+#
+# 기능 브랜치 → develop PR 이 머지되는 순간 배포가 시작된다. 릴리스 PR 단계가
+# 없으므로 develop 에 머지하기 전에 검증을 끝내야 한다.
 on:
   push:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
 
 env:
