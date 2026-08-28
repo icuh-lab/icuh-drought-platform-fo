@@ -1,6 +1,21 @@
 import type { ForecastKey, fireRisk, forecasts, kpis, reports } from "@/lib/mock-data";
 import { sidoName } from "@/lib/fire-region";
 import { FIRE_REGION_NAMES } from "@/lib/fire-region-names";
+import {
+  buildFreshFoodIndex,
+  freshFoodGradeClass,
+  freshFoodGradeLabel,
+  formatIndexValue,
+  gradeCounts,
+  monthWindow,
+  normalizeFreshFoodMonth,
+  provinceBarRatio,
+  topAndBottomProvinces,
+  type FreshFoodIndex,
+  type FreshFoodKind,
+  type FreshFoodProvince,
+  type RawFreshFoodMonth
+} from "@/lib/fresh-food";
 import type {
   ArticleSearchParams, ArticlePage, ArticleDetail, ArticleCategories, ArticleListItem,
 } from "./archive-types";
@@ -119,27 +134,33 @@ export type FireRiskIndexResponse = {
 export type FireRiskView = typeof fireRisk;
 export type FreshFoodKpiView = (typeof kpis)[number];
 
-export type FreshFoodIndexPoint = {
-  baseMonth: string;
-  value: number;
-};
-
-export type FreshFoodIndexResponse = {
-  indexCode: "fresh-food-index";
-  unit: "index_2020_100";
-  baseMonth: string;
-  value: number;
-  monthOverMonthRate: number | null;
-  yearOverYearRate: number | null;
-  points: FreshFoodIndexPoint[];
+export type FreshFoodProvinceRow = {
+  code: number;
+  name: string;
+  value: string;
+  gradeLabel: string;
+  gradeClass: string;
+  /** 0~1. 그 달의 최소~최대를 양 끝으로 늘린 값이다. */
+  ratio: number;
 };
 
 export type FreshFoodGaugeView = {
+  kind: FreshFoodKind;
   value: string;
   baseMonth: string;
   monthOverMonthRate: string;
   yearOverYearRate: string;
+  monthOverMonthDirection: "up" | "down" | null;
+  yearOverYearDirection: "up" | "down" | null;
   series: number[];
+  /** 추세선 양 끝에 붙일 월 라벨 */
+  rangeStart: string;
+  rangeEnd: string;
+  provinceCount: number;
+  grades: { label: string; className: string; count: number }[];
+  top: FreshFoodProvinceRow[];
+  bottom: FreshFoodProvinceRow[];
+  omitted: number;
 };
 
 export type SummaryAlertSeverity = "info" | "warning" | "danger";
@@ -264,6 +285,7 @@ type FetchFreshFoodIndexOptions = {
   signal?: AbortSignal;
   year?: number;
   month?: number;
+  kind?: FreshFoodKind;
 };
 
 type FetchSummaryOptions = {
@@ -299,17 +321,6 @@ type OpenHydropowerGenerationResponse = {
     plannedMwh: number | null;
     actualMwh: number | null;
   }[];
-};
-
-type OpenFreshVegetableIndexResponse = {
-  baseDate: string;
-  provinceData: {
-    code: number;
-    province: string;
-    freshVegetableIndex: number | null;
-    grade: string;
-  }[];
-  summary: Record<string, number>;
 };
 
 type OpenWildFireRegion = {
@@ -474,31 +485,48 @@ export async function fetchFireRiskIndex({ signal }: FetchFireRiskIndexOptions =
   } satisfies FireRiskIndexResponse;
 }
 
-export async function fetchFreshFoodIndex({ signal, year, month }: FetchFreshFoodIndexOptions = {}) {
-  const search = new URLSearchParams({
-    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
-    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month)
-  });
-  const data = await getOpenApiData<OpenFreshVegetableIndexResponse>("/api/v1/freshfood/fresh-vegetable", search, signal);
-  const values = data.provinceData
-    .map((province) => province.freshVegetableIndex)
-    .filter((value): value is number => typeof value === "number");
-  const average = values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+/** 추세선에 담을 개월 수. 오른쪽 끝이 선택 월, 왼쪽 끝이 전년 동월이라 전년대비가 창 안에서 나온다. */
+const FRESH_FOOD_WINDOW_MONTHS = 13;
 
-  return {
-    indexCode: "fresh-food-index",
-    unit: "index_2020_100",
-    baseMonth: data.baseDate.slice(0, 7),
-    value: average,
-    monthOverMonthRate: null,
-    yearOverYearRate: null,
-    points: data.provinceData
-      .filter((province) => typeof province.freshVegetableIndex === "number")
-      .map((province) => ({
-        baseMonth: `${data.baseDate.slice(0, 7)} ${province.province}`,
-        value: province.freshVegetableIndex as number
-      }))
-  } satisfies FreshFoodIndexResponse;
+const FRESH_FOOD_PATHS: Record<FreshFoodKind, string> = {
+  vegetable: "/api/v1/freshfood/fresh-vegetable",
+  fruit: "/api/v1/freshfood/fresh-fruit"
+};
+
+/**
+ * 신선식품물가지수를 13 개월치 모아 온다.
+ *
+ * API 가 월 1건씩만 주므로 추세선과 증감률은 프론트가 여러 달을 모아 만든다. 병렬로
+ * 던지고, 없는 달(2026-08 처럼 빈 응답)이나 실패한 달은 그 점만 빼고 나머지로 그린다.
+ * 선택 월 자체에 값이 없으면 null 이다.
+ */
+export async function fetchFreshFoodIndex({ signal, year, month, kind = "vegetable" }: FetchFreshFoodIndexOptions = {}): Promise<FreshFoodIndex | null> {
+  const baseYear = year ?? OPEN_API_DEFAULT_PERIOD.year;
+  const baseMonth = month ?? OPEN_API_DEFAULT_PERIOD.month;
+  const path = FRESH_FOOD_PATHS[kind];
+
+  const months = await Promise.all(
+    monthWindow(baseYear, baseMonth, FRESH_FOOD_WINDOW_MONTHS).map(async (target) => {
+      const search = new URLSearchParams({ year: String(target.year), month: String(target.month) });
+      try {
+        const data = await getOpenApiData<RawFreshFoodMonth>(path, search, signal);
+        return normalizeFreshFoodMonth(data, kind);
+      } catch (error) {
+        // 창 안의 한 달이 비어도 나머지로 추세선은 그린다. 중단은 호출자가 판단한다.
+        if (signal?.aborted) throw error;
+        return null;
+      }
+    })
+  );
+
+  const loaded = months.filter((value): value is NonNullable<typeof value> => value !== null);
+  // 한 달도 못 받았으면 "데이터가 없다" 가 아니라 조회 자체가 실패한 것이다. 둘을 같은
+  // 문구로 보여주면 CORS·네트워크 오류가 정상적인 빈 달처럼 읽힌다.
+  if (loaded.length === 0) {
+    throw new Error("Fresh food index request failed for every month in the window");
+  }
+
+  return buildFreshFoodIndex(loaded, `${baseYear}-${String(baseMonth).padStart(2, "0")}`, kind);
 }
 
 export async function fetchSummary({ signal }: FetchSummaryOptions = {}) {
@@ -751,39 +779,78 @@ export function latestFireRiskObservedAt(response: FireRiskIndexResponse) {
     .at(-1) ?? null;
 }
 
-export function toFreshFoodKpiView(response: FreshFoodIndexResponse): FreshFoodKpiView | null {
-  if (response.points.length === 0) {
+export function toFreshFoodKpiView(index: FreshFoodIndex): FreshFoodKpiView | null {
+  if (index.points.length === 0) {
     return null;
   }
 
-  const delta = response.monthOverMonthRate ?? 0;
+  const delta = index.monthOverMonthRate ?? 0;
 
   return {
     tag: "지수 · 물가",
     region: "전국",
     name: "신선식품물가지수",
-    value: formatDecimalNumber(response.value),
-    unit: displayFreshFoodUnit(response.unit),
+    value: formatIndexValue(index.value),
+    unit: displayFreshFoodUnit("index_2020_100"),
     delta: formatSignedPercent(delta),
     direction: delta >= 0 ? "up" : "down",
     error: null,
-    spark: response.points.slice(-7).map((point) => point.value),
+    // 예전에는 여기에 시도 목록이 들어가 추세선처럼 보였다. 이제 월별 시계열이다.
+    spark: index.points.slice(-7).map((point) => point.value),
     target: "cabbage"
   };
 }
 
-export function toFreshFoodGaugeView(response: FreshFoodIndexResponse): FreshFoodGaugeView | null {
-  if (response.points.length === 0) {
+function toProvinceRow(province: FreshFoodProvince, min: number, max: number): FreshFoodProvinceRow {
+  return {
+    code: province.code,
+    name: province.name,
+    value: formatIndexValue(province.value),
+    gradeLabel: freshFoodGradeLabel(province.grade),
+    gradeClass: freshFoodGradeClass(province.grade),
+    ratio: provinceBarRatio(province.value, min, max)
+  };
+}
+
+/** 상·하위 몇 곳씩 보여줄지. 19 개 시도를 다 늘어놓으면 카드가 목록으로 변한다. */
+const FRESH_FOOD_RANK_SIZE = 3;
+
+export function toFreshFoodGaugeView(index: FreshFoodIndex): FreshFoodGaugeView | null {
+  if (index.points.length === 0) {
     return null;
   }
 
+  const values = index.provinces.map((province) => province.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const ranked = topAndBottomProvinces(index.provinces, FRESH_FOOD_RANK_SIZE);
+
   return {
-    value: formatDecimalNumber(response.value),
-    baseMonth: response.baseMonth,
-    monthOverMonthRate: formatNullableSignedPercent(response.monthOverMonthRate),
-    yearOverYearRate: formatNullableSignedPercent(response.yearOverYearRate),
-    series: response.points.map((point) => point.value)
+    kind: index.kind,
+    value: formatIndexValue(index.value),
+    baseMonth: index.baseMonth,
+    monthOverMonthRate: formatNullableSignedPercent(index.monthOverMonthRate),
+    yearOverYearRate: formatNullableSignedPercent(index.yearOverYearRate),
+    monthOverMonthDirection: toRateDirection(index.monthOverMonthRate),
+    yearOverYearDirection: toRateDirection(index.yearOverYearRate),
+    series: index.points.map((point) => point.value),
+    rangeStart: index.points[0]?.baseMonth ?? index.baseMonth,
+    rangeEnd: index.points.at(-1)?.baseMonth ?? index.baseMonth,
+    provinceCount: index.provinces.length,
+    grades: gradeCounts(index.provinces).map((entry) => ({
+      label: freshFoodGradeLabel(entry.grade),
+      className: freshFoodGradeClass(entry.grade),
+      count: entry.count
+    })),
+    top: ranked.top.map((province) => toProvinceRow(province, min, max)),
+    bottom: ranked.bottom.map((province) => toProvinceRow(province, min, max)),
+    omitted: ranked.omitted
   };
+}
+
+function toRateDirection(rate: number | null) {
+  if (rate === null) return null;
+  return rate >= 0 ? "up" : "down";
 }
 
 function isApiPriceForecastResponse(value: unknown): value is ApiResponse<PriceForecastResponse> {
@@ -898,34 +965,6 @@ function normalizeFireRiskGrade(value: string): FireRiskGradeCode {
   if (value === "high") return "high";
   if (value === "moderate") return "moderate";
   return "low";
-}
-
-function isApiFreshFoodIndexResponse(value: unknown): value is ApiResponse<FreshFoodIndexResponse> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isFreshFoodIndexResponse(value.data)) &&
-    "error" in value
-  );
-}
-
-function isFreshFoodIndexResponse(value: unknown): value is FreshFoodIndexResponse {
-  if (!isRecord(value)) return false;
-  return (
-    value.indexCode === "fresh-food-index" &&
-    value.unit === "index_2020_100" &&
-    typeof value.baseMonth === "string" &&
-    typeof value.value === "number" &&
-    (value.monthOverMonthRate === null || typeof value.monthOverMonthRate === "number") &&
-    (value.yearOverYearRate === null || typeof value.yearOverYearRate === "number") &&
-    Array.isArray(value.points) &&
-    value.points.every(isFreshFoodIndexPoint)
-  );
-}
-
-function isFreshFoodIndexPoint(value: unknown): value is FreshFoodIndexPoint {
-  if (!isRecord(value)) return false;
-  return typeof value.baseMonth === "string" && typeof value.value === "number";
 }
 
 function isApiSummaryResponse(value: unknown): value is ApiResponse<SummaryResponse> {

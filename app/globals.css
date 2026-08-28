@@ -12,6 +12,9 @@
   --brand-soft: #e2eff1;
   --up: #af3628;
   --down: #1b6b8a;
+  /* 신선물가 "낮음". r1~r4 가 보통~매우높음이라 그 아래 칸이 비어 있었다. */
+  --r0-bg: #dfe9ef;
+  --r0-fg: #245a72;
   --r1-bg: #dee9e6;
   --r1-fg: #2c574f;
   --r2-bg: #faedd0;
@@ -198,6 +201,7 @@ button { cursor: pointer; }
 .fire-top-hd h4 { margin: 0; font-size: 12.5px; }
 .fire-top-hd small { font-size: 11px; color: var(--ink-3); }
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.lv0 { background: var(--r0-bg); color: var(--r0-fg); }
 .lv1 { background: var(--r1-bg); color: var(--r1-fg); }
 .lv2 { background: var(--r2-bg); color: var(--r2-fg); }
 .lv3 { background: var(--r3-bg); color: var(--r3-fg); }
@@ -210,8 +214,34 @@ button { cursor: pointer; }
 .gauge-value span { display: block; font-size: 12px; color: var(--ink-3); font-weight: 600; }
 .gauge-deltas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
 .gauge-deltas span { background: var(--surface-2); border: 1px solid var(--line); padding: 8px; color: var(--ink-3); }
-.gauge-deltas b { display: block; color: var(--up); margin-top: 3px; }
+.gauge-deltas b { display: block; color: var(--ink); margin-top: 3px; }
+.gauge-deltas b.up { color: var(--up); }
+.gauge-deltas b.down { color: var(--down); }
 .cpi { height: 74px; }
+
+.gauge-hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* 카드 안에 들어가는 탭이라 화면 폭을 다 먹는 기본 .tabs 와 크기를 달리한다. */
+.tabs.sm { border-bottom: 0; border: 1px solid var(--line); }
+.tabs.sm button { flex: 0 0 auto; padding: 4px 12px; font-size: 12px; border-right: 1px solid var(--line); }
+.tabs.sm button:last-child { border-right: 0; }
+.tabs.sm button.on { background: var(--brand); color: #fff; }
+
+/* 추세선은 축이 없으면 몇 달치인지 알 수 없다. 양 끝 월만 붙인다. */
+.gauge-axis { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--ink-3); font-weight: 700; }
+
+.gauge-regions-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 18px 0 2px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.gauge-grades { display: flex; gap: 4px; flex-wrap: wrap; }
+.gauge-regions { margin-top: 4px; }
+.gauge-omitted { padding: 7px 0; margin: 2px 0; border-top: 1px dashed var(--line-2); border-bottom: 1px dashed var(--line-2); font-size: 11px; color: var(--ink-3); font-weight: 700; text-align: center; }
+
+.province-row { display: grid; grid-template-columns: 40px 1fr 44px 52px; align-items: center; gap: 8px; padding: 6px 0; }
+.province-name { font-size: 12px; font-weight: 800; color: var(--ink-2); }
+/* 지수는 95~110 에 몰려 있어 0 을 바닥으로 그리면 막대가 전부 같아 보인다.
+   길이는 그 달의 최소~최대를 양 끝으로 늘린 값이다(lib/fresh-food.ts). */
+.province-track { height: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+.province-track i { display: block; height: 100%; background: var(--brand); }
+.province-value { font-size: 13px; text-align: right; }
+.province-row .badge { justify-content: center; }
 .notice { border: 1px solid var(--line); background: var(--surface); padding: 12px 15px; margin-bottom: 14px; color: var(--ink-2); }
 .cols { display: grid; grid-template-columns: 230px 1fr; gap: 18px; }
 .side { padding: 14px; height: fit-content; }
