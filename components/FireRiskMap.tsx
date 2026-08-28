@@ -216,9 +216,11 @@ export function FireRiskMap({ view }: { view: FireRiskMapView }) {
             {band.label}
           </span>
         ))}
+        {/* 광주·전남·전북은 2026-08-29 부터 들어온다. 어느 지역이 빠질지는 그날 응답에 달렸으므로
+            괄호로 지역을 못박지 않는다. 원천이 이따금 빠뜨리는 울릉군 같은 곳이 여기 해당한다. */}
         <span>
           <i className="is-nodata" />
-          미제공 (광주·전남·전북)
+          미제공
         </span>
       </div>
       </div>
