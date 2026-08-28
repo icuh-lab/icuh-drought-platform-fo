@@ -1,4 +1,6 @@
 import type { ForecastKey, fireRisk, forecasts, kpis, reports } from "@/lib/mock-data";
+import { sidoName } from "@/lib/fire-region";
+import { FIRE_REGION_NAMES } from "@/lib/fire-region-names";
 import type {
   ArticleSearchParams, ArticlePage, ArticleDetail, ArticleCategories, ArticleListItem,
 } from "./archive-types";
@@ -428,31 +430,43 @@ export async function fetchHydropowerForecast({ signal, year, month }: FetchHydr
 }
 
 export async function fetchFireRiskIndex({ signal }: FetchFireRiskIndexOptions = {}) {
-  const forecasts = await getOpenApiData<OpenWildFireForecastResponse>("/api/v1/wild-fire-risk/forecast", null, signal);
-  const latest = forecasts.at(-1);
-  const regions = latest?.regionData
+  const response = await getOpenApiData<OpenWildFireForecastResponse>("/api/v1/wild-fire-risk/forecast", null, signal);
+  // 응답은 오늘부터 이틀 뒤까지의 예보다. 지난 날짜는 오지 않는다.
+  const forecasts = [...response].sort((a, b) => a.targetDate.localeCompare(b.targetDate));
+  const today = forecasts[0];
+  if (!today) return { unit: "score_0_100", regions: [] } satisfies FireRiskIndexResponse;
+
+  const regions = today.regionData
     .filter((region) => typeof region.indexValue === "number")
     .map((region) => {
-      const matchingPoints = forecasts
-        .map((forecast) => forecast.regionData.find((candidate) => candidate.regionCode === region.regionCode))
-        .filter((point): point is OpenWildFireRegion => Boolean(point) && typeof point?.indexValue === "number")
-        .map((point, index) => ({
-          baseDate: forecasts[index]?.targetDate ?? latest.targetDate,
-          observedAt: `${forecasts[index]?.targetDate ?? latest.targetDate} ${forecasts[index]?.targetTime ?? latest.targetTime}`,
-          value: point.indexValue as number,
-          gradeCode: normalizeFireRiskGrade(point.riskLevel)
-        }));
+      // 날짜별로 같은 지역을 찾아 붙인다. 빠진 날이 있어도 날짜가 밀리지 않도록 예보를 기준으로 돈다.
+      const points = forecasts
+        .map((forecast) => {
+          const match = forecast.regionData.find((candidate) => candidate.regionCode === region.regionCode);
+          if (!match || typeof match.indexValue !== "number") return null;
+          return {
+            baseDate: forecast.targetDate,
+            observedAt: `${forecast.targetDate} ${forecast.targetTime}`,
+            value: match.indexValue,
+            gradeCode: normalizeFireRiskGrade(match.riskLevel)
+          };
+        })
+        .filter((point): point is NonNullable<typeof point> => point !== null);
+
+      // 과거 값이 없으니 전일 대비는 만들 수 없다. 대신 예보 구간의 추세(오늘 -> 마지막 예보일)를 쓴다.
+      const last = points.at(-1);
+      const change = last && points.length > 1 ? last.value - (region.indexValue as number) : 0;
 
       return {
         regionCode: region.regionCode,
-        regionName: region.regionCode,
+        regionName: FIRE_REGION_NAMES[region.regionCode] ?? region.regionCode,
         value: region.indexValue as number,
         gradeCode: normalizeFireRiskGrade(region.riskLevel),
-        change: 0,
-        observedAt: `${latest.targetDate} ${latest.targetTime}`,
-        points: matchingPoints
+        change,
+        observedAt: `${today.targetDate} ${today.targetTime}`,
+        points
       };
-    }) ?? [];
+    });
 
   return {
     unit: "score_0_100",
@@ -675,11 +689,58 @@ export function toFireRiskView(response: FireRiskIndexResponse): FireRiskView | 
 
   return response.regions.map((region) => ({
     name: region.regionName,
-    sido: FIRE_RISK_SIDO[region.regionCode] ?? "",
+    sido: sidoName(region.regionCode),
     value: Math.round(region.value),
     delta: formatSignedWholeNumber(region.change),
-    series: region.points.slice(-7).map((point) => Math.round(point.value))
+    // 예보는 오늘 포함 3일이다. 그보다 길게 잘라도 더 나올 게 없다.
+    series: region.points.map((point) => Math.round(point.value))
   }));
+}
+
+export type FireRiskMapDay = {
+  baseDate: string;
+  observedAt: string | null;
+};
+
+export type FireRiskMapRegion = {
+  name: string;
+  sido: string;
+  /** days 와 같은 순서. 그 날 값이 없으면 null. */
+  values: (number | null)[];
+};
+
+export type FireRiskMapView = {
+  days: FireRiskMapDay[];
+  /** 시군구 코드 -> 지역. 응답에 없는 시군구는 아예 들어오지 않고, 지도에서 '미제공' 으로 칠한다. */
+  regions: Record<string, FireRiskMapRegion>;
+};
+
+/** 지도는 날짜별로 전국을 한 번에 칠하므로 지역 배열이 아니라 날짜축 + 코드 색인이 필요하다. */
+export function toFireRiskMapView(response: FireRiskIndexResponse): FireRiskMapView | null {
+  if (response.regions.length === 0) {
+    return null;
+  }
+
+  // 날짜축은 지역마다 빠진 날이 있어도 흔들리지 않도록 전체 지역의 합집합으로 만든다.
+  const baseDates = Array.from(new Set(response.regions.flatMap((region) => region.points.map((point) => point.baseDate)))).sort();
+  const days = baseDates.map((baseDate) => ({
+    baseDate,
+    observedAt: response.regions.flatMap((region) => region.points).find((point) => point.baseDate === baseDate)?.observedAt ?? null
+  }));
+
+  const regions: Record<string, FireRiskMapRegion> = {};
+  for (const region of response.regions) {
+    regions[region.regionCode] = {
+      name: region.regionName,
+      sido: sidoName(region.regionCode),
+      values: baseDates.map((baseDate) => {
+        const point = region.points.find((candidate) => candidate.baseDate === baseDate);
+        return point ? Math.round(point.value) : null;
+      })
+    };
+  }
+
+  return { days, regions };
 }
 
 export function latestFireRiskObservedAt(response: FireRiskIndexResponse) {
@@ -1332,12 +1393,6 @@ function percentDelta(current: number, previous: number) {
 
   return ((current - previous) / previous) * 100;
 }
-
-const FIRE_RISK_SIDO: Record<string, string> = {
-  "42150": "강원",
-  "48890": "경남",
-  "46770": "전남"
-};
 
 // ===== 가뭄 자료실 (archive) =====
 

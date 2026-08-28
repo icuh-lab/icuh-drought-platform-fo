@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Braces, ChevronLeft, ChevronRight, Copy, Flame, KeyRound, Send } from "lucide-react";
-import { ForecastChart, Sparkline } from "@/components/charts";
+import { Blocks, ForecastChart, Sparkline } from "@/components/charts";
+import { FireRiskMap } from "@/components/FireRiskMap";
 import {
   API_BASE_URLS,
   OPEN_API_DEFAULT_PERIOD,
@@ -18,6 +19,7 @@ import {
   latestHydropowerForecastDate,
   latestPriceForecastDate,
   toFireRiskView,
+  toFireRiskMapView,
   toDroughtReportDetailView,
   toDroughtReportViews,
   toFreshFoodGaugeView,
@@ -27,6 +29,7 @@ import {
   toPriceForecastView,
   toPriceKpiView,
   type FireRiskView,
+  type FireRiskMapView,
   type DroughtReportView,
   type FreshFoodGaugeView,
   type FreshFoodKpiView,
@@ -61,6 +64,8 @@ type HydropowerApiState = {
 type FireRiskApiState = {
   status: "loading" | "success" | "empty" | "error";
   items: FireRiskView | null;
+  /** 지도는 날짜축이 필요해 목록과 다른 모양을 쓴다. 목업으로는 채울 수 없어 API 성공 때만 들어온다. */
+  map: FireRiskMapView | null;
   latestDate: string | null;
 };
 
@@ -101,16 +106,6 @@ function fireBlockCount(levelClassName: string) {
   if (levelClassName === "lv3") return 3;
   if (levelClassName === "lv2") return 2;
   return 1;
-}
-
-function Blocks({ count, total = 4 }: { count: number; total?: number }) {
-  return (
-    <span className="steps">
-      {Array.from({ length: total }).map((_, index) => (
-        <i key={index} className={index < count ? "filled" : ""} />
-      ))}
-    </span>
-  );
 }
 
 function priceStatusText(state: PriceApiState) {
@@ -220,6 +215,7 @@ const initialHydropowerApiState: HydropowerApiState = {
 const initialFireRiskApiState: FireRiskApiState = {
   status: "loading",
   items: null,
+  map: null,
   latestDate: null
 };
 
@@ -315,6 +311,8 @@ function Dashboard() {
     series: cpiSeries
   };
   const highestFireRisk = activeFireRisk.reduce((highest, current) => current.value > highest.value ? current : highest, activeFireRisk[0]);
+  // 181 개 시군구를 다 늘어놓는 대신 지도로 전체를 보여주고, 목록은 눈에 띄는 곳만 남긴다.
+  const topFireRisk = [...activeFireRisk].sort((left, right) => right.value - left.value).slice(0, 5);
   const priceStatuses = {
     cabbage: priceStatusText(priceApis.cabbage),
     onion: priceStatusText(priceApis.onion)
@@ -345,8 +343,8 @@ function Dashboard() {
       category: "fire-risk",
       dataset: "fire-risk",
       regionCode: highestFireRisk.name,
-      regionName: highestFireRisk.name,
-      title: `${highestFireRisk.name} 산불위험지수 ${highestFireRisk.value} — ‘${fireLevel(highestFireRisk.value)[0]}’ 단계`,
+      regionName: `${highestFireRisk.sido} ${highestFireRisk.name}`.trim(),
+      title: `${`${highestFireRisk.sido} ${highestFireRisk.name}`.trim()} 산불위험지수 ${highestFireRisk.value} — ‘${fireLevel(highestFireRisk.value)[0]}’ 단계`,
       description: `${fireRiskApi.status === "success" ? `API 갱신 ${fireRiskApi.latestDate}` : "목업 기준 표시"} · 임계값 65 ${highestFireRisk.value >= 65 ? "초과" : "미만"}`,
       severity: highestFireRisk.value >= 80 ? "danger" : "warning",
       score: highestFireRisk.value,
@@ -470,13 +468,14 @@ function Dashboard() {
         const nextItems = toFireRiskView(response);
 
         if (!nextItems) {
-          setFireRiskApi({ status: "empty", items: null, latestDate: null });
+          setFireRiskApi({ status: "empty", items: null, map: null, latestDate: null });
           return;
         }
 
         setFireRiskApi({
           status: "success",
           items: nextItems,
+          map: toFireRiskMapView(response),
           latestDate: latestFireRiskObservedAt(response)
         });
       } catch (error) {
@@ -484,7 +483,7 @@ function Dashboard() {
           return;
         }
 
-        setFireRiskApi({ status: "error", items: null, latestDate: null });
+        setFireRiskApi({ status: "error", items: null, map: null, latestDate: null });
       }
     }
 
@@ -722,24 +721,35 @@ function Dashboard() {
               <div className="card">
                 <div className="panel-hd">
                   <div>
-                    <h3>산불위험지수 — 관측지역 비교</h3>
-                    <p>3시간 주기 갱신 · 스파크라인은 최근 7일 추이</p>
+                    <h3>산불위험지수 — 전국 시군구</h3>
+                    <p>1일 1회 18:00 발표 · 오늘 포함 3일 예보</p>
                   </div>
-                  <div className="mini-stat"><span>최고 위험</span><b>{highestFireRisk.value}</b><small>{highestFireRisk.name} · {fireLevel(highestFireRisk.value)[0]}</small></div>
+                  <div className="mini-stat"><span>오늘 최고</span><b>{highestFireRisk.value}</b><small>{highestFireRisk.sido} {highestFireRisk.name} · {fireLevel(highestFireRisk.value)[0]}</small></div>
                 </div>
                 {fireRiskApi.status !== "success" && <div className="data-note">{fireRiskStatus}</div>}
-                {activeFireRisk.map((fire) => {
-                  const [label, cls] = fireLevel(fire.value);
-                  return (
-                    <div className="fire-row" key={fire.name}>
-                      <span className="fire-name"><b>{fire.name}</b><small>{fire.sido}</small></span>
-                      <Sparkline data={fire.series} className="fire-spark" color={cls === "lv3" ? "var(--r3-dot)" : "var(--brand)"} />
-                      <b className="fire-value">{fire.value}</b>
-                      <span className={fire.delta.startsWith("+") ? "up" : "down"}>{fire.delta}</span>
-                      <span className={`badge ${cls}`}><Blocks count={fireBlockCount(cls)} />{label}</span>
+                {fireRiskApi.map ? (
+                  // 지도와 목록은 같은 날짜를 봐야 하므로 한 컴포넌트 안에서 함께 그린다.
+                  <FireRiskMap view={fireRiskApi.map} />
+                ) : (
+                  <div className="fire-top is-standalone">
+                    <div className="fire-top-hd">
+                      <h4>위험 상위 지역</h4>
+                      <small>증감은 마지막 예보일까지의 변화</small>
                     </div>
-                  );
-                })}
+                    {topFireRisk.map((fire) => {
+                      const [label, cls] = fireLevel(fire.value);
+                      return (
+                        <div className="fire-row" key={`${fire.sido}-${fire.name}`}>
+                          <span className="fire-name"><b>{fire.name}</b><small>{fire.sido}</small></span>
+                          <Sparkline data={fire.series} className="fire-spark" color={cls === "lv3" ? "var(--r3-dot)" : "var(--brand)"} />
+                          <b className="fire-value">{fire.value}</b>
+                          <span className={fire.delta.startsWith("+") ? "up" : "down"}>{fire.delta}</span>
+                          <span className={`badge ${cls}`}><Blocks count={fireBlockCount(cls)} />{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="card gauge">
                 <h3>신선식품물가지수</h3>
