@@ -144,7 +144,15 @@ button { cursor: pointer; }
 .accuracy span, .accuracy small { display: block; color: var(--ink-3); font-size: 11px; }
 .accuracy b { display: block; font-size: 24px; color: var(--brand-deep); }
 .data-note { margin: 0 16px 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-3); padding: 7px 9px; font-size: 11.5px; font-weight: 700; }
-.forecast-chart { display: block; width: 100%; height: 260px; padding: 0 16px; }
+.chart-frame { position: relative; padding: 0 16px; }
+.forecast-chart { display: block; width: 100%; height: 260px; }
+/* 축 라벨은 SVG 밖에 둔다 — 안에 넣으면 preserveAspectRatio="none" 에 글자까지 눌린다. */
+.chart-labels { position: absolute; inset: 0 16px; pointer-events: none; font-size: 10px; color: var(--ink-3); }
+.chart-labels span { position: absolute; white-space: nowrap; }
+.chart-labels .lbl-caption { top: 2px; }
+.chart-labels .lbl-y { transform: translate(-100%, -50%); }
+.chart-labels .lbl-middle { transform: translateX(-50%); }
+.chart-labels .lbl-end { transform: translateX(-100%); }
 .legend, .source-line { display: flex; gap: 16px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 11.5px; }
 .legend i { display: inline-block; width: 24px; height: 8px; margin-right: 5px; }
 .legend .solid { border-top: 2px solid var(--brand); }
