@@ -83,6 +83,41 @@ export type PriceForecastResponse = {
   points: PriceForecastPoint[];
 };
 
+export type PredictionVintageSource = "live" | "reconstructed_forecast" | "reconstructed_nowcast_walkforward";
+
+/** onion_prediction_vintage_log 한 행. pred 는 재학습돼도 안 바뀌는 불변값, actual 만 갱신된다. */
+export type PredictionVintageEntry = {
+  targetDate: string;
+  horizonDays: number;
+  source: PredictionVintageSource;
+  modelType: string | null;
+  modelTrainEndDate: string | null;
+  pred: number;
+  actual: number | null;
+  arrivalTon: number | null;
+};
+
+export type PredictionVintageResponse = {
+  location: string;
+  item: string;
+  variety: string;
+  entries: PredictionVintageEntry[];
+};
+
+export type VintageHorizonAccuracy = {
+  horizonDays: number;
+  mae: number | null;
+  sampleCount: number;
+};
+
+export type VintageAccuracyView = {
+  location: string;
+  horizons: VintageHorizonAccuracy[];
+  /** 리드타임(horizonDays)별로, 실측이 확정된 구간만 날짜순으로 정렬한 실측·예측 쌍. 차트에 그대로 씀. */
+  seriesByHorizon: Record<number, { dates: string[]; actual: number[]; predicted: number[] }>;
+  latestActualDate: string | null;
+};
+
 export type PriceForecastView = typeof forecasts.cabbage;
 export type PriceKpiView = (typeof kpis)[number];
 export type HydropowerForecastView = typeof forecasts.hydro;
@@ -414,6 +449,16 @@ export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, 
   } satisfies PriceForecastResponse;
 }
 
+/** daily-price 가 쓰는 location 과 동일한 값을 얻는다("합천") — 호출부에서 문자열을 직접 하드코딩하지 않게. */
+export function priceForecastLocation(key: PriceForecastKey): string {
+  return PRICE_FORECAST_CONFIG[key].location;
+}
+
+export async function fetchPredictionVintage(location: string, signal?: AbortSignal) {
+  const search = new URLSearchParams({ location });
+  return getOpenApiData<PredictionVintageResponse>("/api/v1/agrimarket/prediction-vintage", search, signal);
+}
+
 export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
   // open-api 가 찾는 댐 이름은 "합천" 이다. "합천댐" 으로 물으면 E404 를 준다.
   // 화면 문구의 "합천댐" 은 사람이 읽는 이름이라 그대로 두고, 질의 값만 맞춘다.
@@ -639,6 +684,47 @@ export function toPriceKpiView(key: PriceForecastKey, response: PriceForecastRes
 
 export function latestPriceForecastDate(response: PriceForecastResponse) {
   return response.points.at(-1)?.baseDate ?? null;
+}
+
+/**
+ * 리드타임(horizonDays)별로 실측이 확정된 행만 골라 MAE 와 실측·예측 시계열을 만든다.
+ * source='reconstructed_forecast' 는 현재 모델로 과거를 되짚은 근사치라 사실상 전부
+ * in-sample 이다 — source='live' 와 정확도를 직접 비교하지 않고, 여기서는 실측이
+ * 있는 모든 행(주로 reconstructed_forecast)을 리드타임끼리 상대 비교하는 용도로만 쓴다.
+ */
+export function toVintageAccuracyView(response: PredictionVintageResponse): VintageAccuracyView | null {
+  const withActual = response.entries.filter((entry): entry is PredictionVintageEntry & { actual: number } => entry.actual !== null);
+
+  if (withActual.length === 0) {
+    return null;
+  }
+
+  const horizonDaysList = Array.from(new Set(withActual.map((entry) => entry.horizonDays))).sort((left, right) => left - right);
+
+  const horizons: VintageHorizonAccuracy[] = [];
+  const seriesByHorizon: VintageAccuracyView["seriesByHorizon"] = {};
+
+  for (const horizonDays of horizonDaysList) {
+    const rows = withActual
+      .filter((entry) => entry.horizonDays === horizonDays)
+      .sort((left, right) => left.targetDate.localeCompare(right.targetDate));
+    const errors = rows.map((row) => Math.abs(row.pred - row.actual));
+    const mae = errors.length > 0 ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null;
+
+    horizons.push({ horizonDays, mae, sampleCount: rows.length });
+    seriesByHorizon[horizonDays] = {
+      dates: rows.map((row) => row.targetDate),
+      actual: rows.map((row) => row.actual),
+      predicted: rows.map((row) => row.pred)
+    };
+  }
+
+  return {
+    location: response.location,
+    horizons,
+    seriesByHorizon,
+    latestActualDate: withActual.map((entry) => entry.targetDate).sort().at(-1) ?? null
+  };
 }
 
 export function toHydropowerForecastView(response: HydropowerForecastResponse): HydropowerForecastView | null {
@@ -886,6 +972,40 @@ function isPriceForecastPoint(value: unknown): value is PriceForecastPoint {
     (value.dataType === "observed" || value.dataType === "predicted" || value.dataType === "indexed") &&
     (value.lowerBound === undefined || value.lowerBound === null || typeof value.lowerBound === "number") &&
     (value.upperBound === undefined || value.upperBound === null || typeof value.upperBound === "number")
+  );
+}
+
+function isApiPredictionVintageResponse(value: unknown): value is ApiResponse<PredictionVintageResponse> {
+  if (!isRecord(value)) return false;
+  return (
+    (value.result === "SUCCESS" || value.result === "ERROR") &&
+    (value.data === null || isPredictionVintageResponse(value.data)) &&
+    "error" in value
+  );
+}
+
+function isPredictionVintageResponse(value: unknown): value is PredictionVintageResponse {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.location === "string" &&
+    typeof value.item === "string" &&
+    typeof value.variety === "string" &&
+    Array.isArray(value.entries) &&
+    value.entries.every(isPredictionVintageEntry)
+  );
+}
+
+function isPredictionVintageEntry(value: unknown): value is PredictionVintageEntry {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.targetDate === "string" &&
+    typeof value.horizonDays === "number" &&
+    (value.source === "live" || value.source === "reconstructed_forecast" || value.source === "reconstructed_nowcast_walkforward") &&
+    (value.modelType === null || typeof value.modelType === "string") &&
+    (value.modelTrainEndDate === null || typeof value.modelTrainEndDate === "string") &&
+    typeof value.pred === "number" &&
+    (value.actual === null || typeof value.actual === "number") &&
+    (value.arrivalTon === null || typeof value.arrivalTon === "number")
   );
 }
 
