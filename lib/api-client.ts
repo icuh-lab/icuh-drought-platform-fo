@@ -17,10 +17,8 @@ import {
   type RawFreshFoodMonth
 } from "@/lib/fresh-food";
 import {
-  ONION_PAST_DAYS,
   buildOnionPriceSeries,
-  monthsInWindow,
-  shiftDate,
+  monthsMissingActual,
   vintageBoundaryDate,
   type OnionPricePoint,
   type OnionPriceSeries,
@@ -505,12 +503,17 @@ export async function fetchPredictionVintage(location: string, signal?: AbortSig
 }
 
 /**
- * 양파 메인 차트용 실측·예측 시계열.
+ * 양파 메인 차트용 실측·예측 시계열. 2022년부터의 전체 이력을 만든다.
  *
- * 예측은 이미 받아 둔 vintage 응답에서 꺼내고(정확도 패널과 같은 호출을 나눠 쓴다),
- * 실측만 daily-market 에서 달마다 가져와 붙인다. 창이 걸친 달만 부르므로 7 회 안쪽이다.
- * 한 달이 비어도 나머지로 그린다 — 실측선이 그 구간만 끊길 뿐이다.
+ * 예측은 이미 받아 둔 vintage 응답에서 꺼낸다(정확도 패널과 같은 호출을 나눠 쓴다).
+ * 실측도 대부분 거기 들어 있다 — vintage 의 actual 이 2022~2025 를 덮는다.
+ *
+ * 남는 구멍만 daily-market 으로 메운다. 전 구간을 월별로 부르면 56 회인데, 운영 서버는
+ * 동시 요청을 몰아치면 넘어간 전력이 있어(2026-08-28) 실측이 한 건도 없는 달만 고르고
+ * 그마저 4 개씩 끊어 던진다. 오늘 기준 13 개월이다.
  */
+const MARKET_FETCH_CONCURRENCY = 4;
+
 export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, signal?: AbortSignal) {
   const boundaryDate = vintageBoundaryDate(vintage.entries);
   if (boundaryDate === null) {
@@ -518,21 +521,28 @@ export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, 
   }
 
   const location = PRICE_FORECAST_CONFIG.onion.location;
-  const months = monthsInWindow(shiftDate(boundaryDate, -ONION_PAST_DAYS), boundaryDate);
-  const loaded = await Promise.all(
-    months.map(async (target) => {
-      const search = new URLSearchParams({ year: String(target.year), month: String(target.month), location });
-      try {
-        const data = await getOpenApiData<OpenAgriDailyMarketResponse>("/api/v1/agrimarket/daily-market", search, signal);
-        return data.monthlyTrend;
-      } catch (error) {
-        if (signal?.aborted) throw error;
-        return [];
-      }
-    })
-  );
+  const earliest = vintage.entries.map((entry) => entry.targetDate).sort()[0] ?? boundaryDate;
+  const months = monthsMissingActual(vintage.entries, earliest, boundaryDate);
+  const trends: RawMarketTrendPoint[] = [];
 
-  return buildOnionPriceSeries({ entries: vintage.entries, market: loaded.flat() });
+  for (let index = 0; index < months.length; index += MARKET_FETCH_CONCURRENCY) {
+    const batch = await Promise.all(
+      months.slice(index, index + MARKET_FETCH_CONCURRENCY).map(async (target) => {
+        const search = new URLSearchParams({ year: String(target.year), month: String(target.month), location });
+        try {
+          const data = await getOpenApiData<OpenAgriDailyMarketResponse>("/api/v1/agrimarket/daily-market", search, signal);
+          return data.monthlyTrend;
+        } catch (error) {
+          // 없는 달은 E404 다. 그 구간만 실측선이 끊길 뿐이라 나머지로 계속 그린다.
+          if (signal?.aborted) throw error;
+          return [];
+        }
+      })
+    );
+    trends.push(...batch.flat());
+  }
+
+  return buildOnionPriceSeries({ entries: vintage.entries, market: trends });
 }
 
 export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView | null {

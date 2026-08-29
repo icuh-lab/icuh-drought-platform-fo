@@ -1,10 +1,14 @@
 import { readFileSync } from "node:fs";
 import {
-  ONION_FUTURE_DAYS,
-  ONION_PAST_DAYS,
+  ONION_VIEW_FUTURE_DAYS,
+  ONION_VIEW_PAST_DAYS,
   buildOnionPriceSeries,
+  monthTicks,
   monthsInWindow,
+  monthsMissingActual,
   nearestHorizon,
+  nearestPoint,
+  priceAxisTicks,
   shiftDate,
   vintageBoundaryDate,
   type RawMarketTrendPoint,
@@ -162,16 +166,18 @@ const wideMarket: RawMarketTrendPoint[] = wideEntries
   .filter((entry) => entry.source === "reconstructed_forecast" && entry.horizonDays === 180)
   .map((entry) => ({ trendDate: entry.targetDate, marketVolume: 500, avgWholesalePrice: 1000 }));
 
-const defaulted = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket });
-if (defaulted === null) {
-  console.log("FAIL  기본값으로도 시리즈가 만들어져야 한다");
+// 창을 명시하면 그 경계가 그대로 적용된다.
+const windowed = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: ONION_VIEW_PAST_DAYS, futureDays: ONION_VIEW_FUTURE_DAYS });
+if (windowed === null) {
+  console.log("FAIL  창을 명시해도 시리즈가 만들어져야 한다");
   failed++;
 } else {
-  check("기본 창 시작 = 기준일 - ONION_PAST_DAYS", defaulted.points[0].date, shiftDate(B, -ONION_PAST_DAYS));
-  check("기본 창 끝 = 기준일 + ONION_FUTURE_DAYS", defaulted.points[defaulted.points.length - 1].date, shiftDate(B, ONION_FUTURE_DAYS));
-  check("기본 과거 창은 90일", ONION_PAST_DAYS, 90);
-  check("기본 미래 창은 365일", ONION_FUTURE_DAYS, 365);
+  check("명시한 창 시작", windowed.points[0].date, shiftDate(B, -ONION_VIEW_PAST_DAYS));
+  check("명시한 창 끝", windowed.points[windowed.points.length - 1].date, shiftDate(B, ONION_VIEW_FUTURE_DAYS));
 }
+// 초기 스크롤 위치를 정하는 값이라 화면이 바뀌면 같이 바뀐다. 스펙이 정한 값이라 고정해 둔다.
+check("초기 뷰 과거는 90일", ONION_VIEW_PAST_DAYS, 90);
+check("초기 뷰 미래는 365일", ONION_VIEW_FUTURE_DAYS, 365);
 
 // --- 리드타임이 바뀌는 지점 ---
 // 미래 창이 짧으면 미래선이 단일 리드타임이지만, 길어지면 중간에 더 긴 모델로 넘어간다.
@@ -186,6 +192,69 @@ check("겹침 계산은 짧은 리드타임 기준", longWindow?.horizonDays, 18
 
 // 창 안에 실제로 존재하는 리드타임만 센다 — 없는 전환을 그리면 안 된다.
 check("live 가 단일 리드타임이면 전환 없음", series?.horizonSwitchDate, null);
+
+// --- 실측은 두 곳에서 온다 ---
+// vintage 의 actual 이 2022~2025 를 덮는다. 그걸 안 쓰면 daily-market 을 56 개월치
+// 불러야 하는데, 운영 서버는 동시 요청을 몰아치면 넘어간 전력이 있다.
+const vintageActual: RawVintageEntry[] = [
+  { targetDate: "2024-03-04", horizonDays: 180, source: "reconstructed_forecast", modelType: "rf", modelTrainEndDate: B, pred: 900, actual: 880, arrivalTon: null },
+  { targetDate: "2024-03-05", horizonDays: 180, source: "reconstructed_forecast", modelType: "rf", modelTrainEndDate: B, pred: 910, actual: 905, arrivalTon: null },
+  { targetDate: "2024-03-06", horizonDays: 180, source: "reconstructed_forecast", modelType: "rf", modelTrainEndDate: B, pred: 920, actual: null, arrivalTon: null },
+  liveRow(180, "2026-08-26")
+];
+const merged = buildOnionPriceSeries({ entries: vintageActual, market: [] });
+check("vintage 의 actual 만으로도 실측선이 생긴다", merged?.points.filter((p) => p.actual !== null).length, 2);
+check("vintage actual 값이 그대로 실린다", merged?.points.find((p) => p.date === "2024-03-05")?.actual, 905);
+check("actual 이 null 인 행은 실측이 아니다", merged?.points.find((p) => p.date === "2024-03-06")?.actual, null);
+
+// 같은 날짜가 양쪽에 있으면 daily-market 이 이긴다 — 실측이 갱신되는 쪽이라서.
+const overridden = buildOnionPriceSeries({
+  entries: vintageActual,
+  market: [{ trendDate: "2024-03-06", marketVolume: 100, avgWholesalePrice: 931 }]
+});
+check("daily-market 이 vintage 공백을 메운다", overridden?.points.find((p) => p.date === "2024-03-06")?.actual, 931);
+
+// --- 창을 안 주면 데이터가 있는 만큼 전부 ---
+const full = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket });
+check("창 미지정이면 가장 이른 날부터", full?.points[0].date, shiftDate(B, -400));
+check("창 미지정이면 가장 늦은 날까지", full?.points[full.points.length - 1].date, shiftDate(B, 400));
+
+// --- daily-market 으로 채워야 할 달 ---
+// vintage 에 실측이 한 건도 없는 달만 고른다. 전 구간을 부르면 56 회가 된다.
+checkJson("실측이 없는 달만 고른다", monthsMissingActual(vintageActual, "2024-02-01", "2024-04-30"), [
+  { year: 2024, month: 2 },
+  { year: 2024, month: 4 }
+]);
+checkJson("기준일 이후 달은 안 부른다", monthsMissingActual(vintageActual, "2024-03-01", "2024-03-31"), []);
+checkJson("실측이 하나도 없으면 전부", monthsMissingActual([], "2026-01-01", "2026-03-31"), [
+  { year: 2026, month: 1 },
+  { year: 2026, month: 2 },
+  { year: 2026, month: 3 }
+]);
+
+// --- Y축 눈금: 0원부터 500원 단위 ---
+checkJson("0 부터 500 단위로 올림", priceAxisTicks(2116), [0, 500, 1000, 1500, 2000, 2500]);
+checkJson("눈금에 딱 맞으면 그 위를 더 만들지 않는다", priceAxisTicks(2000), [0, 500, 1000, 1500, 2000]);
+checkJson("값이 작아도 0 과 한 칸은 있다", priceAxisTicks(120), [0, 500]);
+checkJson("단위를 바꿀 수 있다", priceAxisTicks(2116, 1000), [0, 1000, 2000, 3000]);
+
+// --- X축 눈금: 월 단위 ---
+checkJson("범위 안 매월 1일", monthTicks("2026-01-15", "2026-04-02"), ["2026-02-01", "2026-03-01", "2026-04-01"]);
+checkJson("시작이 1일이면 그날도 포함", monthTicks("2026-02-01", "2026-03-05"), ["2026-02-01", "2026-03-01"]);
+checkJson("연 경계를 넘는다", monthTicks("2025-11-20", "2026-02-10"), ["2025-12-01", "2026-01-01", "2026-02-01"]);
+checkJson("한 달도 안 되면 빈 배열", monthTicks("2026-02-02", "2026-02-20"), []);
+
+// --- 툴팁 히트테스트 ---
+const hitPoints = [
+  { date: "2026-08-03", actual: 1165, predicted: 1100 },
+  { date: "2026-08-10", actual: 1186, predicted: 1120 },
+  { date: "2026-08-20", actual: null, predicted: 1130 }
+];
+check("정확히 일치하는 날", nearestPoint(hitPoints, "2026-08-10")?.date, "2026-08-10");
+check("가까운 날로 붙는다", nearestPoint(hitPoints, "2026-08-12")?.date, "2026-08-10");
+check("휴장일 건너 오른쪽이 더 가까우면 그쪽", nearestPoint(hitPoints, "2026-08-18")?.date, "2026-08-20");
+check("너무 멀면 null", nearestPoint(hitPoints, "2026-09-30"), null);
+check("빈 배열이면 null", nearestPoint([], "2026-08-10"), null);
 
 console.log(failed === 0 ? "\n모든 검증 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

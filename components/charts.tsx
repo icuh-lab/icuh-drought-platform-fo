@@ -1,4 +1,16 @@
-import { daysBetween, type OnionPricePoint } from "@/lib/onion-price";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  ONION_VIEW_FUTURE_DAYS,
+  ONION_VIEW_PAST_DAYS,
+  daysBetween,
+  monthTicks,
+  nearestPoint,
+  priceAxisTicks,
+  shiftDate,
+  type OnionPricePoint
+} from "@/lib/onion-price";
 
 type SparkProps = {
   data: number[];
@@ -194,12 +206,22 @@ export function VintageAccuracyChart({ actual, predicted, dates }: { actual: num
   );
 }
 
+// 하루당 가로 픽셀. 3px 이면 한 달이 약 91px 라 "22-01" 라벨이 안 겹치고,
+// 주 단위 등락도 눈에 보인다.
+const PX_PER_DAY = 3;
+const OVERLAY_HEIGHT = 300;
+const OVERLAY_PAD = { top: 16, bottom: 34 };
+const OVERLAY_PLOT_HEIGHT = OVERLAY_HEIGHT - OVERLAY_PAD.top - OVERLAY_PAD.bottom;
+const Y_GUTTER = 56;
+
 /**
- * 실측과 예측을 실제 날짜축 위에 겹쳐 그린다.
+ * 실측과 예측을 실제 날짜축 위에 겹쳐 그린다. 2022년부터의 전체 이력이라 가로로 스크롤한다.
  *
  * ForecastChart 는 실측 뒤에 예측을 이어 붙이는 모양이고 VintageAccuracyChart 는 과거만
  * 겹치는 모양이라, "기준일 앞은 겹치고 뒤는 예측만" 인 이 화면에는 둘 다 안 맞는다.
  * 인덱스가 아니라 날짜로 x 를 잡기 때문에 실측만·예측만 있는 날이 섞여도 선이 안 밀린다.
+ *
+ * Y축은 스크롤을 따라가지 않게 밖으로 뺐다 — 같이 흘러가면 가격 눈금을 잃는다.
  */
 export function OverlayForecastChart({
   points,
@@ -211,21 +233,35 @@ export function OverlayForecastChart({
   /** 미래선의 리드타임이 더 긴 모델로 넘어가는 날. 화면의 오차율이 못 미치는 구간의 시작. */
   horizonSwitchDate?: string | null;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ point: OnionPricePoint; x: number } | null>(null);
+
   const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
+  const start = points[0]?.date ?? boundaryDate;
+  const end = points[points.length - 1]?.date ?? boundaryDate;
+  const span = Math.max(daysBetween(start, end), 1);
+  const plotWidth = Math.max(span * PX_PER_DAY, 600);
+
+  // 열자마자 기준일 근처가 보이게 스크롤을 옮긴다. 초기 위치만 스펙의 90일/365일을 따른다.
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node === null) return;
+    const viewStart = daysBetween(start, shiftDate(boundaryDate, -ONION_VIEW_PAST_DAYS)) * PX_PER_DAY;
+    const viewWidth = (ONION_VIEW_PAST_DAYS + ONION_VIEW_FUTURE_DAYS) * PX_PER_DAY;
+    // 초기 창이 화면보다 넓으면 왼쪽 끝(=최근 과거)에 맞춘다.
+    node.scrollLeft = Math.max(0, viewStart - Math.max(0, (node.clientWidth - viewWidth) / 2));
+  }, [start, boundaryDate, plotWidth]);
+
   if (points.length === 0 || values.length === 0) return null;
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const start = points[0].date;
-  const end = points[points.length - 1].date;
-  const span = Math.max(daysBetween(start, end), 1);
-  const valueToY = (value: number) => PAD.top + PLOT_HEIGHT - ((value - min) / range) * PLOT_HEIGHT;
-  const xAt = (date: string) => PAD.left + (daysBetween(start, date) * PLOT_WIDTH) / span;
+  const ticks = priceAxisTicks(Math.max(...values));
+  const axisTop = ticks[ticks.length - 1];
+  const valueToY = (value: number) => OVERLAY_PAD.top + OVERLAY_PLOT_HEIGHT - (value / axisTop) * OVERLAY_PLOT_HEIGHT;
+  const xAt = (date: string) => daysBetween(start, date) * PX_PER_DAY;
   const xy = (value: number, date: string) => [xAt(date), valueToY(value)] as const;
 
   // 휴장일(주말·공휴일)은 이어 긋되, 한 주 넘게 실측이 비면 끊는다. 없는 구간을 직선으로
-  // 메우면 데이터가 있는 것처럼 보인다.
+  // 메우면 데이터가 있는 것처럼 보인다. 전체 이력에는 이런 공백이 열한 군데 있다.
   const actualSegments: (readonly [number, number])[][] = [];
   let segment: (readonly [number, number])[] = [];
   let previousDate: string | null = null;
@@ -242,44 +278,83 @@ export function OverlayForecastChart({
 
   const predictedPts = points.filter((point) => point.predicted !== null).map((point) => xy(point.predicted as number, point.date));
   const boundaryX = xAt(boundaryDate);
-  const yTicks = [min, (min + max) / 2, max];
   const switchX = horizonSwitchDate !== null && horizonSwitchDate > start && horizonSwitchDate <= end ? xAt(horizonSwitchDate) : null;
+  const months = monthTicks(start, end);
 
-  const xLabels: XLabel[] = [
-    { text: formatShortDate(start), x: PAD.left, align: "start" },
-    { text: formatShortDate(boundaryDate), x: boundaryX, align: "middle" },
-    { text: formatShortDate(end), x: CHART_WIDTH - PAD.right, align: "end" }
-  ];
-  if (switchX !== null) {
-    xLabels.splice(2, 0, { text: `${formatShortDate(horizonSwitchDate as string)} 리드타임 전환`, x: switchX, align: "middle" });
+  function handleMove(event: React.MouseEvent<HTMLDivElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - box.left + event.currentTarget.scrollLeft;
+    const found = nearestPoint(points, shiftDate(start, Math.round(x / PX_PER_DAY)));
+    setHover(found === null ? null : { point: found, x: xAt(found.date) });
   }
 
   return (
-    <ChartFrame
-      caption="X축: 날짜 · Y축: 가격(원/kg) · 첫 세로 점선까지가 실측"
-      yLabels={yTicks.map((value) => ({ text: formatAxisValue(value), y: valueToY(value) }))}
-      xLabels={xLabels}
-    >
-      <svg
-        className="forecast-chart"
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        preserveAspectRatio="none"
+    <div className="overlay-wrap">
+      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: 가격(원/kg) · 가로로 스크롤하면 2022년까지 갑니다</div>
+      <div className="overlay-chart">
+      <div className="overlay-axis" style={{ width: Y_GUTTER, height: OVERLAY_HEIGHT }} aria-hidden="true">
+        {ticks.map((value) => (
+          <span key={value} className="lbl-y" style={{ top: `${valueToY(value)}px`, left: Y_GUTTER - 8 }}>
+            {formatAxisValue(value)}
+          </span>
+        ))}
+      </div>
+      <div
+        className="overlay-scroll"
+        ref={scrollRef}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHover(null)}
         role="img"
-        aria-label={`실측치와 예측치 비교 시계열 그래프. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
+        aria-label={`실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
       >
-        {yTicks.map((value, index) => (
-          <line key={index} x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
-        ))}
-        <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
-        {actualSegments.map((pts, index) => (
-          <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        ))}
-        <line x1={boundaryX} x2={boundaryX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
-        {switchX !== null && (
-          <line x1={switchX} x2={switchX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line)" strokeDasharray="2 6" />
-        )}
-      </svg>
-    </ChartFrame>
+        <div className="overlay-canvas" style={{ width: plotWidth, height: OVERLAY_HEIGHT }}>
+          <svg width={plotWidth} height={OVERLAY_HEIGHT} viewBox={`0 0 ${plotWidth} ${OVERLAY_HEIGHT}`} aria-hidden="true">
+            {ticks.map((value) => (
+              <line key={value} x1={0} x2={plotWidth} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
+            ))}
+            {months.map((month) => (
+              <line
+                key={month}
+                x1={xAt(month)}
+                x2={xAt(month)}
+                y1={OVERLAY_PAD.top}
+                y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom}
+                stroke="var(--line)"
+                strokeDasharray={month.endsWith("-01-01") ? undefined : "2 6"}
+              />
+            ))}
+            <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="2" strokeDasharray="6 6" strokeLinecap="round" strokeLinejoin="round" />
+            {actualSegments.map((pts, index) => (
+              <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+            <line x1={boundaryX} x2={boundaryX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
+            {switchX !== null && (
+              <line x1={switchX} x2={switchX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="2 8" />
+            )}
+            {hover && <line x1={hover.x} x2={hover.x} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--ink-3)" />}
+          </svg>
+          <div className="overlay-months" aria-hidden="true">
+            {months.map((month) => (
+              <span key={month} className={month.endsWith("-01-01") ? "is-year" : ""} style={{ left: `${xAt(month)}px` }}>
+                {month.endsWith("-01-01") ? month.slice(0, 4) : month.slice(5, 7) + "월"}
+              </span>
+            ))}
+          </div>
+          <span className="overlay-mark" style={{ left: `${boundaryX}px` }} aria-hidden="true">실측 종료</span>
+          {switchX !== null && (
+            <span className="overlay-mark" style={{ left: `${switchX}px` }} aria-hidden="true">리드타임 전환</span>
+          )}
+          {hover && (
+            <div className={`overlay-tip ${hover.x > plotWidth - 160 ? "is-left" : ""}`} style={{ left: `${hover.x}px` }}>
+              <b>{hover.point.date}</b>
+              <span><i className="solid" />실측 {hover.point.actual === null ? "—" : `${formatAxisValue(hover.point.actual)}원`}</span>
+              <span><i className="dash" />예측 {hover.point.predicted === null ? "—" : `${formatAxisValue(hover.point.predicted)}원`}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      </div>
+    </div>
   );
 }
 
