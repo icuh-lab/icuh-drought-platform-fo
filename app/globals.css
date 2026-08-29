@@ -156,12 +156,14 @@ button { cursor: pointer; }
 
 /* 양파 전체 이력 차트 — 날짜축이 1,900일이라 가로로 스크롤한다.
    Y축은 스크롤 밖에 둔다. 같이 흘러가면 가격 눈금을 잃는다. */
-.overlay-wrap { display: grid; gap: 6px; padding-top: 10px; }
+.overlay-wrap { display: grid; gap: 6px; padding-top: 10px; min-width: 0; }
 .overlay-caption { padding: 0 16px; font-size: 10px; color: var(--ink-3); }
-.overlay-chart { display: flex; align-items: flex-start; padding: 0 16px; }
+.overlay-chart { display: flex; align-items: flex-start; padding: 0 16px; min-width: 0; }
 .overlay-axis { position: relative; flex: none; font-size: 10px; color: var(--ink-3); }
 .overlay-axis .lbl-y { position: absolute; transform: translate(-100%, -50%); white-space: nowrap; }
-.overlay-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; cursor: crosshair; }
+/* min-width:0 이 없으면 플렉스 아이템이 캔버스 폭(6,000px+) 아래로 안 줄어들어
+   스크롤바가 안 생기고 카드가 통째로 벌어진다. */
+.overlay-scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; cursor: crosshair; }
 .overlay-canvas { position: relative; }
 .overlay-canvas svg { display: block; }
 .overlay-months { position: absolute; left: 0; right: 0; bottom: 12px; height: 12px; font-size: 10px; color: var(--ink-3); }
