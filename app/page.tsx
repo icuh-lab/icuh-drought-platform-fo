@@ -310,10 +310,9 @@ function Dashboard() {
   const activeForecasts = useMemo(
     () => ({
       ...forecasts,
-      cabbage: priceApis.cabbage.forecast ?? forecasts.cabbage,
-      hydro: hydropowerApi.forecast ?? forecasts.hydro
+      cabbage: priceApis.cabbage.forecast ?? forecasts.cabbage
     }),
-    [priceApis, hydropowerApi]
+    [priceApis]
   );
   const activeKpis = useMemo(
     () => kpis.map((kpi) => {
@@ -356,6 +355,8 @@ function Dashboard() {
   };
   // 양파 메인 차트는 목업 폴백을 쓰지 않는다. 실측·예측을 지어내면 정확도까지 지어내는 셈이다.
   const onionForecast = onionApi.forecast;
+  // 수력발전량도 동일하게 목업 폴백을 쓰지 않는다 — activeForecasts.hydro 는 탭 라벨 전용으로만 쓴다.
+  const hydropowerForecast = hydropowerApi.forecast;
   const hydropowerStatus = apiStatusText(hydropowerApi);
   const vintageStatus = apiStatusText(vintageApi);
   const selectedVintageHorizon = vintageHorizon ?? vintageApi.view?.horizons[0]?.horizonDays ?? null;
@@ -801,12 +802,12 @@ function Dashboard() {
               </div>
               <div className="chart-hd">
                 <div>
-                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : fc.current}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : fc.unit}</u></div>
-                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : fc.sub}</div>
+                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : fc.current}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : fc.unit}</u></div>
+                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : forecast === "hydro" ? hydropowerForecast?.sub ?? "" : fc.sub}</div>
                 </div>
                 <div className="accuracy">
                   <span>예측 정확도</span>
-                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : fc.error}</b>
+                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc.error}</b>
                   <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : "최근 30일 평균 오차율"}</small>
                 </div>
               </div>
@@ -815,6 +816,8 @@ function Dashboard() {
               {forecast === "hydro" && hydropowerApi.status !== "success" && <div className="data-note">{hydropowerStatus}</div>}
               {forecast === "onion" ? (
                 onionForecast && <OverlayForecastChart points={onionForecast.points} boundaryDate={onionForecast.boundaryDate} horizonSwitchDate={onionForecast.horizonSwitchDate} />
+              ) : forecast === "hydro" ? (
+                hydropowerForecast && <ForecastChart actual={hydropowerForecast.actual} predicted={hydropowerForecast.predicted} band={hydropowerForecast.band} unit={hydropowerForecast.unit} periodLabel="개월" />
               ) : (
                 <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               )}
@@ -825,7 +828,8 @@ function Dashboard() {
                 {forecast !== "onion" && <span><i className="band" />신뢰구간 95%</span>}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
-              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
+              {forecast === "hydro" && hydropowerForecast && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
+              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 
             {forecast === "onion" && (

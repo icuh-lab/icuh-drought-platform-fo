@@ -111,7 +111,7 @@ function ChartFrame({
   );
 }
 
-export function ForecastChart({ actual, predicted, band, unit = "" }: { actual: number[]; predicted: number[]; band: number[]; unit?: string }) {
+export function ForecastChart({ actual, predicted, band, unit = "", periodLabel = "일" }: { actual: number[]; predicted: number[]; band: number[]; unit?: string; periodLabel?: string }) {
   const all = [...actual, ...predicted.map((value, index) => value + band[index]), ...predicted.map((value, index) => value - band[index])];
   const min = Math.min(...all);
   const max = Math.max(...all);
@@ -128,10 +128,10 @@ export function ForecastChart({ actual, predicted, band, unit = "" }: { actual: 
 
   const xLabels: XLabel[] = [];
   if (actualPts.length > 0) {
-    xLabels.push({ text: `최근 ${actual.length}일 실측`, x: PAD.left, align: "start" });
+    xLabels.push({ text: `최근 ${actual.length}${periodLabel} 실측`, x: PAD.left, align: "start" });
     xLabels.push({ text: "오늘", x: todayX, align: "middle" });
     if (predicted.length > 0) {
-      xLabels.push({ text: `향후 ${predicted.length}일 예측`, x: CHART_WIDTH - PAD.right, align: "end" });
+      xLabels.push({ text: `향후 ${predicted.length}${periodLabel} 예측`, x: CHART_WIDTH - PAD.right, align: "end" });
     }
   }
 
