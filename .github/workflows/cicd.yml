@@ -34,6 +34,7 @@ jobs:
       - run: npx tsx scripts/archive-fallback.test.mts
       - run: npx tsx scripts/fire-region.test.mts
       - run: npx tsx scripts/fresh-food.test.mts
+      - run: npx tsx scripts/onion-price.test.mts
 
   build-and-push:
     name: Build and push image

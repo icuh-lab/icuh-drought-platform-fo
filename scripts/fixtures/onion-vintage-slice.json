@@ -1,0 +1,667 @@
+{
+  "location": "합천",
+  "item": "양파",
+  "variety": "1키로/상",
+  "entries": [
+    {
+      "targetDate": "2026-08-01",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1180.4,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-01",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.56,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-02",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1179.1,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-02",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.03,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-03",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.47,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-03",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.28,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-04",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1165.06,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-04",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.32,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-05",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1167.88,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-05",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1179.9,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-06",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1180.12,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-06",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1189.83,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-07",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1189.89,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-07",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1187.7,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-08",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1187.19,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-08",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1173.48,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-09",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1172.45,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-09",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1160.5,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-10",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1163.23,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-10",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1157.71,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-11",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1141.96,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-11",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1143.34,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-12",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1134.09,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-12",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1135.46,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-13",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1130.13,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-13",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1132.69,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-14",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1125.05,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-14",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1127.15,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-15",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1121.75,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-15",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1126.15,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-16",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1120.12,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-16",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1114.05,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-17",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1113.77,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-17",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1113.98,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-18",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1114.11,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-18",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1114.14,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-19",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1114.16,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-19",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1115.73,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-20",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1125.07,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-20",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1127.17,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-21",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1132.06,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-21",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1127.82,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-22",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1138.08,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-22",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1138.0,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-23",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1131.31,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-23",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1138.0,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-24",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1126.89,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-24",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1130.27,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-25",
+      "horizonDays": 180,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1125.75,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-25",
+      "horizonDays": 365,
+      "source": "reconstructed_forecast",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1129.6,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-26",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1128.19,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-27",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1127.39,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-28",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1128.19,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-29",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1131.07,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-30",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1131.6,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-08-31",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1132.13,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-01",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1132.22,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-02",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1131.25,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-03",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1126.91,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-04",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1125.89,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-05",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1125.26,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-06",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1129.6,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-07",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1129.05,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-08",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1132.79,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-09",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1127.56,
+      "actual": null,
+      "arrivalTon": null
+    },
+    {
+      "targetDate": "2026-09-10",
+      "horizonDays": 180,
+      "source": "live",
+      "modelType": "random_forest",
+      "modelTrainEndDate": "2026-08-25",
+      "pred": 1115.18,
+      "actual": null,
+      "arrivalTon": null
+    }
+  ]
+}

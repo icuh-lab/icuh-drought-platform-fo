@@ -1,3 +1,5 @@
+import { daysBetween, type OnionPricePoint } from "@/lib/onion-price";
+
 type SparkProps = {
   data: number[];
   color?: string;
@@ -157,6 +159,65 @@ export function VintageAccuracyChart({ actual, predicted, dates }: { actual: num
       <polyline points={toLine(actualPts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
       <text x={padLeft} y={12} fontSize="10" textAnchor="start" fill="var(--ink-3)">X축: 대상 날짜 · Y축: 가격(원/kg)</text>
+    </svg>
+  );
+}
+
+/**
+ * 실측과 예측을 실제 날짜축 위에 겹쳐 그린다.
+ *
+ * ForecastChart 는 실측 뒤에 예측을 이어 붙이는 모양이고 VintageAccuracyChart 는 과거만
+ * 겹치는 모양이라, "기준일 앞은 겹치고 뒤는 예측만" 인 이 화면에는 둘 다 안 맞는다.
+ * 인덱스가 아니라 날짜로 x 를 잡기 때문에 실측만·예측만 있는 날이 섞여도 선이 안 밀린다.
+ */
+export function OverlayForecastChart({ points, boundaryDate }: { points: OnionPricePoint[]; boundaryDate: string }) {
+  const width = 900;
+  const height = 260;
+  const padding = 28;
+  const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
+  if (points.length === 0 || values.length === 0) return null;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const start = points[0].date;
+  const span = Math.max(daysBetween(start, points[points.length - 1].date), 1);
+  const xy = (value: number, date: string) => {
+    const x = padding + (daysBetween(start, date) * (width - padding * 2)) / span;
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return [x, y] as const;
+  };
+  const toLine = (pts: readonly (readonly [number, number])[]) => pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+
+  // 휴장일(주말·공휴일)은 이어 긋되, 한 주 넘게 실측이 비면 끊는다. 없는 구간을 직선으로
+  // 메우면 데이터가 있는 것처럼 보인다.
+  const actualSegments: (readonly [number, number])[][] = [];
+  let segment: (readonly [number, number])[] = [];
+  let previousDate: string | null = null;
+  for (const point of points) {
+    if (point.actual === null) continue;
+    if (previousDate !== null && daysBetween(previousDate, point.date) > 7) {
+      actualSegments.push(segment);
+      segment = [];
+    }
+    segment.push(xy(point.actual, point.date));
+    previousDate = point.date;
+  }
+  if (segment.length > 0) actualSegments.push(segment);
+
+  const predictedPts = points.filter((point) => point.predicted !== null).map((point) => xy(point.predicted as number, point.date));
+  const boundaryX = padding + (daysBetween(start, boundaryDate) * (width - padding * 2)) / span;
+
+  return (
+    <svg className="forecast-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label={`실측치와 예측치 비교 시계열 그래프. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}>
+      {[0.25, 0.5, 0.75].map((ratio) => (
+        <line key={ratio} x1={padding} x2={width - padding} y1={padding + (height - padding * 2) * ratio} y2={padding + (height - padding * 2) * ratio} stroke="var(--line)" />
+      ))}
+      <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
+      {actualSegments.map((pts, index) => (
+        <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      ))}
+      <line x1={boundaryX} x2={boundaryX} y1={padding} y2={height - padding} stroke="var(--line-2)" strokeDasharray="4 5" />
     </svg>
   );
 }

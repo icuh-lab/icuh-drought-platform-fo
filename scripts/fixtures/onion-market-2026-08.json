@@ -1,0 +1,137 @@
+{
+  "location": "합천",
+  "item": "양파",
+  "variety": "1키로/상",
+  "monthlyTrend": [
+    {
+      "trendDate": "2026-08-03",
+      "marketVolume": 710,
+      "avgWholesalePrice": 1165
+    },
+    {
+      "trendDate": "2026-08-04",
+      "marketVolume": null,
+      "avgWholesalePrice": 1136
+    },
+    {
+      "trendDate": "2026-08-05",
+      "marketVolume": 566,
+      "avgWholesalePrice": 1136
+    },
+    {
+      "trendDate": "2026-08-06",
+      "marketVolume": 457,
+      "avgWholesalePrice": 1223
+    },
+    {
+      "trendDate": "2026-08-07",
+      "marketVolume": 519,
+      "avgWholesalePrice": 1263
+    },
+    {
+      "trendDate": "2026-08-08",
+      "marketVolume": 674,
+      "avgWholesalePrice": 1198
+    },
+    {
+      "trendDate": "2026-08-10",
+      "marketVolume": 733,
+      "avgWholesalePrice": 1186
+    },
+    {
+      "trendDate": "2026-08-11",
+      "marketVolume": 684,
+      "avgWholesalePrice": 1187
+    },
+    {
+      "trendDate": "2026-08-12",
+      "marketVolume": 698,
+      "avgWholesalePrice": 1154
+    },
+    {
+      "trendDate": "2026-08-13",
+      "marketVolume": 767,
+      "avgWholesalePrice": 1112
+    },
+    {
+      "trendDate": "2026-08-14",
+      "marketVolume": 664,
+      "avgWholesalePrice": 1121
+    },
+    {
+      "trendDate": "2026-08-15",
+      "marketVolume": 618,
+      "avgWholesalePrice": 1126
+    },
+    {
+      "trendDate": "2026-08-17",
+      "marketVolume": 692,
+      "avgWholesalePrice": 1106
+    },
+    {
+      "trendDate": "2026-08-18",
+      "marketVolume": 653,
+      "avgWholesalePrice": 1076
+    },
+    {
+      "trendDate": "2026-08-19",
+      "marketVolume": 614,
+      "avgWholesalePrice": 1081
+    },
+    {
+      "trendDate": "2026-08-20",
+      "marketVolume": 516,
+      "avgWholesalePrice": 1136
+    },
+    {
+      "trendDate": "2026-08-21",
+      "marketVolume": 522,
+      "avgWholesalePrice": 1164
+    },
+    {
+      "trendDate": "2026-08-22",
+      "marketVolume": 558,
+      "avgWholesalePrice": 1183
+    },
+    {
+      "trendDate": "2026-08-24",
+      "marketVolume": 772,
+      "avgWholesalePrice": 1130
+    },
+    {
+      "trendDate": "2026-08-25",
+      "marketVolume": null,
+      "avgWholesalePrice": 1122
+    },
+    {
+      "trendDate": "2026-08-26",
+      "marketVolume": null,
+      "avgWholesalePrice": 1128
+    },
+    {
+      "trendDate": "2026-08-27",
+      "marketVolume": null,
+      "avgWholesalePrice": 1127
+    },
+    {
+      "trendDate": "2026-08-28",
+      "marketVolume": null,
+      "avgWholesalePrice": 1128
+    },
+    {
+      "trendDate": "2026-08-29",
+      "marketVolume": null,
+      "avgWholesalePrice": 1131
+    },
+    {
+      "trendDate": "2026-08-30",
+      "marketVolume": null,
+      "avgWholesalePrice": 1132
+    },
+    {
+      "trendDate": "2026-08-31",
+      "marketVolume": null,
+      "avgWholesalePrice": 1132
+    }
+  ]
+}
