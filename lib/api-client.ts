@@ -16,6 +16,16 @@ import {
   type FreshFoodProvince,
   type RawFreshFoodMonth
 } from "@/lib/fresh-food";
+import {
+  ONION_PAST_DAYS,
+  buildOnionPriceSeries,
+  monthsInWindow,
+  shiftDate,
+  vintageBoundaryDate,
+  type OnionPricePoint,
+  type OnionPriceSeries,
+  type RawMarketTrendPoint
+} from "@/lib/onion-price";
 import type {
   ArticleSearchParams, ArticlePage, ArticleDetail, ArticleCategories, ArticleListItem,
 } from "./archive-types";
@@ -115,6 +125,26 @@ export type VintageAccuracyView = {
   horizons: VintageHorizonAccuracy[];
   /** 리드타임(horizonDays)별로, 실측이 확정된 구간만 날짜순으로 정렬한 실측·예측 쌍. 차트에 그대로 씀. */
   seriesByHorizon: Record<number, { dates: string[]; actual: number[]; predicted: number[] }>;
+  latestActualDate: string | null;
+};
+
+/**
+ * 양파 메인 차트는 실측 뒤에 예측을 이어 붙이는 모양이 아니라 같은 날짜축 위에 겹치는
+ * 모양이라 배열 두 개로는 표현이 안 된다. 날짜마다 실측·예측을 함께 들고 다닌다.
+ */
+export type OnionForecastView = {
+  label: string;
+  current: string;
+  unit: string;
+  error: string;
+  errorNote: string;
+  source: string;
+  sub: string;
+  note: string;
+  points: OnionPricePoint[];
+  boundaryDate: string;
+  /** 미래선의 리드타임이 바뀌는 날. 오차율이 설명하지 못하는 구간의 시작이다. */
+  horizonSwitchDate: string | null;
   latestActualDate: string | null;
 };
 
@@ -350,6 +380,17 @@ type OpenAgriDailyPriceResponse = {
   }[];
 };
 
+/**
+ * 실측 도매가 계열. `daily-price` 의 예측값과는 다른 계열이다.
+ * 기준일 이후 행은 실측이 아니라 예측으로 채워져 있어 그대로 쓰면 안 된다 — onion-price 가 자른다.
+ */
+type OpenAgriDailyMarketResponse = {
+  location: string;
+  item: string;
+  variety: string;
+  monthlyTrend: RawMarketTrendPoint[];
+};
+
 type OpenHydropowerGenerationResponse = {
   damName: string;
   damCode: string;
@@ -461,6 +502,100 @@ export function priceForecastLocation(key: PriceForecastKey): string {
 export async function fetchPredictionVintage(location: string, signal?: AbortSignal) {
   const search = new URLSearchParams({ location });
   return getOpenApiData<PredictionVintageResponse>("/api/v1/agrimarket/prediction-vintage", search, signal);
+}
+
+/**
+ * 양파 메인 차트용 실측·예측 시계열.
+ *
+ * 예측은 이미 받아 둔 vintage 응답에서 꺼내고(정확도 패널과 같은 호출을 나눠 쓴다),
+ * 실측만 daily-market 에서 달마다 가져와 붙인다. 창이 걸친 달만 부르므로 7 회 안쪽이다.
+ * 한 달이 비어도 나머지로 그린다 — 실측선이 그 구간만 끊길 뿐이다.
+ */
+export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, signal?: AbortSignal) {
+  const boundaryDate = vintageBoundaryDate(vintage.entries);
+  if (boundaryDate === null) {
+    return null;
+  }
+
+  const location = PRICE_FORECAST_CONFIG.onion.location;
+  const months = monthsInWindow(shiftDate(boundaryDate, -ONION_PAST_DAYS), boundaryDate);
+  const loaded = await Promise.all(
+    months.map(async (target) => {
+      const search = new URLSearchParams({ year: String(target.year), month: String(target.month), location });
+      try {
+        const data = await getOpenApiData<OpenAgriDailyMarketResponse>("/api/v1/agrimarket/daily-market", search, signal);
+        return data.monthlyTrend;
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        return [];
+      }
+    })
+  );
+
+  return buildOnionPriceSeries({ entries: vintage.entries, market: loaded.flat() });
+}
+
+export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView | null {
+  if (series.points.length === 0) {
+    return null;
+  }
+
+  const config = PRICE_FORECAST_CONFIG.onion;
+  const dated = series.latestActualDate ?? series.boundaryDate;
+  const change = series.delta === null ? "" : ` · 전일대비 ${formatSignedPercent(series.delta)}`;
+
+  return {
+    label: config.label,
+    current: series.current === null ? "–" : formatWholeNumber(series.current),
+    unit: config.displayUnit,
+    // errorRate 는 이미 % 라 formatErrorRate 의 소수/백분율 추정을 태우지 않는다.
+    error: series.errorRate === null ? "N/A" : `${series.errorRate.toFixed(1)}%`,
+    errorNote: series.errorRate === null
+      ? "실측과 겹치는 구간 없음"
+      : `리드타임 ${series.horizonDays}일 기준 · 겹침 ${series.overlapDays}일 평균`,
+    source: "open-api /api/v1/agrimarket/daily-market · prediction-vintage (합천)",
+    sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
+    // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
+    // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
+    note: [
+      `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만`,
+      `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측`,
+      // 미래선이 중간에 더 긴 리드타임 모델로 넘어가면 위 오차율은 그 앞 구간만 설명한다.
+      series.horizonSwitchDate === null
+        ? null
+        : `${series.horizonSwitchDate}부터는 리드타임 ${series.horizonSwitchTo}일 모델이라 위 오차율 범위 밖`
+    ].filter(Boolean).join(" · "),
+    points: series.points,
+    boundaryDate: series.boundaryDate,
+    horizonSwitchDate: series.horizonSwitchDate,
+    latestActualDate: series.latestActualDate
+  };
+}
+
+export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
+  if (series.current === null) {
+    return null;
+  }
+
+  const config = PRICE_FORECAST_CONFIG.onion;
+  const spark = series.points
+    .filter((point) => point.actual !== null)
+    .slice(-7)
+    .map((point) => point.actual as number);
+  const delta = series.delta ?? 0;
+
+  return {
+    tag: "예측 · 농산물",
+    region: config.regionName,
+    name: "양파 도매가격",
+    value: formatWholeNumber(series.current),
+    unit: config.kpiUnit,
+    delta: formatSignedPercent(delta),
+    direction: delta >= 0 ? "up" : "down",
+    error: series.errorRate === null ? "N/A" : `${series.errorRate.toFixed(1)}%`,
+    spark,
+    target: "onion"
+  };
 }
 
 export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
