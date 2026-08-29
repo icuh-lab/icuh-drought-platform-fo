@@ -400,6 +400,19 @@ type OpenHydropowerGenerationResponse = {
   }[];
 };
 
+type OpenHydropowerPredictionResponse = {
+  damName: string;
+  damCode: string;
+  predictedPowerGenerationDto: {
+    predictedPowerGenerationLowerBound: number | null;
+    predictedPowerGenerationUpperBound: number | null;
+  };
+  predictedWaterStorageDto: {
+    predictedWaterStorageLowerBound: number | null;
+    predictedWaterStorageUpperBound: number | null;
+  };
+};
+
 type OpenWildFireRegion = {
   regionCode: string;
   riskLevel: string;
@@ -608,6 +621,13 @@ export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
   };
 }
 
+/** "YYYY-MM-DD" 형태의 baseDate 에서 offset 개월 뒤(음수면 앞) 연/월을 구한다. 순수 함수. */
+export function shiftMonth(baseDate: string, offset: number) {
+  const [year, month] = baseDate.split("-").map(Number);
+  const total = year * 12 + (month - 1) + offset;
+  return { year: Math.floor(total / 12), month: (total % 12) + 1 };
+}
+
 export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
   // open-api 가 찾는 댐 이름은 "합천" 이다. "합천댐" 으로 물으면 E404 를 준다.
   // 화면 문구의 "합천댐" 은 사람이 읽는 이름이라 그대로 두고, 질의 값만 맞춘다.
@@ -618,22 +638,56 @@ export async function fetchHydropowerForecast({ signal, year, month }: FetchHydr
     damName
   });
   const data = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", search, signal);
-  const points = data.monthlyGenerationDto
+  const observedPoints = data.monthlyGenerationDto
     .filter((point) => typeof point.actualMwh === "number" || typeof point.plannedMwh === "number")
     .map((point) => ({
       baseDate: `${point.year}-${point.month.padStart(2, "0")}-01`,
       value: (point.actualMwh ?? point.plannedMwh) as number,
       dataType: "observed" as const,
-      lowerBound: point.plannedMwh ?? null,
-      upperBound: point.plannedMwh ?? null
+      lowerBound: null,
+      upperBound: null
     }));
+
+  // /monthly-predict 는 (year, month, damName) 한 조합만 조회하는 단일 응답 엔드포인트라,
+  // 여러 달을 보려면 달마다 호출해야 한다. 마지막 실측 달 다음 3개월을 시도한다 — 모델이
+  // 실제로 그 범위만큼 채워두므로(운영 RDS 확인) 3이 근거 있는 상한이다. 아직 안 채워진
+  // 미래 달은 DATA_NOT_FOUND(404)로 오므로 개별적으로 건너뛴다 — 한 달이 없다고 나머지
+  // 달까지 안 보여주면 안 된다.
+  const lastObserved = observedPoints.at(-1);
+  const predictedPoints = lastObserved
+    ? (
+        await Promise.all(
+          Array.from({ length: 3 }, (_, index) => index + 1).map(async (offset) => {
+            const target = shiftMonth(lastObserved.baseDate, offset);
+            const predictSearch = new URLSearchParams({ year: String(target.year), month: String(target.month), damName });
+            try {
+              const prediction = await getOpenApiData<OpenHydropowerPredictionResponse>("/api/v1/hydropower/monthly-predict", predictSearch, signal);
+              const { predictedPowerGenerationLowerBound: lower, predictedPowerGenerationUpperBound: upper } = prediction.predictedPowerGenerationDto;
+              if (lower === null || upper === null) return null;
+              return {
+                baseDate: `${target.year}-${String(target.month).padStart(2, "0")}-01`,
+                // 백엔드가 중앙값(p50)을 별도로 안 줘서 상하한의 중점으로 근사한다 — 실제
+                // 예측 점값이 아니라 근사치라는 걸 화면 카피에 반드시 밝혀야 한다.
+                value: (lower + upper) / 2,
+                dataType: "predicted" as const,
+                lowerBound: lower,
+                upperBound: upper
+              };
+            } catch (error) {
+              if (signal?.aborted) throw error;
+              return null;
+            }
+          })
+        )
+      ).filter((point): point is NonNullable<typeof point> => point !== null)
+    : [];
 
   return {
     plant: "hapcheon-dam",
     regionCode: "48890",
     unit: "MWh/month",
     errorRate: null,
-    points
+    points: [...observedPoints, ...predictedPoints]
   } satisfies HydropowerForecastResponse;
 }
 
@@ -937,7 +991,8 @@ export function toHydropowerKpiView(response: HydropowerForecastResponse): Hydro
 }
 
 export function latestHydropowerForecastDate(response: HydropowerForecastResponse) {
-  return response.points.at(-1)?.baseDate ?? null;
+  const observed = response.points.filter((point) => point.dataType === "observed");
+  return observed.at(-1)?.baseDate ?? null;
 }
 
 export function toDroughtReportViews(response: DroughtReportListResponse): DroughtReportView[] {
