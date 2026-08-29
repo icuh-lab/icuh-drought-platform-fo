@@ -143,6 +143,8 @@ export type OnionForecastView = {
   note: string;
   points: OnionPricePoint[];
   boundaryDate: string;
+  /** 미래선의 리드타임이 바뀌는 날. 오차율이 설명하지 못하는 구간의 시작이다. */
+  horizonSwitchDate: string | null;
   latestActualDate: string | null;
 };
 
@@ -548,14 +550,24 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
     unit: config.displayUnit,
     // errorRate 는 이미 % 라 formatErrorRate 의 소수/백분율 추정을 태우지 않는다.
     error: series.errorRate === null ? "N/A" : `${series.errorRate.toFixed(1)}%`,
-    errorNote: series.errorRate === null ? "실측과 겹치는 구간 없음" : `최근 ${series.overlapDays}일 겹침 구간 평균 오차율`,
+    errorNote: series.errorRate === null
+      ? "실측과 겹치는 구간 없음"
+      : `리드타임 ${series.horizonDays}일 기준 · 겹침 ${series.overlapDays}일 평균`,
     source: "open-api /api/v1/agrimarket/daily-market · prediction-vintage (합천)",
     sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
     // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
     // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
-    note: `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만 · 과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측${series.horizonDays === null ? "" : ` · 리드타임 ${series.horizonDays}일`}`,
+    note: [
+      `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만`,
+      `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측`,
+      // 미래선이 중간에 더 긴 리드타임 모델로 넘어가면 위 오차율은 그 앞 구간만 설명한다.
+      series.horizonSwitchDate === null
+        ? null
+        : `${series.horizonSwitchDate}부터는 리드타임 ${series.horizonSwitchTo}일 모델이라 위 오차율 범위 밖`
+    ].filter(Boolean).join(" · "),
     points: series.points,
     boundaryDate: series.boundaryDate,
+    horizonSwitchDate: series.horizonSwitchDate,
     latestActualDate: series.latestActualDate
   };
 }

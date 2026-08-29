@@ -46,14 +46,27 @@ export type OnionPriceSeries = {
   latestActualDate: string | null;
   /** 직전 실측 대비 변동률(%) */
   delta: number | null;
-  /** 겹침 구간의 MAPE(%) */
+  /** 겹침 구간의 MAPE(%). horizonDays 리드타임으로만 계산한 값이다. */
   errorRate: number | null;
   overlapDays: number;
+  /**
+   * 미래선의 리드타임이 더 긴 모델로 넘어가는 첫 날. 단일 리드타임이면 null.
+   *
+   * errorRate 는 horizonDays 하나로 계산한 값이라 이 날 이후 구간은 설명하지 못한다.
+   * 화면에 표시해야 그 숫자가 선 전체를 설명하는 것처럼 읽히지 않는다.
+   */
+  horizonSwitchDate: string | null;
+  /** 전환 후의 리드타임. horizonSwitchDate 가 null 이면 null. */
+  horizonSwitchTo: number | null;
 };
 
-/** 화면에 그리는 창. 기준일 앞뒤로 반년씩. */
-export const ONION_PAST_DAYS = 183;
-export const ONION_FUTURE_DAYS = 183;
+/**
+ * 화면에 그리는 창. 과거는 최근 90일(실측 참고), 미래는 forecast 산출 범위 전체(365일).
+ * onion-wholesale-price-forecast 스펙(2026-08-29 재정의)이 정한 값 — 임의로 늘리거나
+ * 줄이지 않는다.
+ */
+export const ONION_PAST_DAYS = 90;
+export const ONION_FUTURE_DAYS = 365;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -165,6 +178,12 @@ export function buildOnionPriceSeries({
   const previous = previousActualDate === null ? null : actual.get(previousActualDate) ?? null;
   const delta = current === null || previous === null || previous === 0 ? null : ((current - previous) / previous) * 100;
 
+  const switchRow = entries
+    .filter((entry) => entry.source === "live" && entry.targetDate > boundaryDate && entry.targetDate <= end && entry.horizonDays !== horizonDays)
+    .sort((left, right) => left.targetDate.localeCompare(right.targetDate))[0];
+  const horizonSwitchDate = switchRow?.targetDate ?? null;
+  const horizonSwitchTo = switchRow?.horizonDays ?? null;
+
   const overlap = dates.filter((date) => actual.has(date) && predicted.has(date));
   const errorRate =
     overlap.length === 0
@@ -181,7 +200,9 @@ export function buildOnionPriceSeries({
     latestActualDate,
     delta,
     errorRate,
-    overlapDays: overlap.length
+    overlapDays: overlap.length,
+    horizonSwitchDate,
+    horizonSwitchTo
   };
 }
 

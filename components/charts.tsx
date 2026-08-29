@@ -201,7 +201,16 @@ export function VintageAccuracyChart({ actual, predicted, dates }: { actual: num
  * 겹치는 모양이라, "기준일 앞은 겹치고 뒤는 예측만" 인 이 화면에는 둘 다 안 맞는다.
  * 인덱스가 아니라 날짜로 x 를 잡기 때문에 실측만·예측만 있는 날이 섞여도 선이 안 밀린다.
  */
-export function OverlayForecastChart({ points, boundaryDate }: { points: OnionPricePoint[]; boundaryDate: string }) {
+export function OverlayForecastChart({
+  points,
+  boundaryDate,
+  horizonSwitchDate = null
+}: {
+  points: OnionPricePoint[];
+  boundaryDate: string;
+  /** 미래선의 리드타임이 더 긴 모델로 넘어가는 날. 화면의 오차율이 못 미치는 구간의 시작. */
+  horizonSwitchDate?: string | null;
+}) {
   const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
   if (points.length === 0 || values.length === 0) return null;
 
@@ -234,16 +243,22 @@ export function OverlayForecastChart({ points, boundaryDate }: { points: OnionPr
   const predictedPts = points.filter((point) => point.predicted !== null).map((point) => xy(point.predicted as number, point.date));
   const boundaryX = xAt(boundaryDate);
   const yTicks = [min, (min + max) / 2, max];
+  const switchX = horizonSwitchDate !== null && horizonSwitchDate > start && horizonSwitchDate <= end ? xAt(horizonSwitchDate) : null;
+
+  const xLabels: XLabel[] = [
+    { text: formatShortDate(start), x: PAD.left, align: "start" },
+    { text: formatShortDate(boundaryDate), x: boundaryX, align: "middle" },
+    { text: formatShortDate(end), x: CHART_WIDTH - PAD.right, align: "end" }
+  ];
+  if (switchX !== null) {
+    xLabels.splice(2, 0, { text: `${formatShortDate(horizonSwitchDate as string)} 리드타임 전환`, x: switchX, align: "middle" });
+  }
 
   return (
     <ChartFrame
-      caption="X축: 날짜 · Y축: 가격(원/kg) · 세로 점선까지가 실측"
+      caption="X축: 날짜 · Y축: 가격(원/kg) · 첫 세로 점선까지가 실측"
       yLabels={yTicks.map((value) => ({ text: formatAxisValue(value), y: valueToY(value) }))}
-      xLabels={[
-        { text: formatShortDate(start), x: PAD.left, align: "start" },
-        { text: formatShortDate(boundaryDate), x: boundaryX, align: "middle" },
-        { text: formatShortDate(end), x: CHART_WIDTH - PAD.right, align: "end" }
-      ]}
+      xLabels={xLabels}
     >
       <svg
         className="forecast-chart"
@@ -260,6 +275,9 @@ export function OverlayForecastChart({ points, boundaryDate }: { points: OnionPr
           <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         ))}
         <line x1={boundaryX} x2={boundaryX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
+        {switchX !== null && (
+          <line x1={switchX} x2={switchX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line)" strokeDasharray="2 6" />
+        )}
       </svg>
     </ChartFrame>
   );

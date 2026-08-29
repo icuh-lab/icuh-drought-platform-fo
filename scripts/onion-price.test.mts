@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import {
+  ONION_FUTURE_DAYS,
+  ONION_PAST_DAYS,
   buildOnionPriceSeries,
   monthsInWindow,
   nearestHorizon,
@@ -135,6 +137,55 @@ const nullPrices: RawMarketTrendPoint[] = [
 const sparse = buildOnionPriceSeries({ entries: vintage.entries, market: nullPrices, pastDays: 24, futureDays: 16 });
 check("가격이 null 인 행은 버린다", sparse?.points.filter((point) => point.actual !== null).length, 1);
 check("물량이 null 이어도 가격이 있으면 실측", sparse?.points.find((point) => point.date === "2026-08-21")?.actual, 1164);
+
+// --- 기본 창이 실제로 창 경계까지 흘러가는가 ---
+// 상수가 리터럴과 같은지 묻는 대신(그건 결함을 못 잡는다) 기본값을 안 넘겼을 때
+// 실제로 만들어지는 창을 본다. 기본 파라미터가 빠지거나 상수 배선이 끊기면 여기서 걸린다.
+const B = "2026-08-25";
+function liveRow(horizonDays: number, targetDate: string): RawVintageEntry {
+  return { targetDate, horizonDays, source: "live", modelType: "random_forest", modelTrainEndDate: B, pred: 1000, actual: null, arrivalTon: null };
+}
+function reconstructedRow(horizonDays: number, targetDate: string): RawVintageEntry {
+  return { ...liveRow(horizonDays, targetDate), source: "reconstructed_forecast" };
+}
+const wideEntries: RawVintageEntry[] = [];
+for (let offset = -400; offset <= 400; offset++) {
+  const date = shiftDate(B, offset);
+  if (offset <= 0) {
+    wideEntries.push(reconstructedRow(180, date), reconstructedRow(365, date));
+  } else {
+    // 백엔드는 T+205 까지 짧은 모델을, 그 뒤를 긴 모델로 이어 붙인다.
+    wideEntries.push(liveRow(offset <= 205 ? 180 : 365, date));
+  }
+}
+const wideMarket: RawMarketTrendPoint[] = wideEntries
+  .filter((entry) => entry.source === "reconstructed_forecast" && entry.horizonDays === 180)
+  .map((entry) => ({ trendDate: entry.targetDate, marketVolume: 500, avgWholesalePrice: 1000 }));
+
+const defaulted = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket });
+if (defaulted === null) {
+  console.log("FAIL  기본값으로도 시리즈가 만들어져야 한다");
+  failed++;
+} else {
+  check("기본 창 시작 = 기준일 - ONION_PAST_DAYS", defaulted.points[0].date, shiftDate(B, -ONION_PAST_DAYS));
+  check("기본 창 끝 = 기준일 + ONION_FUTURE_DAYS", defaulted.points[defaulted.points.length - 1].date, shiftDate(B, ONION_FUTURE_DAYS));
+  check("기본 과거 창은 90일", ONION_PAST_DAYS, 90);
+  check("기본 미래 창은 365일", ONION_FUTURE_DAYS, 365);
+}
+
+// --- 리드타임이 바뀌는 지점 ---
+// 미래 창이 짧으면 미래선이 단일 리드타임이지만, 길어지면 중간에 더 긴 모델로 넘어간다.
+// 화면의 "예측 정확도" 는 짧은 쪽 리드타임으로 계산한 값이라, 넘어가는 자리를 표시하지
+// 않으면 그 숫자가 선 전체를 설명하는 것처럼 읽힌다.
+const shortWindow = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 183 });
+check("미래 창이 짧으면 리드타임이 안 바뀐다", shortWindow?.horizonSwitchDate, null);
+
+const longWindow = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 365 });
+check("미래 창이 길면 T+206 에서 바뀐다", longWindow?.horizonSwitchDate, shiftDate(B, 206));
+check("겹침 계산은 짧은 리드타임 기준", longWindow?.horizonDays, 180);
+
+// 창 안에 실제로 존재하는 리드타임만 센다 — 없는 전환을 그리면 안 된다.
+check("live 가 단일 리드타임이면 전환 없음", series?.horizonSwitchDate, null);
 
 console.log(failed === 0 ? "\n모든 검증 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

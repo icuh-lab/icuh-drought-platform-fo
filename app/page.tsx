@@ -814,7 +814,7 @@ function Dashboard() {
               {forecast === "onion" && onionApi.status !== "success" && <div className="data-note">{priceStatuses.onion}</div>}
               {forecast === "hydro" && hydropowerApi.status !== "success" && <div className="data-note">{hydropowerStatus}</div>}
               {forecast === "onion" ? (
-                onionForecast && <OverlayForecastChart points={onionForecast.points} boundaryDate={onionForecast.boundaryDate} />
+                onionForecast && <OverlayForecastChart points={onionForecast.points} boundaryDate={onionForecast.boundaryDate} horizonSwitchDate={onionForecast.horizonSwitchDate} />
               ) : (
                 <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               )}
