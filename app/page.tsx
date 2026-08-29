@@ -822,7 +822,7 @@ function Dashboard() {
                 <span><i className="solid" />실측치</span>
                 <span><i className="dash" />예측치</span>
                 {/* 양파는 일 단위 상·하한을 주는 엔드포인트가 없다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
-                {forecast !== "onion" && <span><i className="band" />신뢰구간 95%</span>}
+                {forecast !== "onion" && fc?.band?.some((value) => value > 0) && <span><i className="band" />신뢰구간 95%</span>}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
               <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
