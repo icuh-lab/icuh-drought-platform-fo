@@ -131,6 +131,43 @@ export function monthsMissingActual(entries: RawVintageEntry[], start: string, e
   );
 }
 
+export type YearAccuracy = {
+  year: number;
+  /** 그 해 겹침 구간의 평균절대백분율오차(%) */
+  mape: number;
+  sampleDays: number;
+};
+
+/**
+ * 연도별 예측 정확도. 실측과 예측이 같은 날에 다 있는 날만 센다.
+ *
+ * 전체를 한 숫자로 뭉치면 2022년처럼 유난히 어려웠던 해가 평균을 끌어올려, 최근 예측선을
+ * 얼마나 믿을지 판단할 수 없다. 연도로 나누면 그게 보인다.
+ *
+ * 다만 예측이 전부 한 모델로 과거를 되짚은 값이라, 연도 차이는 **모델의 발전이 아니라
+ * 그 해의 난이도**다. 화면 문구가 이걸 뒤집어 읽지 않게 해야 한다.
+ */
+export function yearlyAccuracy(points: OnionPricePoint[]): YearAccuracy[] {
+  const byYear = new Map<number, number[]>();
+
+  for (const point of points) {
+    // 실측이 0 원이면 백분율 오차가 정의되지 않는다.
+    if (point.actual === null || point.predicted === null || point.actual === 0) continue;
+    const year = Number(point.date.slice(0, 4));
+    const errors = byYear.get(year) ?? [];
+    errors.push(Math.abs(point.actual - point.predicted) / point.actual);
+    byYear.set(year, errors);
+  }
+
+  return Array.from(byYear.entries())
+    .sort(([left], [right]) => left - right)
+    .map(([year, errors]) => ({
+      year,
+      mape: (errors.reduce((sum, value) => sum + value, 0) / errors.length) * 100,
+      sampleDays: errors.length
+    }));
+}
+
 /** Y축 눈금. 0 원부터 step 원 간격으로, 최댓값을 덮는 데까지. */
 export function priceAxisTicks(maxValue: number, step = 500) {
   const top = Math.max(Math.ceil(maxValue / step) * step, step);

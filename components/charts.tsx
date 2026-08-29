@@ -156,56 +156,6 @@ export function ForecastChart({ actual, predicted, band, unit = "" }: { actual: 
   );
 }
 
-/**
- * 실측과 예측을 같은 날짜축 위에 겹쳐 그린다. ForecastChart 는 실측 구간 뒤에 예측
- * 구간을 이어붙이는 모양(미래 전망용)이라, "그 날짜에 실측과 예측이 둘 다 있다"는
- * vintage 정확도 검증에는 안 맞는다 — 여긴 같은 index 의 실측·예측이 같은 x 좌표를 쓴다.
- */
-export function VintageAccuracyChart({ actual, predicted, dates }: { actual: number[]; predicted: number[]; dates: string[] }) {
-  const all = [...actual, ...predicted];
-  const min = Math.min(...all);
-  const max = Math.max(...all);
-  const range = max - min || 1;
-  const valueToY = (value: number) => PAD.top + PLOT_HEIGHT - ((value - min) / range) * PLOT_HEIGHT;
-  const xAt = (index: number) => PAD.left + (index * PLOT_WIDTH) / Math.max(actual.length - 1, 1);
-  const xy = (value: number, index: number) => [xAt(index), valueToY(value)] as const;
-  const actualPts = actual.map((value, index) => xy(value, index));
-  const predictedPts = predicted.map((value, index) => xy(value, index));
-  const yTicks = [min, (min + max) / 2, max];
-
-  const tickCount = Math.min(5, dates.length);
-  const tickIndices = Array.from(
-    new Set(
-      tickCount <= 1
-        ? [0]
-        : Array.from({ length: tickCount }, (_, i) => Math.round((i * (dates.length - 1)) / (tickCount - 1)))
-    )
-  );
-
-  return (
-    <ChartFrame
-      caption="X축: 대상 날짜 · Y축: 가격(원/kg)"
-      yLabels={yTicks.map((value) => ({ text: formatAxisValue(value), y: valueToY(value) }))}
-      xLabels={tickIndices.map((i) => ({
-        text: formatShortDate(dates[i]),
-        x: xAt(i),
-        align: i === 0 ? "start" : i === dates.length - 1 ? "end" : "middle"
-      }))}
-    >
-      <svg className="forecast-chart" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none" role="img" aria-label="리드타임별 실측치와 예측치 비교 시계열 그래프">
-        {yTicks.map((value, index) => (
-          <line key={index} x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
-        ))}
-        {tickIndices.map((i) => (
-          <line key={i} x1={xAt(i)} x2={xAt(i)} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line)" strokeDasharray="2 4" />
-        ))}
-        <polyline points={toLine(actualPts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </ChartFrame>
-  );
-}
-
 // 하루당 가로 픽셀. 3px 이면 한 달이 약 91px 라 "22-01" 라벨이 안 겹치고,
 // 주 단위 등락도 눈에 보인다.
 const PX_PER_DAY = 3;
@@ -217,9 +167,9 @@ const Y_GUTTER = 56;
 /**
  * 실측과 예측을 실제 날짜축 위에 겹쳐 그린다. 2022년부터의 전체 이력이라 가로로 스크롤한다.
  *
- * ForecastChart 는 실측 뒤에 예측을 이어 붙이는 모양이고 VintageAccuracyChart 는 과거만
- * 겹치는 모양이라, "기준일 앞은 겹치고 뒤는 예측만" 인 이 화면에는 둘 다 안 맞는다.
- * 인덱스가 아니라 날짜로 x 를 잡기 때문에 실측만·예측만 있는 날이 섞여도 선이 안 밀린다.
+ * ForecastChart 는 실측 뒤에 예측을 이어 붙이는 모양이라 "기준일 앞은 겹치고 뒤는
+ * 예측만" 인 이 화면에 안 맞는다. 인덱스가 아니라 날짜로 x 를 잡기 때문에 실측만·
+ * 예측만 있는 날이 섞여도 선이 안 밀린다.
  *
  * Y축은 스크롤을 따라가지 않게 밖으로 뺐다 — 같이 흘러가면 가격 눈금을 잃는다.
  */

@@ -10,6 +10,7 @@ import {
   nearestPoint,
   priceAxisTicks,
   shiftDate,
+  yearlyAccuracy,
   vintageBoundaryDate,
   type RawMarketTrendPoint,
   type RawVintageEntry
@@ -255,6 +256,33 @@ check("가까운 날로 붙는다", nearestPoint(hitPoints, "2026-08-12")?.date,
 check("휴장일 건너 오른쪽이 더 가까우면 그쪽", nearestPoint(hitPoints, "2026-08-18")?.date, "2026-08-20");
 check("너무 멀면 null", nearestPoint(hitPoints, "2026-09-30"), null);
 check("빈 배열이면 null", nearestPoint([], "2026-08-10"), null);
+
+// --- 연도별 정확도 ---
+// 리드타임별 패널을 없애고 이 값이 헤더의 정확도 자리를 대신한다.
+const yearPoints = [
+  { date: "2024-01-10", actual: 1000, predicted: 1100 },  // 오차 10%
+  { date: "2024-06-20", actual: 1000, predicted: 900 },   // 오차 10%
+  { date: "2025-03-02", actual: 500, predicted: 510 },    // 오차 2%
+  { date: "2025-09-09", actual: 500, predicted: 480 },    // 오차 4%
+  { date: "2025-11-11", actual: 800, predicted: 800 },    // 오차 0%
+  { date: "2026-04-04", actual: 1000, predicted: 1050 },  // 오차 5%
+  // 한쪽만 있는 날은 겹침이 아니라 표본에서 빠진다.
+  { date: "2026-05-05", actual: null, predicted: 1200 },
+  { date: "2026-06-06", actual: 1200, predicted: null }
+];
+checkJson("연도별 MAPE 와 표본", yearlyAccuracy(yearPoints), [
+  { year: 2024, mape: 10, sampleDays: 2 },
+  { year: 2025, mape: 2, sampleDays: 3 },
+  { year: 2026, mape: 5, sampleDays: 1 }
+]);
+checkJson("연도순으로 정렬된다", yearlyAccuracy([...yearPoints].reverse()).map((row) => row.year), [2024, 2025, 2026]);
+checkJson("겹침이 없으면 빈 배열", yearlyAccuracy([{ date: "2026-01-01", actual: null, predicted: 100 }]), []);
+checkJson("빈 입력", yearlyAccuracy([]), []);
+// 실측이 0 원인 날은 나눗셈이 깨진다. 그런 날은 표본에서 뺀다.
+checkJson("실측 0 원인 날은 뺀다", yearlyAccuracy([
+  { date: "2026-01-01", actual: 0, predicted: 100 },
+  { date: "2026-01-02", actual: 1000, predicted: 900 }
+]), [{ year: 2026, mape: 10, sampleDays: 1 }]);
 
 console.log(failed === 0 ? "\n모든 검증 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

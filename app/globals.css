@@ -156,6 +156,12 @@ button { cursor: pointer; }
 
 /* 양파 전체 이력 차트 — 날짜축이 1,900일이라 가로로 스크롤한다.
    Y축은 스크롤 밖에 둔다. 같이 흘러가면 가격 눈금을 잃는다. */
+/* 연도별 정확도 — 전체 평균 하나로는 어느 해가 평균을 끌어올렸는지 안 보인다. */
+.accuracy-years { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 10.5px; color: var(--ink-2); }
+.accuracy-years span { display: inline-flex; gap: 3px; }
+.accuracy-years i { color: var(--ink-3); font-style: normal; }
+.accuracy-years span:last-child { font-weight: 700; color: var(--ink); }
+
 .overlay-wrap { display: grid; gap: 6px; padding-top: 10px; min-width: 0; }
 .overlay-caption { padding: 0 16px; font-size: 10px; color: var(--ink-3); }
 .overlay-chart { display: flex; align-items: flex-start; padding: 0 16px; min-width: 0; }
