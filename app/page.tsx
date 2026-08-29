@@ -808,7 +808,7 @@ function Dashboard() {
                 <div className="accuracy">
                   <span>예측 정확도</span>
                   <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc.error}</b>
-                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : "최근 30일 평균 오차율"}</small>
+                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? "최근 3개월 평균 오차율" : "최근 30일 평균 오차율"}</small>
                 </div>
               </div>
               {forecast === "cabbage" && priceApis.cabbage.status !== "success" && <div className="data-note">{priceStatuses.cabbage}</div>}
@@ -823,12 +823,15 @@ function Dashboard() {
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>
-                <span><i className="dash" />예측치</span>
+                {/* 수력발전량은 예측 3개월이 전부 404(모델 미산출)일 수 있다 — 그릴 선이 없으면 범례에도 올리지 않는다. */}
+                {(forecast !== "hydro" || (hydropowerForecast?.predicted.length ?? 0) > 0) && <span><i className="dash" />예측치</span>}
                 {/* 양파는 일 단위 상·하한을 주는 엔드포인트가 없다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
-                {forecast !== "onion" && <span><i className="band" />신뢰구간 95%</span>}
+                {forecast !== "onion" && (forecast !== "hydro" || (hydropowerForecast?.band.length ?? 0) > 0) && (
+                  <span><i className="band" />{forecast === "hydro" ? "예측구간(q10–q90)" : "신뢰구간 95%"}</span>
+                )}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
-              {forecast === "hydro" && hydropowerForecast && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
+              {forecast === "hydro" && hydropowerForecast && hydropowerForecast.predicted.length > 0 && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
               <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 

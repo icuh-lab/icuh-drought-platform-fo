@@ -646,7 +646,11 @@ export async function fetchHydropowerForecast({ signal, year, month }: FetchHydr
       dataType: "observed" as const,
       lowerBound: null,
       upperBound: null
-    }));
+    }))
+    // 백엔드가 월 순서를 보장하지 않을 수 있어(별도 배포, 알려진 이슈) 방어적으로 정렬한다 —
+    // fetchFireRiskIndex 의 targetDate 정렬과 동일한 패턴. 정렬 없으면 observedPoints.at(-1) 이
+    // 최신 실측월이 아닐 수 있어 미래 예측 범위 계산이 틀어진다.
+    .sort((a, b) => a.baseDate.localeCompare(b.baseDate));
 
   // /monthly-predict 는 (year, month, damName) 한 조합만 조회하는 단일 응답 엔드포인트라,
   // 여러 달을 보려면 달마다 호출해야 한다. 마지막 실측 달 다음 3개월을 시도한다 — 모델이
