@@ -65,6 +65,39 @@ export function ForecastChart({ actual, predicted, band }: { actual: number[]; p
   );
 }
 
+/**
+ * 실측과 예측을 같은 날짜축 위에 겹쳐 그린다. ForecastChart 는 실측 구간 뒤에 예측
+ * 구간을 이어붙이는 모양(미래 전망용)이라, "그 날짜에 실측과 예측이 둘 다 있다"는
+ * vintage 정확도 검증에는 안 맞는다 — 여기선 같은 index 의 실측·예측이 같은 x 좌표를 쓴다.
+ */
+export function VintageAccuracyChart({ actual, predicted }: { actual: number[]; predicted: number[] }) {
+  const width = 900;
+  const height = 260;
+  const all = [...actual, ...predicted];
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const range = max - min || 1;
+  const padding = 28;
+  const xy = (value: number, index: number) => {
+    const x = padding + (index * (width - padding * 2)) / Math.max(actual.length - 1, 1);
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return [x, y] as const;
+  };
+  const actualPts = actual.map((value, index) => xy(value, index));
+  const predictedPts = predicted.map((value, index) => xy(value, index));
+  const toLine = (pts: readonly (readonly [number, number])[]) => pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+
+  return (
+    <svg className="forecast-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="리드타임별 실측치와 예측치 비교 시계열 그래프">
+      {[0.25, 0.5, 0.75].map((ratio) => (
+        <line key={ratio} x1={padding} x2={width - padding} y1={padding + (height - padding * 2) * ratio} y2={padding + (height - padding * 2) * ratio} stroke="var(--line)" />
+      ))}
+      <polyline points={toLine(actualPts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** 위험 등급을 4칸(리포트는 3칸) 눈금으로 보여준다. 숫자만으로는 등급 폭이 안 읽혀서 함께 쓴다. */
 export function Blocks({ count, total = 4 }: { count: number; total?: number }) {
   return (
