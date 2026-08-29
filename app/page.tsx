@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Braces, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, Flame, KeyRound, Send } from "lucide-react";
-import { Blocks, ForecastChart, OverlayForecastChart, Sparkline, VintageAccuracyChart } from "@/components/charts";
+import { Blocks, ForecastChart, OverlayForecastChart, Sparkline } from "@/components/charts";
 import { FireRiskMap } from "@/components/FireRiskMap";
 import {
   API_BASE_URLS,
@@ -33,7 +33,6 @@ import {
   toOnionKpiView,
   toPriceForecastView,
   toPriceKpiView,
-  toVintageAccuracyView,
   type FireRiskView,
   type FireRiskMapView,
   type DroughtReportView,
@@ -47,8 +46,7 @@ import {
   type PriceForecastKey,
   type PriceForecastView,
   type PriceKpiView,
-  type SummaryAlert,
-  type VintageAccuracyView
+  type SummaryAlert
 } from "@/lib/api-client";
 import { parseView, viewHref } from "@/lib/dashboard-view";
 import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
@@ -76,12 +74,6 @@ type OnionApiState = {
   status: "loading" | "success" | "empty" | "error";
   forecast: OnionForecastView | null;
   kpi: PriceKpiView | null;
-  latestDate: string | null;
-};
-
-type VintageApiState = {
-  status: "loading" | "success" | "empty" | "error";
-  view: VintageAccuracyView | null;
   latestDate: string | null;
 };
 
@@ -241,12 +233,6 @@ const initialOnionApiState: OnionApiState = {
   latestDate: null
 };
 
-const initialVintageApiState: VintageApiState = {
-  status: "loading",
-  view: null,
-  latestDate: null
-};
-
 const initialHydropowerApiState: HydropowerApiState = {
   status: "loading",
   forecast: null,
@@ -298,8 +284,6 @@ function Dashboard() {
   const [priceApis, setPriceApis] = useState<PriceApiStates>({ cabbage: initialPriceApiState });
   const [onionApi, setOnionApi] = useState<OnionApiState>(initialOnionApiState);
   const [hydropowerApi, setHydropowerApi] = useState<HydropowerApiState>(initialHydropowerApiState);
-  const [vintageApi, setVintageApi] = useState<VintageApiState>(initialVintageApiState);
-  const [vintageHorizon, setVintageHorizon] = useState<number | null>(null);
   const [fireRiskApi, setFireRiskApi] = useState<FireRiskApiState>(initialFireRiskApiState);
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
   const [freshFoodKind, setFreshFoodKind] = useState<FreshFoodKind>("vegetable");
@@ -358,12 +342,6 @@ function Dashboard() {
   // 수력발전량도 동일하게 목업 폴백을 쓰지 않는다 — activeForecasts.hydro 는 탭 라벨 전용으로만 쓴다.
   const hydropowerForecast = hydropowerApi.forecast;
   const hydropowerStatus = apiStatusText(hydropowerApi);
-  const vintageStatus = apiStatusText(vintageApi);
-  const selectedVintageHorizon = vintageHorizon ?? vintageApi.view?.horizons[0]?.horizonDays ?? null;
-  const selectedVintageSeries = selectedVintageHorizon !== null ? vintageApi.view?.seriesByHorizon[selectedVintageHorizon] ?? null : null;
-  const selectedVintageAccuracy = selectedVintageHorizon !== null
-    ? vintageApi.view?.horizons.find((horizon) => horizon.horizonDays === selectedVintageHorizon) ?? null
-    : null;
   const fireRiskStatus = apiStatusText(fireRiskApi);
   const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
   const summaryStatus = summaryStatusText(summaryApi);
@@ -476,7 +454,6 @@ function Dashboard() {
   }, [period]);
 
   // vintage 로그는 연/월 필터가 없는 전체 이력이라, period 가 바뀔 때마다 다시 부를 이유가 없다.
-  // 메인 차트의 예측선도 같은 응답에서 나오므로 한 번만 부르고 둘이 나눠 쓴다.
   useEffect(() => {
     const controller = new AbortController();
 
@@ -486,17 +463,9 @@ function Dashboard() {
         response = await fetchPredictionVintage(priceForecastLocation("onion"), controller.signal);
       } catch (error) {
         if (controller.signal.aborted) return;
-        setVintageApi({ status: "error", view: null, latestDate: null });
         setOnionApi({ status: "error", forecast: null, kpi: null, latestDate: null });
         return;
       }
-
-      const nextView = toVintageAccuracyView(response);
-      setVintageApi(
-        nextView
-          ? { status: "success", view: nextView, latestDate: nextView.latestActualDate }
-          : { status: "empty", view: null, latestDate: null }
-      );
 
       try {
         // 실측은 daily-market 에서 창이 걸친 달만큼 더 부른다.
@@ -809,6 +778,15 @@ function Dashboard() {
                   <span>예측 정확도</span>
                   <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc.error}</b>
                   <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? "최근 3개월 평균 오차율" : "최근 30일 평균 오차율"}</small>
+                  {forecast === "onion" && onionForecast && onionForecast.years.length > 1 && (
+                    <div className="accuracy-years">
+                      {onionForecast.years.map((year) => (
+                        <span key={year.year} title={`${year.year}년 · 표본 ${year.sampleDays}일`}>
+                          <i>{String(year.year).slice(2)}</i>{year.mape.toFixed(1)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               {forecast === "cabbage" && priceApis.cabbage.status !== "success" && <div className="data-note">{priceStatuses.cabbage}</div>}
@@ -834,46 +812,6 @@ function Dashboard() {
               {forecast === "hydro" && hydropowerForecast && hydropowerForecast.predicted.length > 0 && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
               <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
-
-            {forecast === "onion" && (
-              <div className="card chart-card">
-                <SectionHead title="양파 예측 정확도(리드타임별)" note="재학습해도 안 바뀌는 예측 기록과 실측을 리드타임별로 비교합니다" />
-                {vintageApi.view && vintageApi.view.horizons.length > 0 && (
-                  <div className="tabs" role="tablist" aria-label="리드타임 선택">
-                    {vintageApi.view.horizons.map((horizon) => (
-                      <button
-                        key={horizon.horizonDays}
-                        role="tab"
-                        aria-selected={selectedVintageHorizon === horizon.horizonDays}
-                        onClick={() => setVintageHorizon(horizon.horizonDays)}
-                      >
-                        {horizon.horizonDays}일 전 예측
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {selectedVintageAccuracy && (
-                  <div className="chart-hd">
-                    <div>
-                      <div className="chart-val">{selectedVintageAccuracy.mae !== null ? Math.round(selectedVintageAccuracy.mae) : "–"}<u>원/kg</u></div>
-                      <div className="chart-sub">평균절대오차(MAE) · 표본 {selectedVintageAccuracy.sampleCount}일</div>
-                    </div>
-                  </div>
-                )}
-                {vintageApi.status !== "success" && <div className="data-note">{vintageStatus}</div>}
-                {vintageApi.status === "success" && !selectedVintageSeries && <div className="data-note">실측이 확정된 예측이 아직 없습니다</div>}
-                {selectedVintageSeries && selectedVintageSeries.actual.length > 0 && (
-                  <>
-                    <VintageAccuracyChart actual={selectedVintageSeries.actual} predicted={selectedVintageSeries.predicted} dates={selectedVintageSeries.dates} />
-                    <div className="legend">
-                      <span><i className="solid" />실측치</span>
-                      <span><i className="dash" />예측치</span>
-                    </div>
-                  </>
-                )}
-                <div className="source-line"><b>출처</b> open-api /api/v1/agrimarket/prediction-vintage (합천)<span>|</span><b>갱신</b> {vintageApi.latestDate ?? vintageStatus}</div>
-              </div>
-            )}
 
             <SectionHead title="지수형 지표" note="가뭄이 누적될수록 함께 상승하는 지표들을 표시합니다" />
             <div className="split">
