@@ -61,12 +61,14 @@ export type OnionPriceSeries = {
 };
 
 /**
- * 화면에 그리는 창. 과거는 최근 90일(실측 참고), 미래는 forecast 산출 범위 전체(365일).
- * onion-wholesale-price-forecast 스펙(2026-08-29 재정의)이 정한 값 — 임의로 늘리거나
- * 줄이지 않는다.
+ * 차트를 열었을 때 보이는 구간. 데이터는 2022년부터 전부 그리고 가로로 스크롤하므로,
+ * 이 값은 "표시 범위" 가 아니라 **초기 스크롤 위치**를 정한다.
+ *
+ * 과거 90일 / 미래 365일 은 onion-wholesale-price-forecast 스펙(2026-08-29 재정의)이
+ * 정한 값이다 — 임의로 늘리거나 줄이지 않는다.
  */
-export const ONION_PAST_DAYS = 90;
-export const ONION_FUTURE_DAYS = 365;
+export const ONION_VIEW_PAST_DAYS = 90;
+export const ONION_VIEW_FUTURE_DAYS = 365;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -112,6 +114,62 @@ export function vintageBoundaryDate(entries: RawVintageEntry[]) {
  * 이어 놓기 때문에 창 앞쪽은 전부 이 값이다. 과거 겹침도 같은 값으로 맞춰야 두 구간의
  * 예측선이 같은 성격이 된다.
  */
+/**
+ * daily-market 으로 채워야 할 달. vintage 에 실측이 한 건도 없는 달만 고른다.
+ *
+ * 2022년부터의 전 구간을 월별로 부르면 56 회다. 운영 서버는 동시 요청을 몰아치면
+ * 넘어간 전력이 있어(2026-08-28) 부를 달을 최소로 줄인다. vintage 의 actual 이
+ * 2022~2025 대부분을 이미 덮고 있어서, 실제로 비는 달만 남는다.
+ */
+export function monthsMissingActual(entries: RawVintageEntry[], start: string, end: string) {
+  const covered = new Set(
+    entries.filter((entry) => entry.actual !== null).map((entry) => entry.targetDate.slice(0, 7))
+  );
+
+  return monthsInWindow(start, end).filter(
+    (month) => !covered.has(`${month.year}-${String(month.month).padStart(2, "0")}`)
+  );
+}
+
+/** Y축 눈금. 0 원부터 step 원 간격으로, 최댓값을 덮는 데까지. */
+export function priceAxisTicks(maxValue: number, step = 500) {
+  const top = Math.max(Math.ceil(maxValue / step) * step, step);
+  const ticks: number[] = [];
+  for (let value = 0; value <= top; value += step) ticks.push(value);
+  return ticks;
+}
+
+/** X축 눈금. 범위 안에 드는 매월 1일. 일 단위 데이터 위에 월 단위 기준선을 얹는 용도다. */
+export function monthTicks(start: string, end: string) {
+  const ticks: string[] = [];
+
+  for (const { year, month } of monthsInWindow(start, end)) {
+    const first = `${year}-${String(month).padStart(2, "0")}-01`;
+    if (first >= start && first <= end) ticks.push(first);
+  }
+
+  return ticks;
+}
+
+/**
+ * 마우스가 가리킨 날짜에 가장 가까운 포인트. toleranceDays 를 넘게 떨어져 있으면 null.
+ * 휴장일과 실측 공백이 많아 "그 날짜의 포인트" 를 그대로 찾으면 대개 빈손이 된다.
+ */
+export function nearestPoint(points: OnionPricePoint[], date: string, toleranceDays = 4) {
+  let best: OnionPricePoint | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (const point of points) {
+    const distance = Math.abs(daysBetween(point.date, date));
+    if (distance < bestDistance) {
+      best = point;
+      bestDistance = distance;
+    }
+  }
+
+  return bestDistance <= toleranceDays ? best : null;
+}
+
 export function nearestHorizon(entries: RawVintageEntry[]) {
   const live = entries.filter((entry) => entry.source === "live");
   if (live.length === 0) return null;
@@ -121,21 +179,27 @@ export function nearestHorizon(entries: RawVintageEntry[]) {
 type BuildOptions = {
   entries: RawVintageEntry[];
   market: RawMarketTrendPoint[];
-  pastDays?: number;
-  futureDays?: number;
+  /** 기준일에서 뒤로 며칠까지. 안 주면 데이터가 있는 만큼 전부. */
+  pastDays?: number | null;
+  /** 기준일에서 앞으로 며칠까지. 안 주면 데이터가 있는 만큼 전부. */
+  futureDays?: number | null;
 };
 
 export function buildOnionPriceSeries({
   entries,
   market,
-  pastDays = ONION_PAST_DAYS,
-  futureDays = ONION_FUTURE_DAYS
+  pastDays = null,
+  futureDays = null
 }: BuildOptions): OnionPriceSeries | null {
   const boundaryDate = vintageBoundaryDate(entries);
   if (boundaryDate === null) return null;
 
-  const start = shiftDate(boundaryDate, -pastDays);
-  const end = shiftDate(boundaryDate, futureDays);
+  const allDates = entries
+    .map((entry) => entry.targetDate)
+    .concat(market.map((point) => point.trendDate))
+    .sort();
+  const start = pastDays === null ? allDates[0] ?? boundaryDate : shiftDate(boundaryDate, -pastDays);
+  const end = futureDays === null ? allDates[allDates.length - 1] ?? boundaryDate : shiftDate(boundaryDate, futureDays);
   const horizonDays = nearestHorizon(entries) ?? minReconstructedHorizon(entries);
 
   const predicted = new Map<string, number>();
@@ -154,6 +218,13 @@ export function buildOnionPriceSeries({
   }
 
   const actual = new Map<string, number>();
+  // vintage 의 actual 이 2022~2025 대부분을 덮는다. daily-market 을 그만큼 덜 불러도 된다.
+  for (const entry of entries) {
+    if (entry.actual === null) continue;
+    if (entry.targetDate < start || entry.targetDate > boundaryDate) continue;
+    actual.set(entry.targetDate, entry.actual);
+  }
+  // 같은 날짜가 겹치면 daily-market 이 이긴다 — 실측이 갱신되는 쪽이다.
   for (const point of market) {
     // 기준일 뒤의 daily-market 행은 실측이 아니라 같은 모델의 예측값이다. 이걸 실측선으로
     // 그리면 예측을 실측이라고 말하게 된다.

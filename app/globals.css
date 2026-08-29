@@ -153,6 +153,28 @@ button { cursor: pointer; }
 .chart-labels .lbl-y { transform: translate(-100%, -50%); }
 .chart-labels .lbl-middle { transform: translateX(-50%); }
 .chart-labels .lbl-end { transform: translateX(-100%); }
+
+/* 양파 전체 이력 차트 — 날짜축이 1,900일이라 가로로 스크롤한다.
+   Y축은 스크롤 밖에 둔다. 같이 흘러가면 가격 눈금을 잃는다. */
+.overlay-wrap { display: grid; gap: 6px; padding-top: 10px; }
+.overlay-caption { padding: 0 16px; font-size: 10px; color: var(--ink-3); }
+.overlay-chart { display: flex; align-items: flex-start; padding: 0 16px; }
+.overlay-axis { position: relative; flex: none; font-size: 10px; color: var(--ink-3); }
+.overlay-axis .lbl-y { position: absolute; transform: translate(-100%, -50%); white-space: nowrap; }
+.overlay-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; cursor: crosshair; }
+.overlay-canvas { position: relative; }
+.overlay-canvas svg { display: block; }
+.overlay-months { position: absolute; left: 0; right: 0; bottom: 12px; height: 12px; font-size: 10px; color: var(--ink-3); }
+.overlay-months span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.overlay-months .is-year { color: var(--ink-2); font-weight: 600; }
+.overlay-mark { position: absolute; top: 0; transform: translateX(-50%); font-size: 10px; color: var(--ink-3); white-space: nowrap; }
+.overlay-tip { position: absolute; top: 22px; margin-left: 8px; display: grid; gap: 2px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); box-shadow: 0 4px 14px rgba(0,0,0,.10); font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 2; }
+.overlay-tip.is-left { transform: translateX(-100%); margin-left: -8px; }
+.overlay-tip b { font-size: 11.5px; }
+.overlay-tip span { display: flex; align-items: center; color: var(--ink-2); }
+.overlay-tip i { display: inline-block; width: 14px; height: 0; margin-right: 6px; }
+.overlay-tip .solid { border-top: 2px solid var(--brand); }
+.overlay-tip .dash { border-top: 2px dashed var(--up); }
 .legend, .source-line { display: flex; gap: 16px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 11.5px; }
 .legend i { display: inline-block; width: 24px; height: 8px; margin-right: 5px; }
 .legend .solid { border-top: 2px solid var(--brand); }
