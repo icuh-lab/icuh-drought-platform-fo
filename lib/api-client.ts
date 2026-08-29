@@ -432,12 +432,16 @@ export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, 
     location: config.location
   });
   const data = await getOpenApiData<OpenAgriDailyPriceResponse>("/api/v1/agrimarket/daily-price", search, signal);
+  // daily-price 는 "predictedPrice" 한 컬럼뿐이라 실측과 예측이 구분되어 오지 않는다.
+  // 오늘(today) 이전 날짜는 이미 지나간 값(실측에 가장 가까움)으로, 오늘 이후는 아직
+  // 오지 않은 값(예측)으로 갈라서 observed/predicted 를 프론트에서 만든다.
+  const todayIso = new Date().toISOString().slice(0, 10);
   const points = data.calendarData
     .filter((point) => typeof point.predictedPrice === "number")
     .map((point) => ({
       baseDate: point.predictionDate,
       value: point.predictedPrice as number,
-      dataType: "observed" as const
+      dataType: (point.predictionDate <= todayIso ? "observed" : "predicted") as PriceForecastDataType
     }));
 
   return {

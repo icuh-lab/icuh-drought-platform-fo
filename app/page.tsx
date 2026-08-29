@@ -774,7 +774,7 @@ function Dashboard() {
               </div>
               {(forecast === "cabbage" || forecast === "onion") && priceApis[forecast].status !== "success" && <div className="data-note">{priceStatuses[forecast]}</div>}
               {forecast === "hydro" && hydropowerApi.status !== "success" && <div className="data-note">{hydropowerStatus}</div>}
-              <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} />
+              <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               <div className="legend">
                 <span><i className="solid" />실측치</span>
                 <span><i className="dash" />예측치</span>
@@ -812,7 +812,7 @@ function Dashboard() {
                 {vintageApi.status === "success" && !selectedVintageSeries && <div className="data-note">실측이 확정된 예측이 아직 없습니다</div>}
                 {selectedVintageSeries && selectedVintageSeries.actual.length > 0 && (
                   <>
-                    <VintageAccuracyChart actual={selectedVintageSeries.actual} predicted={selectedVintageSeries.predicted} />
+                    <VintageAccuracyChart actual={selectedVintageSeries.actual} predicted={selectedVintageSeries.predicted} dates={selectedVintageSeries.dates} />
                     <div className="legend">
                       <span><i className="solid" />실측치</span>
                       <span><i className="dash" />예측치</span>
