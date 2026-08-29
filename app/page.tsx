@@ -310,7 +310,7 @@ function Dashboard() {
   const activeForecasts = useMemo(
     () => ({
       ...forecasts,
-      cabbage: priceApis.cabbage.forecast ?? forecasts.cabbage,
+      cabbage: priceApis.cabbage.forecast,
       hydro: hydropowerApi.forecast ?? forecasts.hydro
     }),
     [priceApis, hydropowerApi]
@@ -795,18 +795,18 @@ function Dashboard() {
               <div className="tabs" role="tablist" aria-label="예측 지표 선택">
                 {(["cabbage", "onion", "hydro"] as ForecastKey[]).map((key) => (
                   <button key={key} role="tab" aria-selected={forecast === key} onClick={() => setForecast(key)}>
-                    {activeForecasts[key].label}
+                    {activeForecasts[key]?.label ?? forecasts[key].label}
                   </button>
                 ))}
               </div>
               <div className="chart-hd">
                 <div>
-                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : fc.current}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : fc.unit}</u></div>
-                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : fc.sub}</div>
+                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : fc?.current ?? "–"}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : fc?.unit ?? "원 / 10kg망"}</u></div>
+                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : fc?.sub ?? ""}</div>
                 </div>
                 <div className="accuracy">
                   <span>예측 정확도</span>
-                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : fc.error}</b>
+                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : fc?.error ?? "N/A"}</b>
                   <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : "최근 30일 평균 오차율"}</small>
                 </div>
               </div>
@@ -816,7 +816,7 @@ function Dashboard() {
               {forecast === "onion" ? (
                 onionForecast && <OverlayForecastChart points={onionForecast.points} boundaryDate={onionForecast.boundaryDate} horizonSwitchDate={onionForecast.horizonSwitchDate} />
               ) : (
-                <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
+                fc && <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>
@@ -825,7 +825,7 @@ function Dashboard() {
                 {forecast !== "onion" && <span><i className="band" />신뢰구간 95%</span>}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
-              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
+              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 
             {forecast === "onion" && (
