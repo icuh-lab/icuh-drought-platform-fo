@@ -20,6 +20,8 @@ import {
   buildOnionPriceSeries,
   monthsMissingActual,
   vintageBoundaryDate,
+  yearlyAccuracy,
+  type YearAccuracy,
   type OnionPricePoint,
   type OnionPriceSeries,
   type RawMarketTrendPoint
@@ -112,20 +114,6 @@ export type PredictionVintageResponse = {
   entries: PredictionVintageEntry[];
 };
 
-export type VintageHorizonAccuracy = {
-  horizonDays: number;
-  mae: number | null;
-  sampleCount: number;
-};
-
-export type VintageAccuracyView = {
-  location: string;
-  horizons: VintageHorizonAccuracy[];
-  /** 리드타임(horizonDays)별로, 실측이 확정된 구간만 날짜순으로 정렬한 실측·예측 쌍. 차트에 그대로 씀. */
-  seriesByHorizon: Record<number, { dates: string[]; actual: number[]; predicted: number[] }>;
-  latestActualDate: string | null;
-};
-
 /**
  * 양파 메인 차트는 실측 뒤에 예측을 이어 붙이는 모양이 아니라 같은 날짜축 위에 겹치는
  * 모양이라 배열 두 개로는 표현이 안 된다. 날짜마다 실측·예측을 함께 들고 다닌다.
@@ -139,6 +127,8 @@ export type OnionForecastView = {
   source: string;
   sub: string;
   note: string;
+  /** 연도별 정확도. 큰 숫자는 마지막 항목을 쓴다. */
+  years: YearAccuracy[];
   points: OnionPricePoint[];
   boundaryDate: string;
   /** 미래선의 리드타임이 바뀌는 날. 오차율이 설명하지 못하는 구간의 시작이다. */
@@ -551,6 +541,8 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
   }
 
   const config = PRICE_FORECAST_CONFIG.onion;
+  const years = yearlyAccuracy(series.points);
+  const latestYear = years.at(-1) ?? null;
   const dated = series.latestActualDate ?? series.boundaryDate;
   const change = series.delta === null ? "" : ` · 전일대비 ${formatSignedPercent(series.delta)}`;
 
@@ -558,23 +550,25 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
     label: config.label,
     current: series.current === null ? "–" : formatWholeNumber(series.current),
     unit: config.displayUnit,
-    // errorRate 는 이미 % 라 formatErrorRate 의 소수/백분율 추정을 태우지 않는다.
-    error: series.errorRate === null ? "N/A" : `${series.errorRate.toFixed(1)}%`,
-    errorNote: series.errorRate === null
+    // 전체 평균은 유난히 어려웠던 해가 끌어올린다. 최근 연도가 "지금 이 예측선을 믿어도
+    // 되나" 에 더 맞는 답이라 큰 숫자는 마지막 연도를 쓴다.
+    error: latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
+    errorNote: latestYear === null
       ? "실측과 겹치는 구간 없음"
-      : `리드타임 ${series.horizonDays}일 기준 · 겹침 ${series.overlapDays}일 평균`,
+      : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}일`,
     source: "open-api /api/v1/agrimarket/daily-market · prediction-vintage (합천)",
     sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
     // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
     // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
     note: [
       `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만`,
-      `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측`,
+      `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측이라, 연도별 차이는 모델의 발전이 아니라 그 해의 난이도다`,
       // 미래선이 중간에 더 긴 리드타임 모델로 넘어가면 위 오차율은 그 앞 구간만 설명한다.
       series.horizonSwitchDate === null
         ? null
         : `${series.horizonSwitchDate}부터는 리드타임 ${series.horizonSwitchTo}일 모델이라 위 오차율 범위 밖`
     ].filter(Boolean).join(" · "),
+    years,
     points: series.points,
     boundaryDate: series.boundaryDate,
     horizonSwitchDate: series.horizonSwitchDate,
@@ -588,6 +582,7 @@ export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
   }
 
   const config = PRICE_FORECAST_CONFIG.onion;
+  const latestYearMape = yearlyAccuracy(series.points).at(-1)?.mape ?? null;
   const spark = series.points
     .filter((point) => point.actual !== null)
     .slice(-7)
@@ -602,7 +597,7 @@ export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
     unit: config.kpiUnit,
     delta: formatSignedPercent(delta),
     direction: delta >= 0 ? "up" : "down",
-    error: series.errorRate === null ? "N/A" : `${series.errorRate.toFixed(1)}%`,
+    error: latestYearMape === null ? "N/A" : `${latestYearMape.toFixed(1)}%`,
     spark,
     target: "onion"
   };
@@ -833,47 +828,6 @@ export function toPriceKpiView(key: PriceForecastKey, response: PriceForecastRes
 
 export function latestPriceForecastDate(response: PriceForecastResponse) {
   return response.points.at(-1)?.baseDate ?? null;
-}
-
-/**
- * 리드타임(horizonDays)별로 실측이 확정된 행만 골라 MAE 와 실측·예측 시계열을 만든다.
- * source='reconstructed_forecast' 는 현재 모델로 과거를 되짚은 근사치라 사실상 전부
- * in-sample 이다 — source='live' 와 정확도를 직접 비교하지 않고, 여기서는 실측이
- * 있는 모든 행(주로 reconstructed_forecast)을 리드타임끼리 상대 비교하는 용도로만 쓴다.
- */
-export function toVintageAccuracyView(response: PredictionVintageResponse): VintageAccuracyView | null {
-  const withActual = response.entries.filter((entry): entry is PredictionVintageEntry & { actual: number } => entry.actual !== null);
-
-  if (withActual.length === 0) {
-    return null;
-  }
-
-  const horizonDaysList = Array.from(new Set(withActual.map((entry) => entry.horizonDays))).sort((left, right) => left - right);
-
-  const horizons: VintageHorizonAccuracy[] = [];
-  const seriesByHorizon: VintageAccuracyView["seriesByHorizon"] = {};
-
-  for (const horizonDays of horizonDaysList) {
-    const rows = withActual
-      .filter((entry) => entry.horizonDays === horizonDays)
-      .sort((left, right) => left.targetDate.localeCompare(right.targetDate));
-    const errors = rows.map((row) => Math.abs(row.pred - row.actual));
-    const mae = errors.length > 0 ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null;
-
-    horizons.push({ horizonDays, mae, sampleCount: rows.length });
-    seriesByHorizon[horizonDays] = {
-      dates: rows.map((row) => row.targetDate),
-      actual: rows.map((row) => row.actual),
-      predicted: rows.map((row) => row.pred)
-    };
-  }
-
-  return {
-    location: response.location,
-    horizons,
-    seriesByHorizon,
-    latestActualDate: withActual.map((entry) => entry.targetDate).sort().at(-1) ?? null
-  };
 }
 
 export function toHydropowerForecastView(response: HydropowerForecastResponse): HydropowerForecastView | null {
