@@ -1,4 +1,4 @@
-import type { ForecastKey, fireRisk, forecasts, kpis, reports } from "@/lib/mock-data";
+import type { ForecastKey, fireRisk, forecasts, kpis } from "@/lib/mock-data";
 import { sidoName } from "@/lib/fire-region";
 import { FIRE_REGION_NAMES } from "@/lib/fire-region-names";
 import {
