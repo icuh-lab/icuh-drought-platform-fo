@@ -167,6 +167,8 @@ export type HydropowerForecastView = {
   source: string;
   sub: string;
   note: string;
+  /** 연도별 정확도(발전량 기준). 큰 숫자는 마지막 항목을 쓴다. */
+  years: YearAccuracy[];
   points: HydropowerVintagePoint[];
   boundaryDate: string;
   latestActualDate: string | null;
@@ -878,16 +880,29 @@ export function toHydropowerForecastView(
 ): HydropowerForecastView {
   const dated = generation.latestActualDate ?? generation.boundaryDate;
   const change = generation.delta === null ? "" : ` · 전월대비 ${formatSignedPercent(generation.delta)}`;
+  const years = yearlyAccuracy(generation.points);
+  const latestYear = years.at(-1) ?? null;
 
   return {
     label: "수력발전량",
     current: generation.current === null ? "–" : formatWholeNumber(generation.current),
     unit: "MWh / 월",
-    error: "N/A",
-    errorNote: "정확도 지표 미제공",
+    // 전체 평균은 유난히 어려웠던 해가 끌어올린다. 최근 연도가 "지금 이 예측선을 믿어도
+    // 되나" 에 더 맞는 답이라 큰 숫자는 마지막 연도를 쓴다(양파와 동일 규칙).
+    error: latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
+    errorNote: latestYear === null
+      ? "실측과 겹치는 구간 없음"
+      : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}개월`,
     source: "open-api /api/v1/hydropower/monthly-generation · monthly-reservoir · monthly-predict-history",
     sub: `${damLabel} · ${dated}${change}`,
-    note: "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
+    // 2022-01~2024-10 은 2026-08-30 walk-forward 재구성 예측이라, 그 구간이 낀 연도의
+    // 오차율 차이는 모델의 발전이 아니라 그 해의 난이도다 — 적어 두지 않으면 정확도를
+    // 실제보다 후하게 읽게 된다(양파와 동일 취지).
+    note: [
+      "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
+      "2022-01~2024-10 구간은 2026-08-30 walk-forward 재구성 예측이라, 연도별 오차율 차이는 모델의 발전이 아니라 그 해의 난이도입니다"
+    ].join(" · "),
+    years,
     points: generation.points,
     boundaryDate: generation.boundaryDate,
     latestActualDate: generation.latestActualDate,
@@ -911,6 +926,7 @@ export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageS
     .filter((point) => point.actual !== null)
     .slice(-7)
     .map((point) => point.actual as number);
+  const latestYearMape = yearlyAccuracy(series.points).at(-1)?.mape ?? null;
 
   return {
     tag: "예측 · 에너지",
@@ -920,7 +936,7 @@ export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageS
     unit: "MWh/월",
     delta: formatSignedPercent(delta),
     direction: delta >= 0 ? "up" : "down",
-    error: "N/A",
+    error: latestYearMape === null ? "N/A" : `${latestYearMape.toFixed(1)}%`,
     spark,
     target: "hydro"
   };

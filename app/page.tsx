@@ -323,8 +323,8 @@ function Dashboard() {
   const cabbageForecast = cabbageApi.forecast;
   // 수력발전량도 동일하게 목업 폴백을 쓰지 않는다 — 탭 라벨만 정적 목업을 쓴다.
   const hydropowerForecast = hydropowerApi.forecast;
-  // 배추·양파 둘 다 OverlayForecastView 라 연도별 정확도 칩을 같은 모양으로 쓴다.
-  const overlayYears = forecast === "onion" ? onionForecast?.years : forecast === "cabbage" ? cabbageForecast?.years : undefined;
+  // 배추·양파·수력 셋 다 연도별 정확도 칩을 같은 모양으로 쓴다.
+  const overlayYears = forecast === "onion" ? onionForecast?.years : forecast === "cabbage" ? cabbageForecast?.years : forecast === "hydro" ? hydropowerForecast?.years : undefined;
   const hydropowerStatus = apiStatusText(hydropowerApi);
   const fireRiskStatus = apiStatusText(fireRiskApi);
   const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
