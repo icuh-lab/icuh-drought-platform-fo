@@ -170,14 +170,13 @@ const HYDRO_VIEW_FUTURE_DAYS = 120;
 export function MonthlyOverlayChart({
   points,
   boundaryDate,
-  legacyBandUntilDate = null,
-  unit = "MWh"
+  unit = "MWh",
+  metricLabel = "발전량"
 }: {
   points: HydropowerVintagePoint[];
   boundaryDate: string;
-  /** 이 날짜 이전은 고정밴드 구간(모델 예측 아님) — 세로 점선 + 라벨로 표시. */
-  legacyBandUntilDate?: string | null;
   unit?: string;
+  metricLabel?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ point: HydropowerVintagePoint; x: number } | null>(null);
@@ -223,7 +222,6 @@ export function MonthlyOverlayChart({
 
   const predictedPts = points.filter((point) => point.predicted !== null).map((point) => xy(point.predicted as number, point.date));
   const boundaryX = xAt(boundaryDate);
-  const legacyX = legacyBandUntilDate !== null && legacyBandUntilDate > start && legacyBandUntilDate <= end ? xAt(legacyBandUntilDate) : null;
   const months = monthTicks(start, end);
 
   function handleMove(event: React.MouseEvent<HTMLDivElement>) {
@@ -235,7 +233,7 @@ export function MonthlyOverlayChart({
 
   return (
     <div className="overlay-wrap">
-      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: 발전량({unit}) · 가로로 스크롤하면 {start.slice(0, 4)}년까지 갑니다</div>
+      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: {metricLabel}({unit}) · 가로로 스크롤하면 {start.slice(0, 4)}년까지 갑니다</div>
       <div className="overlay-chart">
       <div className="overlay-axis" style={{ width: Y_GUTTER, height: OVERLAY_HEIGHT }} aria-hidden="true">
         {ticks.map((value) => (
@@ -250,7 +248,7 @@ export function MonthlyOverlayChart({
         onMouseMove={handleMove}
         onMouseLeave={() => setHover(null)}
         role="img"
-        aria-label={`댐 발전량 실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
+        aria-label={`댐 ${metricLabel} 실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
       >
         <div className="overlay-canvas" style={{ width: plotWidth, height: OVERLAY_HEIGHT }}>
           <svg width={plotWidth} height={OVERLAY_HEIGHT} viewBox={`0 0 ${plotWidth} ${OVERLAY_HEIGHT}`} aria-hidden="true">
@@ -273,9 +271,6 @@ export function MonthlyOverlayChart({
               <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             ))}
             <line x1={boundaryX} x2={boundaryX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
-            {legacyX !== null && (
-              <line x1={legacyX} x2={legacyX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="2 8" />
-            )}
             {hover && <line x1={hover.x} x2={hover.x} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--ink-3)" />}
           </svg>
           <div className="overlay-months" aria-hidden="true">
@@ -286,9 +281,6 @@ export function MonthlyOverlayChart({
             ))}
           </div>
           <span className="overlay-mark" style={{ left: `${boundaryX}px` }} aria-hidden="true">실측 종료</span>
-          {legacyX !== null && (
-            <span className="overlay-mark" style={{ left: `${legacyX}px` }} aria-hidden="true">고정밴드 이전</span>
-          )}
           {hover && (
             <div className={`overlay-tip ${hover.x > plotWidth - 160 ? "is-left" : ""}`} style={{ left: `${hover.x}px` }}>
               <b>{hover.point.date}</b>
