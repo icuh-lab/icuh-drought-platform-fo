@@ -880,6 +880,16 @@ export async function fetchDroughtReportDetail(
   return getOpenApiData<DroughtReportDetail>(`/api/v1/drought/reports/${encodeURIComponent(reportYm)}`, null, signal);
 }
 
+/**
+ * 1월은 K-water 발전량이 연간 누계에서 0으로 리셋되는 달이라, 예측 구간도 이 시점에
+ * 유난히 불안정해져 오차가 수백%로 치솟는다(2026-01 합천댐 기준 실측 대비 580%).
+ * 나머지 달은 대개 한 자릿수~30%대라, 1월 하나를 같이 평균 내면 그 왜곡이 정확도
+ * 전체를 뒤덮는다 — 그래서 정확도 계산에서만 뺀다.
+ */
+function excludeJanuaryReset(points: HydropowerVintagePoint[]): HydropowerVintagePoint[] {
+  return points.filter((point) => point.date.slice(5, 7) !== "01");
+}
+
 export function toHydropowerForecastView(
   damLabel: string,
   generation: HydropowerVintageSeries,
@@ -887,7 +897,7 @@ export function toHydropowerForecastView(
 ): HydropowerForecastView {
   const dated = generation.latestActualDate ?? generation.boundaryDate;
   const change = generation.delta === null ? "" : ` · 전월대비 ${formatSignedPercent(generation.delta)}`;
-  const years = yearlyAccuracy(generation.points);
+  const years = yearlyAccuracy(excludeJanuaryReset(generation.points));
   const latestYear = years.at(-1) ?? null;
 
   return {
@@ -907,6 +917,7 @@ export function toHydropowerForecastView(
     // 실제보다 후하게 읽게 된다(양파와 동일 취지).
     note: [
       "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
+      "1월은 K-water 발전량이 연간 누계에서 0으로 리셋돼 오차가 일시적으로 치솟는 달이라 정확도 계산에서 제외했습니다",
       "2022-01~2024-10 구간은 2026-08-30 walk-forward 재구성 예측이라, 연도별 오차율 차이는 모델의 발전이 아니라 그 해의 난이도입니다"
     ].join(" · "),
     years,
@@ -933,7 +944,7 @@ export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageS
     .filter((point) => point.actual !== null)
     .slice(-7)
     .map((point) => point.actual as number);
-  const latestYearMape = yearlyAccuracy(series.points).at(-1)?.mape ?? null;
+  const latestYearMape = yearlyAccuracy(excludeJanuaryReset(series.points)).at(-1)?.mape ?? null;
 
   return {
     tag: "예측 · 에너지",
