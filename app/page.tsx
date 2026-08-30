@@ -34,6 +34,7 @@ import {
   type FireRiskMapView,
   type DroughtReportDetail,
   type DroughtReportDetailView,
+  type DroughtRegionSection,
   type FreshFoodGaugeView,
   type FreshFoodProvinceRow,
   type FreshFoodKpiView,
@@ -150,6 +151,78 @@ function buildReportOverview(report: DroughtReportDetailView): string {
   return (
     `이번 호는 전국 ${report.detectedSidoCount}/17개 시도, ${report.regions.length}개 지역에서 총 ${report.articleCount}건의 가뭄 관련 기사가 감지되었습니다. `
     + `가장 많은 기사가 집중된 지역은 ${topName}(${top.total}건)이며, ${continuityPhrase} 주요 영향분야는 ${topFields}입니다.`
+  );
+}
+
+function RegionCard({
+  region,
+  anchorId,
+  nested
+}: {
+  region: DroughtRegionSection;
+  anchorId?: string;
+  nested?: boolean;
+}) {
+  return (
+    <div className={`rsec${nested ? " rsec-nested" : ""}`} id={anchorId}>
+      <div className="rsec-hd">
+        <h3>{region.sido}{region.sigungu ? ` ${region.sigungu}` : ""}</h3>
+        {region.impactFields[0] && (
+          <span className={`chip-cont${region.impactFields[0].continuityCount <= 1 ? " new" : ""}`}>
+            {region.impactFields[0].continuityCount > 1 ? `${region.impactFields[0].continuityCount}개월째` : "신규"}
+          </span>
+        )}
+        <span className="rn">{region.impactFields.length}개 분야</span>
+      </div>
+      {[...region.impactFields]
+        .sort((a, b) => b.articleCount - a.articleCount)
+        .map((field) => (
+        <div className="fsub" key={field.impactCode}>
+          <div className="fsub-badge">
+            <span className={`badge ${droughtGradeClass(field.grade)}`}><GradeSteps grade={field.grade} />{field.grade}</span>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 5 }}>#{field.impactName}</div>
+          </div>
+          <div className="fsub-bd">
+            <p className="fsub-ti">
+              {field.representativeTitle}
+              {field.relevanceFlag && (
+                <>
+                  {" "}
+                  <span className="flag">
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 1.5 15 14H1L8 1.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                      <path d="M8 6.2v3.4M8 11.8v.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                    관련도 검토 필요
+                  </span>
+                </>
+              )}
+            </p>
+            {field.keywords.length > 0 && (
+              <div className="fsub-kw">
+                {field.keywords.map((keyword) => <span className="kw" key={keyword}>#{keyword}</span>)}
+              </div>
+            )}
+            {field.relevanceFlag && (
+              <div style={{ fontSize: 11, color: "var(--warn)" }}>
+                대표기사가 이 지역·영향분야의 피해 키워드와 낮은 관련성을 보입니다 — 노출 전 재검토를 권장합니다.
+              </div>
+            )}
+            {field.gradeLowerBound !== null && (
+              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
+                등급 근거: 이 등급 기준 {Math.round(field.gradeLowerBound)}건
+                {field.nextGradeLowerBound !== null
+                  ? ` · 다음 등급 기준 ${Math.round(field.nextGradeLowerBound)}건`
+                  : field.grade === "심각"
+                    ? " · 이미 최고 등급"
+                    : " · 다음 등급 구간 데이터 없음"}
+              </div>
+            )}
+          </div>
+          <div className="fsub-n">기사 {field.articleCount}건</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -338,6 +411,7 @@ function Dashboard() {
   const [freshFoodExpanded, setFreshFoodExpanded] = useState(false);
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
+  const [expandedSidoGroups, setExpandedSidoGroups] = useState<Set<string>>(new Set());
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
   const activeKpis = useMemo(
     () => kpis.map((kpi) => {
@@ -355,6 +429,27 @@ function Dashboard() {
     [activeReports, reportApi.details, selectedReportId]
   );
   const selectedReportAllFields = selectedReport.regions.flatMap((region) => region.impactFields);
+  const selectedReportRegionGroups = useMemo(() => {
+    const groups = new Map<string, DroughtRegionSection[]>();
+    selectedReport.regions.forEach((region) => {
+      const list = groups.get(region.sido) ?? [];
+      list.push(region);
+      groups.set(region.sido, list);
+    });
+    return Array.from(groups.entries()).map(([sido, regions]) => ({ sido, regions }));
+  }, [selectedReport.regions]);
+  function toggleSidoGroup(sido: string) {
+    const key = `${selectedReport.reportYm}:${sido}`;
+    setExpandedSidoGroups((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
   const selectedReportReferenceLinks = selectedReportAllFields.filter(
     (field): field is typeof field & { representativeLink: string; representativeTitle: string } =>
       field.representativeLink !== null && field.representativeTitle !== null
@@ -381,7 +476,8 @@ function Dashboard() {
   const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
   // 운영환경에서는 "집계 알림 없음 · 목업 표시" 같은 안내를 보여줄 필요가 없어 임시로 뺀다.
   // const summaryStatus = summaryStatusText(summaryApi);
-  const reportStatus = reportStatusText(reportApi);
+  // 운영환경에서는 "리포트 API 응답 없음 · 캐시 표시" 같은 안내를 보여줄 필요가 없어 임시로 뺀다.
+  // const reportStatus = reportStatusText(reportApi);
   const fallbackSummaryAlerts: SummaryAlert[] = [
     // 운영환경에서는 목업 데이터를 표시할 필요가 없어 임시로 뺀다.
     // {
@@ -1015,7 +1111,6 @@ function Dashboard() {
 
         {view === "reports" && (
           <section className="view">
-            <div className="notice">본 리포트는 언론 보도를 자동 수집·분석해 월 1회 발행하는 요약 자료입니다. {reportStatus}</div>
             <SectionHead title={`리포트 ${activeReports.length}건`} note="최신순" />
             <div className="report-list">
               {activeReports.map((report) => <ReportRow key={report.reportYm} report={report} onClick={() => { setSelectedReportId(report.reportYm); go("detail"); }} />)}
@@ -1095,67 +1190,31 @@ function Dashboard() {
 
                   <h3>감지된 지역</h3>
                   {selectedReport.regions.length === 0 && <p>이번 호에는 감지된 지역이 없습니다.</p>}
-                  {selectedReport.regions.map((region) => (
-                    <div className="rsec" id={`region-${region.sido}`} key={`${region.sido}-${region.sigungu}`}>
-                      <div className="rsec-hd">
-                        <h3>{region.sido}{region.sigungu ? ` ${region.sigungu}` : ""}</h3>
-                        {region.impactFields[0] && (
-                          <span className={`chip-cont${region.impactFields[0].continuityCount <= 1 ? " new" : ""}`}>
-                            {region.impactFields[0].continuityCount > 1 ? `${region.impactFields[0].continuityCount}개월째` : "신규"}
-                          </span>
-                        )}
-                        <span className="rn">{region.impactFields.length}개 분야</span>
+                  {selectedReportRegionGroups.map(({ sido, regions }) => {
+                    if (regions.length === 1) {
+                      return <RegionCard key={sido} region={regions[0]} anchorId={`region-${sido}`} />;
+                    }
+                    const groupKey = `${selectedReport.reportYm}:${sido}`;
+                    const expanded = expandedSidoGroups.has(groupKey);
+                    const bestGrade = regions
+                      .flatMap((region) => region.impactFields.map((field) => field.grade))
+                      .reduce<string | null>(
+                        (best, grade) => (best === null || droughtGradeLevel(grade) > droughtGradeLevel(best) ? grade : best),
+                        null
+                      );
+                    return (
+                      <div className="rsec" id={`region-${sido}`} key={sido}>
+                        <button type="button" className="rsec-hd rsec-toggle" onClick={() => toggleSidoGroup(sido)}>
+                          <h3>{sido}</h3>
+                          <span className={`badge ${droughtGradeClass(bestGrade)}`}>{bestGrade ?? "등급 없음"}</span>
+                          <span className="rn">{regions.length}개 지역 · {expanded ? "접기 ▲" : "펼치기 ▼"}</span>
+                        </button>
+                        {expanded && regions.map((region) => (
+                          <RegionCard key={`${region.sido}-${region.sigungu}`} region={region} nested />
+                        ))}
                       </div>
-                      {[...region.impactFields]
-                        .sort((a, b) => b.articleCount - a.articleCount)
-                        .map((field) => (
-                        <div className="fsub" key={field.impactCode}>
-                          <div className="fsub-badge">
-                            <span className={`badge ${droughtGradeClass(field.grade)}`}><GradeSteps grade={field.grade} />{field.grade}</span>
-                            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 5 }}>#{field.impactName}</div>
-                          </div>
-                          <div className="fsub-bd">
-                            <p className="fsub-ti">
-                              {field.representativeTitle}
-                              {field.relevanceFlag && (
-                                <>
-                                  {" "}
-                                  <span className="flag">
-                                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                      <path d="M8 1.5 15 14H1L8 1.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                                      <path d="M8 6.2v3.4M8 11.8v.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                                    </svg>
-                                    관련도 검토 필요
-                                  </span>
-                                </>
-                              )}
-                            </p>
-                            {field.keywords.length > 0 && (
-                              <div className="fsub-kw">
-                                {field.keywords.map((keyword) => <span className="kw" key={keyword}>#{keyword}</span>)}
-                              </div>
-                            )}
-                            {field.relevanceFlag && (
-                              <div style={{ fontSize: 11, color: "var(--warn)" }}>
-                                대표기사가 이 지역·영향분야의 피해 키워드와 낮은 관련성을 보입니다 — 노출 전 재검토를 권장합니다.
-                              </div>
-                            )}
-                            {field.gradeLowerBound !== null && (
-                              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
-                                등급 근거: 이 등급 기준 {Math.round(field.gradeLowerBound)}건
-                                {field.nextGradeLowerBound !== null
-                                  ? ` · 다음 등급 기준 ${Math.round(field.nextGradeLowerBound)}건`
-                                  : field.grade === "심각"
-                                    ? " · 이미 최고 등급"
-                                    : " · 다음 등급 구간 데이터 없음"}
-                              </div>
-                            )}
-                          </div>
-                          <div className="fsub-n">기사 {field.articleCount}건</div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {selectedReportReferenceLinks.length > 0 && (
                     <>
@@ -1292,12 +1351,16 @@ function SectionHead({ title, note, action, onAction }: { title: string; note?: 
 
 function ReportCard({ report, onClick }: { report: DroughtReportDetailView; onClick: () => void }) {
   const [year, month] = report.reportYm.split("-");
+  const topSido = report.nationwide
+    .filter((status) => status.detected)
+    .sort((a, b) => droughtGradeLevel(b.maxGrade) - droughtGradeLevel(a.maxGrade))
+    .slice(0, 5);
   return (
     <button className="report-card" onClick={onClick}>
       <span className={`badge ${droughtGradeClass(report.headlineGrade)}`}>{report.headlineGrade ?? "등급 없음"}</span>
       <b>{year}년 {Number(month)}월호</b>
       <p>감지 시도 {report.detectedSidoCount}/17 · 분석 기사 {report.articleCount}건</p>
-      <span className="tags">{report.detectedSidoNames.map((name) => <i key={name}>#{name}</i>)}</span>
+      <span className="tags">{topSido.map((status) => <i key={status.sido}>#{status.sido}</i>)}</span>
     </button>
   );
 }
