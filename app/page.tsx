@@ -900,9 +900,6 @@ function Dashboard() {
                 <span><i className="solid" />실측치</span>
                 <span><i className="dash" />예측치</span>
               </div>
-              {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
-              {forecast === "cabbage" && cabbageForecast && <div className="data-note">{cabbageForecast.note}</div>}
-              {forecast === "hydro" && hydropowerForecast && <div className="data-note">{hydropowerForecast.note}</div>}
               <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history" : cabbageForecast?.source ?? "open-api /api/v1/agrimarket/daily-market · prediction-vintage (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? cabbageApi.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 

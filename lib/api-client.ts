@@ -644,23 +644,10 @@ export function toOverlayForecastView(
     error: latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
     errorNote: latestYear === null
       ? "실측과 겹치는 구간 없음"
-      // walk-forward 표본은 일 단위가 아니라 월별 cutoff 단위라 "일" 대신 "건"으로 센다.
-      : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}${isWalkforward ? "건" : "일"}`,
+      : `${latestYear.year}년 평균 오차율`,
     source: `open-api /api/v1/agrimarket/daily-market · prediction-vintage (${config.regionName})`,
     sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
-    // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
-    // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
-    note: [
-      `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만`,
-      // walk-forward 값은 이미 진짜 out-of-sample 이라 이 캐비어트가 필요 없다.
-      isWalkforward
-        ? null
-        : `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측이라, 연도별 차이는 모델의 발전이 아니라 그 해의 난이도다`,
-      // 미래선이 중간에 더 긴 리드타임 모델로 넘어가면 위 오차율은 그 앞 구간만 설명한다.
-      series.horizonSwitchDate === null
-        ? null
-        : `${series.horizonSwitchDate}부터는 리드타임 ${series.horizonSwitchTo}일 모델이라 위 오차율 범위 밖`
-    ].filter(Boolean).join(" · "),
+    note: "",
     years,
     points: series.points,
     boundaryDate: series.boundaryDate,
@@ -928,17 +915,10 @@ export function toHydropowerForecastView(
     error: latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
     errorNote: latestYear === null
       ? "실측과 겹치는 구간 없음"
-      : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}개월`,
+      : `${latestYear.year}년 평균 오차율`,
     source: "open-api /api/v1/hydropower/monthly-generation · monthly-reservoir · monthly-predict-history",
     sub: `${damLabel} · ${dated}${change}`,
-    // 2022-01~2024-10 은 2026-08-30 walk-forward 재구성 예측이라, 그 구간이 낀 연도의
-    // 오차율 차이는 모델의 발전이 아니라 그 해의 난이도다 — 적어 두지 않으면 정확도를
-    // 실제보다 후하게 읽게 된다(양파와 동일 취지).
-    note: [
-      "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
-      "1월은 K-water 발전량이 연간 누계에서 0으로 리셋돼 오차가 일시적으로 치솟는 달이라 정확도 계산에서 제외했습니다",
-      "2022-01~2024-10 구간은 2026-08-30 walk-forward 재구성 예측이라, 연도별 오차율 차이는 모델의 발전이 아니라 그 해의 난이도입니다"
-    ].join(" · "),
+    note: "",
     years,
     points: generation.points,
     boundaryDate: generation.boundaryDate,
