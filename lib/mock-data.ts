@@ -1,3 +1,5 @@
+import type { DroughtReportDetailView } from "@/lib/api-client";
+
 export type ViewKey = "home" | "forecast" | "reports" | "detail" | "api";
 export type ForecastKey = "cabbage" | "onion" | "hydro";
 
@@ -95,115 +97,110 @@ export const fireRisk = [
 ];
 
 
-export const reports = [
+export const droughtReportFallback: DroughtReportDetailView[] = [
   {
-    id: "r1",
-    title: "고흥 유자·마늘 재배지 관수 차질 확대",
-    level: 3,
-    levelName: "심각",
-    date: "2026-08-04",
-    regions: ["고흥", "전남"],
-    summary: "고흥 일대 밭작물 재배지에서 관정 수위 저하로 관수 중단 사례가 늘고 있으며, 일부 지역은 급수차 지원이 시작됐습니다.",
-    count: 14,
-    body: [
-      "전남 고흥 일대에서 지속된 강수 부족으로 유자·마늘 재배지의 관수에 차질이 발생하고 있습니다. 지역 농가들은 관정 수위 저하로 하루 중 관수 가능 시간이 크게 줄었다고 밝혔습니다.",
-      "군은 급수차를 투입해 긴급 용수를 공급하고 있으며, 밭작물 중에서도 생육 초기 단계 작물의 피해가 두드러진 것으로 나타났습니다.",
-      "기상 전망상 향후 2주간 유의미한 강수가 예보되지 않아, 관수 제한 조치가 확대될 가능성이 제기되고 있습니다."
+    reportYm: "2026-05",
+    headlineGrade: "심각",
+    generatedAt: "2026-08-30T15:39:00",
+    articleCount: 748,
+    detectedSidoCount: 3,
+    detectedSidoNames: ["강원", "경남", "전남"],
+    nationwide: [
+      { sido: "서울", detected: false, maxGrade: null },
+      { sido: "부산", detected: false, maxGrade: null },
+      { sido: "대구", detected: false, maxGrade: null },
+      { sido: "인천", detected: false, maxGrade: null },
+      { sido: "광주", detected: false, maxGrade: null },
+      { sido: "대전", detected: false, maxGrade: null },
+      { sido: "울산", detected: false, maxGrade: null },
+      { sido: "세종", detected: false, maxGrade: null },
+      { sido: "경기", detected: false, maxGrade: null },
+      { sido: "강원", detected: true, maxGrade: "심각" },
+      { sido: "충북", detected: false, maxGrade: null },
+      { sido: "충남", detected: false, maxGrade: null },
+      { sido: "전북", detected: false, maxGrade: null },
+      { sido: "전남", detected: true, maxGrade: "경계" },
+      { sido: "경북", detected: false, maxGrade: null },
+      { sido: "경남", detected: true, maxGrade: "경계" },
+      { sido: "제주", detected: false, maxGrade: null }
     ],
-    keywords: ["관수", "관정", "급수차", "유자", "마늘", "생육지연"],
-    pins: [{ name: "고흥", note: "관수 차질 집중 발생 — 유자·마늘 재배지 중심" }],
-    mentionedRegions: [
+    regions: [
       {
-        sidoName: "전남",
-        sigunguName: "고흥군",
-        sigunguCode: "46770",
-        regionCode: "46770",
-        regionName: "고흥",
-        impactCode: "agriculture",
-        impactName: "농업",
-        note: "고흥군 농업 부문 관수 차질 언급",
-        damageDetail: "관정 수위 저하, 급수차 지원, 유자·마늘 재배지 생육 지연"
+        sido: "강원",
+        sigungu: "강릉",
+        impactFields: [
+          {
+            impactCode: "A1",
+            impactName: "물 공급",
+            grade: "심각",
+            gradeFinalized: true,
+            articleCount: 12,
+            representativeTitle: "강릉 상수원 저수율 20%대 진입",
+            representativeLink: null,
+            keywords: ["저수율", "제한급수"],
+            relevanceFlag: false,
+            continuityCount: 3,
+            gradeLowerBound: 10,
+            nextGradeLowerBound: null
+          },
+          {
+            impactCode: "A2",
+            impactName: "농업",
+            grade: "경계",
+            gradeFinalized: true,
+            articleCount: 7,
+            representativeTitle: "영동지역 밭작물 가뭄 피해 확산",
+            representativeLink: null,
+            keywords: ["밭작물", "관수중단"],
+            relevanceFlag: false,
+            continuityCount: 1,
+            gradeLowerBound: 6,
+            nextGradeLowerBound: 15
+          }
+        ]
+      },
+      {
+        sido: "경남",
+        sigungu: "합천",
+        impactFields: [
+          {
+            impactCode: "A5",
+            impactName: "산업",
+            grade: "경계",
+            gradeFinalized: true,
+            articleCount: 5,
+            representativeTitle: "합천댐 저수율 하락에 산업단지 비상",
+            representativeLink: null,
+            keywords: ["합천댐", "산단"],
+            relevanceFlag: false,
+            continuityCount: 2,
+            gradeLowerBound: null,
+            nextGradeLowerBound: null
+          }
+        ]
+      },
+      {
+        sido: "전남",
+        sigungu: "고흥",
+        impactFields: [
+          {
+            impactCode: "A4",
+            impactName: "수산업",
+            grade: "경계",
+            gradeFinalized: true,
+            articleCount: 4,
+            representativeTitle: "고흥 저수지 바닥 드러나 양식장 피해",
+            representativeLink: null,
+            keywords: ["저수지", "양식장"],
+            relevanceFlag: false,
+            continuityCount: 1,
+            gradeLowerBound: null,
+            nextGradeLowerBound: null
+          }
+        ]
       }
     ],
-    visualSummary: {
-      articleCount: 14,
-      sourceCount: 3,
-      mentionedRegionCount: 1,
-      impactFields: [{ impactCode: "agriculture", impactName: "농업", count: 1 }]
-    },
-    sources: ["고흥 밭작물 관수 중단 확산", "고흥군 급수차 긴급 투입", "관정 수위 저하로 농가 부담 가중"]
-  },
-  {
-    id: "r2",
-    title: "합천댐 저수율 하락, 농업용수 배분 조정 논의",
-    level: 2,
-    levelName: "보통",
-    date: "2026-08-03",
-    regions: ["합천", "경남"],
-    summary: "합천댐 저수율이 평년 대비 낮은 수준을 유지하면서, 농업용수 배분 순번을 조정하는 방안이 논의되고 있습니다.",
-    count: 9,
-    body: [
-      "경남 합천댐의 저수율이 평년보다 낮은 수준을 이어가면서 농업용수 공급 계획 조정이 검토되고 있습니다.",
-      "관계 기관은 저수율 추이를 주 단위로 점검하며, 필요 시 배분 순번 조정과 절수 안내를 병행할 계획이라고 밝혔습니다."
-    ],
-    keywords: ["저수율", "농업용수", "급수조정", "발전방류", "절수"],
-    pins: [{ name: "합천", note: "합천댐 저수율 하락 — 배분 조정 검토" }],
-    mentionedRegions: [
-      {
-        sidoName: "경남",
-        sigunguName: "합천군",
-        sigunguCode: "48890",
-        regionCode: "48890",
-        regionName: "합천",
-        impactCode: "agriculture",
-        impactName: "농업",
-        note: "합천군 농업용수 배분 조정 언급",
-        damageDetail: "저수율 하락, 농업용수 배분 순번 조정, 절수 안내"
-      }
-    ],
-    visualSummary: {
-      articleCount: 9,
-      sourceCount: 2,
-      mentionedRegionCount: 1,
-      impactFields: [{ impactCode: "agriculture", impactName: "농업", count: 1 }]
-    },
-    sources: ["합천댐 저수율 평년 하회", "농업용수 배분 조정 검토 착수"]
-  },
-  {
-    id: "r3",
-    title: "강릉 안반데기 고랭지 채소 생육 지연 관측",
-    level: 1,
-    levelName: "경미",
-    date: "2026-08-01",
-    regions: ["강릉", "강원"],
-    summary: "안반데기 일대 고랭지 배추 재배지에서 결구가 예년보다 더디다는 관측이 보고됐으나, 현재까지 출하량 영향은 제한적입니다.",
-    count: 5,
-    body: [
-      "강원 강릉 안반데기 일대 고랭지 배추 재배지에서 토양 수분 부족으로 결구가 예년보다 더디게 진행되고 있다는 관측이 보고됐습니다.",
-      "다만 현 시점에서는 출하량에 미치는 영향이 제한적이라는 평가가 우세하며, 관계 기관은 관수 지도를 강화하고 있습니다."
-    ],
-    keywords: ["고랭지", "생육지연", "토양수분", "결구", "배추"],
-    pins: [{ name: "강릉", note: "안반데기 고랭지 배추 생육 지연 관측" }],
-    mentionedRegions: [
-      {
-        sidoName: "강원",
-        sigunguName: "강릉시",
-        sigunguCode: "42150",
-        regionCode: "42150",
-        regionName: "강릉",
-        impactCode: "agriculture",
-        impactName: "농업",
-        note: "강릉 안반데기 고랭지 채소 생육 지연 언급",
-        damageDetail: "토양 수분 부족, 결구 지연, 관수 지도"
-      }
-    ],
-    visualSummary: {
-      articleCount: 5,
-      sourceCount: 2,
-      mentionedRegionCount: 1,
-      impactFields: [{ impactCode: "agriculture", impactName: "농업", count: 1 }]
-    },
-    sources: ["안반데기 고랭지 배추 결구 지연 관측", "고랭지 채소 관수 지도 강화"]
+    detailLoaded: true
   }
 ];
 

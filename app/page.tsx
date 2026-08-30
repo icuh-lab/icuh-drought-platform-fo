@@ -23,7 +23,7 @@ import {
   toFireRiskView,
   toFireRiskMapView,
   toDroughtReportDetailView,
-  toDroughtReportViews,
+  toDroughtReportListViews,
   toFreshFoodGaugeView,
   toFreshFoodKpiView,
   toHydropowerForecastView,
@@ -32,7 +32,7 @@ import {
   toOverlayKpiView,
   type FireRiskView,
   type FireRiskMapView,
-  type DroughtReportView,
+  type DroughtReportDetailView,
   type FreshFoodGaugeView,
   type FreshFoodProvinceRow,
   type FreshFoodKpiView,
@@ -46,8 +46,9 @@ import {
 } from "@/lib/api-client";
 import { parseView, viewHref } from "@/lib/dashboard-view";
 import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtStart, shiftPeriod } from "@/lib/period";
-import { apiCatalog, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
+import { apiCatalog, fireRisk, forecasts, kpis, droughtReportFallback, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
 import { freshFoodStatusText, type FreshFoodKind } from "@/lib/fresh-food";
+import { Pagination } from "@/components/archive/Pagination";
 
 /** 배추도 양파와 같은 prediction-vintage + daily-market 겹쳐그리기 경로를 쓴다. */
 type CabbageApiState = {
@@ -99,14 +100,17 @@ type SummaryApiState = {
 
 type ReportApiState = {
   status: "loading" | "success" | "empty" | "error";
-  reports: DroughtReportView[] | null;
-  details: Record<string, DroughtReportView>;
+  reports: DroughtReportDetailView[] | null;
+  details: Record<string, DroughtReportDetailView>;
+  page: number;
+  totalPages: number;
+  detailError: string | null;
 };
 
-function levelClass(level: number) {
-  if (level >= 3) return "lv4";
-  if (level === 2) return "lv3";
-  return "lv1";
+const DROUGHT_GRADE_CLASS: Record<string, string> = { 관심: "lv1", 주의: "lv2", 경계: "lv3", 심각: "lv4" };
+
+function droughtGradeClass(grade: string | null) {
+  return grade ? DROUGHT_GRADE_CLASS[grade] ?? "lv1" : "lv1";
 }
 
 function fireLevel(value: number) {
@@ -250,7 +254,10 @@ const initialSummaryApiState: SummaryApiState = {
 const initialReportApiState: ReportApiState = {
   status: "loading",
   reports: null,
-  details: {}
+  details: {},
+  page: 0,
+  totalPages: 1,
+  detailError: null
 };
 
 export default function Page() {
@@ -289,25 +296,16 @@ function Dashboard() {
     }),
     [cabbageApi, onionApi, hydropowerApi, freshFoodApi]
   );
-  const activeReports = reportApi.reports ?? reports;
+  const activeReports = reportApi.reports ?? droughtReportFallback;
   const selectedReport = useMemo(
-    () => reportApi.details[selectedReportId] ?? activeReports.find((report) => report.id === selectedReportId) ?? activeReports[0] ?? reports[0],
+    () => reportApi.details[selectedReportId] ?? activeReports.find((report) => report.reportYm === selectedReportId) ?? activeReports[0] ?? droughtReportFallback[0],
     [activeReports, reportApi.details, selectedReportId]
   );
-  const selectedReportVisualMax = Math.max(1, ...selectedReport.visualSummary.impactFields.map((field) => field.count));
-  const selectedReportMentionedRegions = selectedReport.mentionedRegions.length > 0
-    ? selectedReport.mentionedRegions
-    : selectedReport.pins.map((pin) => ({
-      sidoName: "",
-      sigunguName: pin.name,
-      sigunguCode: null,
-      regionCode: null,
-      regionName: pin.name,
-      impactCode: null,
-      impactName: "미분류",
-      note: pin.note,
-      damageDetail: null
-    }));
+  const selectedReportAllFields = selectedReport.regions.flatMap((region) => region.impactFields);
+  const selectedReportReferenceLinks = selectedReportAllFields.filter(
+    (field): field is typeof field & { representativeLink: string; representativeTitle: string } =>
+      field.representativeLink !== null && field.representativeTitle !== null
+  );
   const activeFireRisk = fireRiskApi.items ?? fireRisk;
   const activeFreshFoodGauge = freshFoodApi.gauge;
   const highestFireRisk = activeFireRisk.reduce((highest, current) => current.value > highest.value ? current : highest, activeFireRisk[0]);
@@ -562,18 +560,28 @@ function Dashboard() {
       }
     }
 
+    loadFireRiskIndex();
+    loadSummary();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
     async function loadDroughtReports() {
       try {
-        const response = await fetchDroughtReports({ signal: controller.signal, size: 20 });
-        const nextReports = toDroughtReportViews(response);
+        const response = await fetchDroughtReports({ signal: controller.signal, page: reportApi.page, size: 12 });
+        const nextReports = toDroughtReportListViews(response);
 
         setReportApi((current) => ({
           ...current,
           status: nextReports.length > 0 ? "success" : "empty",
-          reports: nextReports.length > 0 ? nextReports : null
+          reports: nextReports.length > 0 ? nextReports : null,
+          totalPages: response.totalPages
         }));
         if (nextReports.length > 0) {
-          setSelectedReportId((current) => nextReports.some((report) => report.id === current) ? current : nextReports[0].id);
+          setSelectedReportId((current) => nextReports.some((report) => report.reportYm === current) ? current : nextReports[0].reportYm);
         }
       } catch (error) {
         if (controller.signal.aborted) {
@@ -584,15 +592,13 @@ function Dashboard() {
       }
     }
 
-    loadFireRiskIndex();
-    loadSummary();
     loadDroughtReports();
 
     return () => controller.abort();
-  }, []);
+  }, [reportApi.page]);
 
   useEffect(() => {
-    if (reportApi.status !== "success" || reportApi.details[selectedReportId]) {
+    if (reportApi.status !== "success" || reportApi.details[selectedReportId] || reportApi.detailError === selectedReportId) {
       return;
     }
 
@@ -613,13 +619,14 @@ function Dashboard() {
         if (controller.signal.aborted) {
           return;
         }
+        setReportApi((current) => ({ ...current, detailError: selectedReportId }));
       }
     }
 
     loadDroughtReportDetail();
 
     return () => controller.abort();
-  }, [reportApi.details, reportApi.status, selectedReportId]);
+  }, [reportApi.details, reportApi.detailError, reportApi.status, selectedReportId]);
 
   const go = (next: ViewKey, target?: ForecastKey) => {
     if (target) setForecast(target);
@@ -728,7 +735,7 @@ function Dashboard() {
             <SectionHead title="가뭄영향 리포트" note="뉴스 기사를 자동 분석해 생성된 리포트입니다" action="전체 리포트" onAction={() => go("reports")} />
             <div className="report-grid">
               {activeReports.slice(0, 3).map((report) => (
-                <ReportCard key={report.id} report={report} onClick={() => { setSelectedReportId(report.id); go("detail"); }} />
+                <ReportCard key={report.reportYm} report={report} onClick={() => { setSelectedReportId(report.reportYm); go("detail"); }} />
               ))}
             </div>
 
@@ -925,21 +932,16 @@ function Dashboard() {
 
         {view === "reports" && (
           <section className="view">
-            <div className="notice">본 리포트는 언론 보도를 자동 수집·분석해 생성한 요약 자료입니다. 원문 링크에서 전문을 확인할 수 있습니다. {reportStatus}</div>
-            <div className="cols">
-              <aside className="side">
-                <h3>필터</h3>
-                {["고흥 · 전남", "합천 · 경남", "강릉 · 강원"].map((label) => <label key={label}><input type="checkbox" defaultChecked /> {label}</label>)}
-                <hr />
-                {["최근 7일", "최근 1개월", "최근 3개월"].map((label, index) => <label key={label}><input type="radio" name="period" defaultChecked={index === 1} /> {label}</label>)}
-              </aside>
-              <div>
-                <SectionHead title={`리포트 ${activeReports.length}건`} note="최신순" />
-                <div className="report-list">
-                  {activeReports.map((report) => <ReportRow key={report.id} report={report} onClick={() => { setSelectedReportId(report.id); go("detail"); }} />)}
-                </div>
-              </div>
+            <div className="notice">본 리포트는 언론 보도를 자동 수집·분석해 월 1회 발행하는 요약 자료입니다. {reportStatus}</div>
+            <SectionHead title={`리포트 ${activeReports.length}건`} note="최신순" />
+            <div className="report-list">
+              {activeReports.map((report) => <ReportRow key={report.reportYm} report={report} onClick={() => { setSelectedReportId(report.reportYm); go("detail"); }} />)}
             </div>
+            <Pagination
+              page={reportApi.page + 1}
+              totalPages={reportApi.totalPages}
+              onChange={(page) => setReportApi((current) => ({ ...current, page: page - 1 }))}
+            />
           </section>
         )}
 
@@ -947,45 +949,81 @@ function Dashboard() {
           <section className="view">
             <button className="back" onClick={() => go("reports")}><ChevronLeft size={16} />리포트 목록으로</button>
             <article className="article">
-              <div className="article-meta"><span className={`badge ${levelClass(selectedReport.level)}`}><Blocks count={selectedReport.level} total={3} />영향도 {selectedReport.levelName}</span><span>발행 {selectedReport.date}</span><span>분석 기사 {selectedReport.count}건</span></div>
-              <h1>{selectedReport.title}</h1>
-              <div className="tags">{selectedReport.regions.map((tag) => <span key={tag}>#{tag}</span>)}</div>
-              <h3>요약</h3>
-              {selectedReport.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-              <div className="report-visual-grid">
-                <div className="report-metric"><span>분석 기사</span><b>{selectedReport.visualSummary.articleCount}</b><small>자동 수집 기사 기준</small></div>
-                <div className="report-metric"><span>원문 출처</span><b>{selectedReport.visualSummary.sourceCount}</b><small>상세 링크 제공 건수</small></div>
-                <div className="report-metric"><span>언급지역</span><b>{selectedReport.visualSummary.mentionedRegionCount}</b><small>기사 내 지역 mention</small></div>
+              <div className="article-meta">
+                <span className={`badge ${droughtGradeClass(selectedReport.headlineGrade)}`}>헤드라인 {selectedReport.headlineGrade ?? "등급 없음"}</span>
+                {selectedReport.generatedAt && <span>발행 {selectedReport.generatedAt.slice(0, 10)}</span>}
+                <span>분석 기사 {selectedReport.articleCount}건</span>
+                <span>감지 시도 {selectedReport.detectedSidoCount}/17</span>
               </div>
-              {selectedReport.visualSummary.impactFields.length > 0 && (
-                <div className="impact-bars" aria-label="영향분야 분포">
-                  {selectedReport.visualSummary.impactFields.map((field) => (
-                    <div className="impact-bar" key={`${field.impactCode}-${field.impactName}`}>
-                      <span>{field.impactName}</span>
-                      <div className="bar-track"><i style={{ width: `${Math.max(12, (field.count / selectedReportVisualMax) * 100)}%` }} /></div>
-                      <b>{field.count}</b>
-                    </div>
-                  ))}
+              <h1>{selectedReport.reportYm.split("-")[0]}년 {Number(selectedReport.reportYm.split("-")[1])}월호</h1>
+
+              {!selectedReport.detailLoaded && reportApi.detailError === selectedReportId && (
+                <div className="notice">
+                  리포트를 찾을 수 없습니다. <button className="back" onClick={() => go("reports")}>목록으로 돌아가기</button>
                 </div>
               )}
-              <h3>기사에서 언급된 지역</h3>
-              <div className="mention-grid">
-                {selectedReportMentionedRegions.map((region, index) => {
-                  const name = region.sigunguName ?? region.regionName ?? region.sidoName;
-                  return (
-                    <div className="mention-card" key={`${name}-${region.impactName}-${index}`}>
-                      <strong>{name}</strong>
-                      <span>{region.sidoName}{region.impactName ? ` · ${region.impactName}` : ""}</span>
-                      <p>{region.note ?? "기사 본문에서 지역 언급"}</p>
-                      {region.damageDetail && <small>{region.damageDetail}</small>}
-                    </div>
-                  );
-                })}
-              </div>
-              <h3>키워드</h3>
-              <div className="tags">{selectedReport.keywords.map((tag) => <span key={tag}>#{tag}</span>)}</div>
-              <h3>분석에 사용된 원문</h3>
-              <ul className="source-list">{selectedReport.sources.map((source) => <li key={source}>{source}<small>언론사 · {selectedReport.date}</small></li>)}</ul>
+              {!selectedReport.detailLoaded && reportApi.detailError !== selectedReportId && (
+                <div className="data-note">상세 데이터를 불러오는 중입니다…</div>
+              )}
+
+              {selectedReport.detailLoaded && (
+                <>
+                  <h3>전국 17개 시도 현황</h3>
+                  <div className="article-meta">
+                    {selectedReport.nationwide.map((status) => (
+                      <span key={status.sido} className={status.detected ? `badge ${droughtGradeClass(status.maxGrade)}` : undefined}>
+                        {status.sido}{status.detected ? ` · ${status.maxGrade}` : ""}
+                      </span>
+                    ))}
+                  </div>
+
+                  <h3>감지된 지역</h3>
+                  {selectedReport.regions.length === 0 && <p>이번 호에는 감지된 지역이 없습니다.</p>}
+                  <div className="mention-grid">
+                    {selectedReport.regions.map((region) => (
+                      <div className="mention-card" key={`${region.sido}-${region.sigungu}`}>
+                        <strong>{region.sigungu || region.sido}</strong>
+                        <span>{region.sido}</span>
+                        {region.impactFields.map((field) => (
+                          <div key={field.impactCode} style={{ marginTop: 8 }}>
+                            <b className={`badge ${droughtGradeClass(field.grade)}`}>{field.grade}</b>
+                            {" "}<b>{field.impactName}</b> · 기사 {field.articleCount}건
+                            {field.gradeLowerBound !== null && (
+                              <p style={{ margin: "4px 0", fontSize: 12 }}>
+                                등급 근거: 이 등급 기준 {Math.round(field.gradeLowerBound)}건
+                                {field.nextGradeLowerBound !== null
+                                  ? ` · 다음 등급 기준 ${Math.round(field.nextGradeLowerBound)}건`
+                                  : field.grade === "심각"
+                                    ? " · 이미 최고 등급"
+                                    : " · 다음 등급 구간 데이터 없음"}
+                              </p>
+                            )}
+                            {field.representativeTitle && <p>{field.representativeTitle}</p>}
+                            {field.keywords.length > 0 && (
+                              <small>{field.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>
+                            )}
+                            <small>{field.continuityCount > 1 ? `${field.continuityCount}개월째 감지` : "신규"}</small>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedReportReferenceLinks.length > 0 && (
+                    <>
+                      <h3>참고기사 링크 모음</h3>
+                      <ul className="source-list">
+                        {selectedReportReferenceLinks.map((field, index) => (
+                          <li key={`${field.impactCode}-${index}`}>
+                            <a href={field.representativeLink} target="_blank" rel="noreferrer">{field.representativeTitle}</a>
+                            <small>{field.impactName}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
             </article>
           </section>
         )}
@@ -1104,25 +1142,25 @@ function SectionHead({ title, note, action, onAction }: { title: string; note?: 
   );
 }
 
-function ReportCard({ report, onClick }: { report: typeof reports[number]; onClick: () => void }) {
+function ReportCard({ report, onClick }: { report: DroughtReportDetailView; onClick: () => void }) {
+  const [year, month] = report.reportYm.split("-");
   return (
     <button className="report-card" onClick={onClick}>
-      <span className={`badge ${levelClass(report.level)}`}><Blocks count={report.level} total={3} />{report.levelName}</span>
-      <small>{report.date}</small>
-      <b>{report.title}</b>
-      <p>{report.summary}</p>
-      <span className="tags">{report.regions.map((tag) => <i key={tag}>#{tag}</i>)}</span>
+      <span className={`badge ${droughtGradeClass(report.headlineGrade)}`}>{report.headlineGrade ?? "등급 없음"}</span>
+      <b>{year}년 {Number(month)}월호</b>
+      <p>감지 시도 {report.detectedSidoCount}/17 · 분석 기사 {report.articleCount}건</p>
+      <span className="tags">{report.detectedSidoNames.map((name) => <i key={name}>#{name}</i>)}</span>
     </button>
   );
 }
 
-function ReportRow({ report, onClick }: { report: typeof reports[number]; onClick: () => void }) {
+function ReportRow({ report, onClick }: { report: DroughtReportDetailView; onClick: () => void }) {
+  const [year, month] = report.reportYm.split("-");
   return (
     <button className="report-row" onClick={onClick}>
-      <span className={`badge ${levelClass(report.level)}`}><Blocks count={report.level} total={3} />{report.levelName}</span>
-      <b>{report.title}</b>
-      <p>{report.summary}</p>
-      <small>{report.date} · 분석 기사 {report.count}건 · 뉴스 기반 자동 생성</small>
+      <span className={`badge ${droughtGradeClass(report.headlineGrade)}`}>{report.headlineGrade ?? "등급 없음"}</span>
+      <b>{year}년 {Number(month)}월호</b>
+      <small>감지 시도 {report.detectedSidoCount}/17 · 분석 기사 {report.articleCount}건 · 뉴스 기반 자동 생성</small>
     </button>
   );
 }
