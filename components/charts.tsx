@@ -170,11 +170,13 @@ const HYDRO_VIEW_FUTURE_DAYS = 120;
 export function MonthlyOverlayChart({
   points,
   boundaryDate,
-  unit = "MWh"
+  unit = "MWh",
+  metricLabel = "발전량"
 }: {
   points: HydropowerVintagePoint[];
   boundaryDate: string;
   unit?: string;
+  metricLabel?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ point: HydropowerVintagePoint; x: number } | null>(null);
@@ -231,7 +233,7 @@ export function MonthlyOverlayChart({
 
   return (
     <div className="overlay-wrap">
-      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: 발전량({unit}) · 가로로 스크롤하면 {start.slice(0, 4)}년까지 갑니다</div>
+      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: {metricLabel}({unit}) · 가로로 스크롤하면 {start.slice(0, 4)}년까지 갑니다</div>
       <div className="overlay-chart">
       <div className="overlay-axis" style={{ width: Y_GUTTER, height: OVERLAY_HEIGHT }} aria-hidden="true">
         {ticks.map((value) => (
@@ -246,7 +248,7 @@ export function MonthlyOverlayChart({
         onMouseMove={handleMove}
         onMouseLeave={() => setHover(null)}
         role="img"
-        aria-label={`댐 발전량 실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
+        aria-label={`댐 ${metricLabel} 실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
       >
         <div className="overlay-canvas" style={{ width: plotWidth, height: OVERLAY_HEIGHT }}>
           <svg width={plotWidth} height={OVERLAY_HEIGHT} viewBox={`0 0 ${plotWidth} ${OVERLAY_HEIGHT}`} aria-hidden="true">

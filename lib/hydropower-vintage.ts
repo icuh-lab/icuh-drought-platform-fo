@@ -1,14 +1,17 @@
 /**
  * 수력발전량의 과거 예측·실측 + 미래 예측 시계열을 만드는 순수 로직 (양파 vintage와 동형).
  *
+ * 발전량(MWh)·저수량(백만㎥) 둘 다 같은 모양(예측 하한/상한 + 실측 하나)이라 이 빌더 하나를
+ * 공유한다 — 호출부에서 어떤 지표의 값을 넘기는지만 다르다.
+ *
  * 양파와 달리 하나의 vintage 로그 테이블이 없다 — `dam_monthly_predictions`를 그대로 쓴다.
  * 이 테이블은 시점(vintage)별로 기록된 로그가 아니라 "지금 아는 최신 예측"만 담은 테이블이라,
  * 한 번 지나간 달의 값은 그 뒤로 절대 안 바뀐다(모델이 매달 direct 1~3개월만 예측하므로).
  * 그래서 그대로 전체 이력을 가져다 쓰면 결과적으로 point-in-time 로그와 같아진다.
  *
- * 2022-01~2024-10 구간은 원래 실제 모델 산출물이 아니라 실적 ±80MWh/±40백만㎥ 고정밴드였는데,
- * 2026-08-30에 backtest_fill(누수 없는 시점별 재학습 walk-forward)로 그 구간 전체를 진짜 모델
- * 예측으로 다시 채웠다 — 이제 전 구간이 동일한 성격의 예측이라 별도 구분이 필요 없다.
+ * 2022-01~2024-10 구간은 원래 실제 모델 산출물이 아니라 고정밴드였는데, 2026-08-30에
+ * backtest_fill(누수 없는 시점별 재학습 walk-forward)로 그 구간 전체를 진짜 모델 예측으로
+ * 다시 채웠다 — 이제 전 구간이 동일한 성격의 예측이다.
  */
 
 export type HydropowerPredictionEntry = {
@@ -21,7 +24,7 @@ export type HydropowerPredictionEntry = {
 export type HydropowerActualEntry = {
   year: string;
   month: string;
-  actualMwh: number | null;
+  value: number | null;
 };
 
 export type HydropowerVintagePoint = {
@@ -56,8 +59,8 @@ export function buildHydropowerVintageSeries(
 
   const actual = new Map<string, number>();
   for (const entry of actuals) {
-    if (entry.actualMwh === null) continue;
-    actual.set(toMonthDate(entry.year, entry.month), entry.actualMwh);
+    if (entry.value === null) continue;
+    actual.set(toMonthDate(entry.year, entry.month), entry.value);
   }
 
   const dates = Array.from(new Set(Array.from(actual.keys()).concat(Array.from(predicted.keys())))).sort();

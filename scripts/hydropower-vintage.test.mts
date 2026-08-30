@@ -14,7 +14,7 @@ check(
   "실측과 예측을 날짜로 합친다",
   buildHydropowerVintageSeries(
     [{ year: "2026", month: "9", lowerBound: 100, upperBound: 200 }],
-    [{ year: "2026", month: "8", actualMwh: 500 }]
+    [{ year: "2026", month: "8", value: 500 }]
   ),
   {
     points: [
@@ -32,7 +32,7 @@ check(
   "실측과 예측이 같은 달에 겹치면 한 포인트에 둘 다 채운다",
   buildHydropowerVintageSeries(
     [{ year: "2026", month: "8", lowerBound: 400, upperBound: 600 }],
-    [{ year: "2026", month: "8", actualMwh: 500 }]
+    [{ year: "2026", month: "8", value: 500 }]
   ),
   {
     points: [{ date: "2026-08-01", actual: 500, predicted: 500 }],
@@ -48,8 +48,8 @@ check(
   buildHydropowerVintageSeries(
     [],
     [
-      { year: "2026", month: "7", actualMwh: 100 },
-      { year: "2026", month: "8", actualMwh: 150 }
+      { year: "2026", month: "7", value: 100 },
+      { year: "2026", month: "8", value: 150 }
     ]
   )?.delta,
   50

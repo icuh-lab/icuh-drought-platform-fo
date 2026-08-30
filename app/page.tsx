@@ -377,11 +377,11 @@ function Dashboard() {
 
     async function loadHydropower() {
       try {
-        const { damName, series } = await fetchHydropowerVintage({ signal: controller.signal, damName: selectedHydroDam });
+        const { damName, generation, storage } = await fetchHydropowerVintage({ signal: controller.signal, damName: selectedHydroDam });
         const damLabel = HYDROPOWER_DAMS.find((dam) => dam.queryName === damName)?.label ?? damName;
-        const nextForecast = series && toHydropowerForecastView(damLabel, series);
+        const nextForecast = generation && toHydropowerForecastView(damLabel, generation, storage);
 
-        if (!series || !nextForecast) {
+        if (!generation || !nextForecast) {
           setHydropowerApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
           return;
         }
@@ -389,8 +389,8 @@ function Dashboard() {
         setHydropowerApi({
           status: "success",
           forecast: nextForecast,
-          kpi: toHydropowerKpiView(damLabel, series),
-          latestDate: series.latestActualDate
+          kpi: toHydropowerKpiView(damLabel, generation),
+          latestDate: generation.latestActualDate
         });
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -812,6 +812,25 @@ function Dashboard() {
               {forecast === "hydro" && hydropowerForecast && <div className="data-note">{hydropowerForecast.note}</div>}
               <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history" : cabbageForecast?.source ?? "open-api /api/v1/agrimarket/daily-market · prediction-vintage (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? cabbageApi.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
+
+            {forecast === "hydro" && hydropowerForecast?.storage && (
+              <div className="card chart-card">
+                <div className="panel-hd">
+                  <h3>저수량</h3>
+                </div>
+                <div className="chart-hd">
+                  <div>
+                    <div className="chart-val">{hydropowerForecast.storage.current}<u>{hydropowerForecast.storage.unit}</u></div>
+                    <div className="chart-sub">{hydropowerForecast.storage.sub}</div>
+                  </div>
+                </div>
+                <MonthlyOverlayChart points={hydropowerForecast.storage.points} boundaryDate={hydropowerForecast.storage.boundaryDate} unit="백만㎥" metricLabel="저수량" />
+                <div className="legend">
+                  <span><i className="solid" />실측치</span>
+                  <span><i className="dash" />예측치</span>
+                </div>
+              </div>
+            )}
 
             <SectionHead title="지수형 지표" note="가뭄이 누적될수록 함께 상승하는 지표들을 표시합니다" />
             <div className="split">
