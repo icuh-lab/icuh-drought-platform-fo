@@ -168,6 +168,25 @@ export function yearlyAccuracy(points: VintagePricePoint[]): YearAccuracy[] {
     }));
 }
 
+/**
+ * walk-forward(진짜 out-of-sample) 표본만 모아 전체 MAPE 하나로 집계한다.
+ * 연도로 안 나누는 이유: 표본이 몇십 건뿐이라 연도로 쪼개면 연도당 표본이
+ * 너무 적어 통계적으로 의미가 약하다.
+ */
+export function walkforwardAccuracy(entries: RawVintageEntry[]): { mape: number; sampleCount: number } | null {
+  const errors: number[] = [];
+  for (const entry of entries) {
+    if (entry.source !== "reconstructed_walkforward") continue;
+    if (entry.actual === null || entry.actual === 0) continue;
+    errors.push(Math.abs(entry.actual - entry.pred) / entry.actual);
+  }
+  if (errors.length === 0) return null;
+  return {
+    mape: (errors.reduce((sum, value) => sum + value, 0) / errors.length) * 100,
+    sampleCount: errors.length
+  };
+}
+
 /** Y축 눈금. 0 원부터 step 원 간격으로, 최댓값을 덮는 데까지. */
 export function priceAxisTicks(maxValue: number, step = 500) {
   const top = Math.max(Math.ceil(maxValue / step) * step, step);
