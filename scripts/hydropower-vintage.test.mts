@@ -24,8 +24,7 @@ check(
     boundaryDate: "2026-08-01",
     latestActualDate: "2026-08-01",
     delta: null,
-    current: 500,
-    legacyBandUntilDate: null
+    current: 500
   }
 );
 
@@ -40,8 +39,7 @@ check(
     boundaryDate: "2026-08-01",
     latestActualDate: "2026-08-01",
     delta: null,
-    current: 500,
-    legacyBandUntilDate: null
+    current: 500
   }
 );
 
@@ -55,24 +53,6 @@ check(
     ]
   )?.delta,
   50
-);
-
-check(
-  "2024-11 이전 포인트가 있으면 고정밴드 경계일을 표시한다",
-  buildHydropowerVintageSeries(
-    [
-      { year: "2024", month: "10", lowerBound: 80, upperBound: 80 },
-      { year: "2024", month: "11", lowerBound: 100, upperBound: 100 }
-    ],
-    []
-  )?.legacyBandUntilDate,
-  "2024-11-01"
-);
-
-check(
-  "전 구간이 2024-11 이후면 고정밴드 경계일이 없다",
-  buildHydropowerVintageSeries([{ year: "2025", month: "1", lowerBound: 100, upperBound: 100 }], [])?.legacyBandUntilDate,
-  null
 );
 
 check("실측·예측이 둘 다 없으면 null", buildHydropowerVintageSeries([], []), null);

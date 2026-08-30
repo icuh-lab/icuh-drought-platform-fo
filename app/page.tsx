@@ -797,7 +797,6 @@ function Dashboard() {
                   <MonthlyOverlayChart
                     points={hydropowerForecast.points}
                     boundaryDate={hydropowerForecast.boundaryDate}
-                    legacyBandUntilDate={hydropowerForecast.legacyBandUntilDate}
                     unit="MWh"
                   />
                 )

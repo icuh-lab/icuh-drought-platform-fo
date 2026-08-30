@@ -161,8 +161,6 @@ export type HydropowerForecastView = {
   note: string;
   points: HydropowerVintagePoint[];
   boundaryDate: string;
-  /** 이 날짜보다 이른 포인트는 실적 ±80MWh 고정밴드다(모델 예측 아님). 없으면 null. */
-  legacyBandUntilDate: string | null;
   latestActualDate: string | null;
 };
 
@@ -847,15 +845,9 @@ export function toHydropowerForecastView(damLabel: string, series: HydropowerVin
     errorNote: "정확도 지표 미제공",
     source: "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history",
     sub: `${damLabel} · ${dated}${change}`,
-    note: [
-      "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
-      series.legacyBandUntilDate === null
-        ? null
-        : `${series.legacyBandUntilDate} 이전 구간은 모델 예측이 아니라 실적 기준 고정밴드(±80MWh)입니다`
-    ].filter((part): part is string => part !== null).join(" · "),
+    note: "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
     points: series.points,
     boundaryDate: series.boundaryDate,
-    legacyBandUntilDate: series.legacyBandUntilDate,
     latestActualDate: series.latestActualDate
   };
 }

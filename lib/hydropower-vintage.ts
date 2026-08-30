@@ -4,9 +4,11 @@
  * 양파와 달리 하나의 vintage 로그 테이블이 없다 — `dam_monthly_predictions`를 그대로 쓴다.
  * 이 테이블은 시점(vintage)별로 기록된 로그가 아니라 "지금 아는 최신 예측"만 담은 테이블이라,
  * 한 번 지나간 달의 값은 그 뒤로 절대 안 바뀐다(모델이 매달 direct 1~3개월만 예측하므로).
- * 그래서 그대로 전체 이력을 가져다 쓰면 결과적으로 point-in-time 로그와 같아진다 — 단,
- * 2022-01~2024-10 구간만 예외로, 실제 모델 산출물이 아니라 실적 ±80MWh/±40백만㎥ 고정밴드다
- * (CLAUDE.md에 문서화된 사실). `legacyBandUntilDate`로 그 경계를 표시한다.
+ * 그래서 그대로 전체 이력을 가져다 쓰면 결과적으로 point-in-time 로그와 같아진다.
+ *
+ * 2022-01~2024-10 구간은 원래 실제 모델 산출물이 아니라 실적 ±80MWh/±40백만㎥ 고정밴드였는데,
+ * 2026-08-30에 backtest_fill(누수 없는 시점별 재학습 walk-forward)로 그 구간 전체를 진짜 모델
+ * 예측으로 다시 채웠다 — 이제 전 구간이 동일한 성격의 예측이라 별도 구분이 필요 없다.
  */
 
 export type HydropowerPredictionEntry = {
@@ -36,16 +38,7 @@ export type HydropowerVintageSeries = {
   /** 직전 실측월 대비 변동률(%) */
   delta: number | null;
   current: number | null;
-  /** 이 날짜보다 이른 포인트는 고정밴드 구간(모델 예측이 아님). 전 구간이 그 이후면 null. */
-  legacyBandUntilDate: string | null;
 };
-
-/**
- * `dam_monthly_predictions`의 2022-01~2024-10 행은 실제 모델 산출물이 아니라 실적
- * ±80MWh(발전량)/±40백만㎥(저수량) 고정밴드다. 2024-11부터가 진짜 모델 예측이다.
- * (CLAUDE.md "데이터 의미 주의사항" 참고 — DB 컬럼으로 구분이 안 돼 날짜 기준을 고정값으로 둔다.)
- */
-export const HYDROPOWER_LEGACY_BAND_UNTIL = "2024-11-01";
 
 function toMonthDate(year: string, month: string) {
   return `${year}-${month.padStart(2, "0")}-01`;
@@ -84,11 +77,8 @@ export function buildHydropowerVintageSeries(
   const delta = current === null || previous === null || previous === 0 ? null : ((current - previous) / previous) * 100;
 
   const boundaryDate = latestActualDate ?? dates[dates.length - 1];
-  const legacyBandUntilDate = dates.some((date) => date < HYDROPOWER_LEGACY_BAND_UNTIL)
-    ? HYDROPOWER_LEGACY_BAND_UNTIL
-    : null;
 
-  return { points, boundaryDate, latestActualDate, delta, current, legacyBandUntilDate };
+  return { points, boundaryDate, latestActualDate, delta, current };
 }
 
 /**
