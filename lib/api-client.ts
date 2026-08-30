@@ -474,6 +474,15 @@ export function priceForecastLocation(key: PriceForecastKey): string {
   return PRICE_FORECAST_CONFIG[key].location;
 }
 
+/**
+ * 절대 가격값에 곱해야 하는 배수. 배추는 모델이 원/kg 로 내지만 화면은 원/10kg망
+ * 관행이라 10, 양파는 원/kg 그대로라 1 — 테스트가 이 값을 그대로 참조해 하드코딩된
+ * 10/1 이 설정과 어긋나지 않게 한다.
+ */
+export function priceForecastDisplayMultiplier(key: PriceForecastKey): number {
+  return PRICE_FORECAST_CONFIG[key].displayMultiplier;
+}
+
 export async function fetchPredictionVintage(location: string, signal?: AbortSignal) {
   const search = new URLSearchParams({ location });
   return getOpenApiData<PredictionVintageResponse>("/api/v1/agrimarket/prediction-vintage", search, signal);
@@ -523,7 +532,43 @@ export async function fetchOverlayPriceSeries(
     trends.push(...batch.flat());
   }
 
-  return buildVintagePriceSeries({ entries: vintage.entries, market: trends });
+  const multiplier = PRICE_FORECAST_CONFIG[key].displayMultiplier;
+  return buildVintagePriceSeries({
+    entries: scaleVintageEntriesForDisplay(vintage.entries, multiplier),
+    market: scaleMarketTrendForDisplay(trends, multiplier)
+  });
+}
+
+/**
+ * 배추의 기반 모델은 원/kg 로 값을 내지만 화면은 "원/10kg망" 관행으로 표시한다
+ * (displayMultiplier=10). 양파는 원/kg 그대로라 배수가 1 이라 이 변환이 없어도
+ * 결과가 같다. onion 이 이 함수를 거쳐도 값이 그대로인 걸 테스트가 확인한다.
+ *
+ * vintage-price-series 의 순수 로직(합계·오차율 계산)은 건드리지 않는다 — 실측·예측
+ * 양쪽을 같은 배수로 미리 스케일해서 넘기면, 그 비율로 계산하는 delta·errorRate 는
+ * 배수가 상쇄돼 자동으로 맞는 값이 나온다.
+ */
+export function scaleVintageEntriesForDisplay(
+  entries: PredictionVintageEntry[],
+  multiplier: number
+): PredictionVintageEntry[] {
+  return entries.map((entry) => ({
+    ...entry,
+    pred: toDisplayPrice(entry.pred, multiplier),
+    actual: toOptionalDisplayPrice(entry.actual, multiplier)
+    // arrivalTon 은 물량이라 가격 배수의 영향을 받지 않는다.
+  }));
+}
+
+export function scaleMarketTrendForDisplay(
+  points: RawMarketTrendPoint[],
+  multiplier: number
+): RawMarketTrendPoint[] {
+  return points.map((point) => ({
+    ...point,
+    avgWholesalePrice: toOptionalDisplayPrice(point.avgWholesalePrice, multiplier)
+    // marketVolume 은 물량이라 가격 배수의 영향을 받지 않는다.
+  }));
 }
 
 export function toOverlayForecastView(key: PriceForecastKey, series: VintagePriceSeries): OverlayForecastView | null {
