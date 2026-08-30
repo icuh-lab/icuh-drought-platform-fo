@@ -32,6 +32,7 @@ import {
   toOverlayKpiView,
   type FireRiskView,
   type FireRiskMapView,
+  type DroughtReportDetail,
   type DroughtReportDetailView,
   type FreshFoodGaugeView,
   type FreshFoodProvinceRow,
@@ -105,6 +106,7 @@ type ReportApiState = {
   page: number;
   totalPages: number;
   detailError: string | null;
+  usingCuratedFallback: boolean;
 };
 
 const DROUGHT_GRADE_CLASS: Record<string, string> = { 관심: "lv1", 주의: "lv2", 경계: "lv3", 심각: "lv4" };
@@ -191,6 +193,7 @@ function summaryStatusText(state: SummaryApiState) {
 }
 
 function reportStatusText(state: ReportApiState) {
+  if (state.usingCuratedFallback) return "리포트 API 오류 · 실측 데이터 캐시 표시";
   if (state.status === "success") return "리포트 API 갱신";
   if (state.status === "loading") return "리포트 API 확인 중 · 목업 표시";
   if (state.status === "empty") return "리포트 API 데이터 없음 · 목업 표시";
@@ -306,7 +309,8 @@ const initialReportApiState: ReportApiState = {
   details: {},
   page: 0,
   totalPages: 1,
-  detailError: null
+  detailError: null,
+  usingCuratedFallback: false
 };
 
 export default function Page() {
@@ -639,7 +643,32 @@ function Dashboard() {
           return;
         }
 
-        setReportApi((current) => ({ ...current, status: "error", reports: null }));
+        try {
+          const curatedResponse = await fetch("/data/drought-reports-curated.json", { signal: controller.signal });
+          if (!curatedResponse.ok) {
+            throw new Error(`curated fallback fetch failed: ${curatedResponse.status}`);
+          }
+          const curatedRaw = (await curatedResponse.json()) as DroughtReportDetail[];
+          const curatedReports = curatedRaw
+            .map((raw) => toDroughtReportDetailView(raw))
+            .sort((a, b) => (a.reportYm < b.reportYm ? 1 : -1));
+
+          setReportApi((current) => ({
+            ...current,
+            status: "success",
+            reports: curatedReports,
+            totalPages: 1,
+            usingCuratedFallback: true
+          }));
+          setSelectedReportId((current) =>
+            curatedReports.some((report) => report.reportYm === current) ? current : curatedReports[0].reportYm
+          );
+        } catch {
+          if (controller.signal.aborted) {
+            return;
+          }
+          setReportApi((current) => ({ ...current, status: "error", reports: null }));
+        }
       }
     }
 
