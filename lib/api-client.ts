@@ -150,6 +150,14 @@ export type PriceKpiView = (typeof kpis)[number];
  * 수력발전량도 양파처럼 실측 뒤에 예측을 이어 붙이는 모양이 아니라 같은 날짜축 위에
  * 겹치는 모양이다 — 과거에 예측한 값과 그 달의 실측이 나란히, 그리고 미래는 예측만.
  */
+export type HydropowerStorageView = {
+  current: string;
+  unit: string;
+  sub: string;
+  points: HydropowerVintagePoint[];
+  boundaryDate: string;
+};
+
 export type HydropowerForecastView = {
   label: string;
   current: string;
@@ -161,9 +169,9 @@ export type HydropowerForecastView = {
   note: string;
   points: HydropowerVintagePoint[];
   boundaryDate: string;
-  /** 이 날짜보다 이른 포인트는 실적 ±80MWh 고정밴드다(모델 예측 아님). 없으면 null. */
-  legacyBandUntilDate: string | null;
   latestActualDate: string | null;
+  /** 같은 댐의 저수량 시계열. 실측·예측이 전혀 없으면 null. */
+  storage: HydropowerStorageView | null;
 };
 
 export type FireRiskGradeCode = "low" | "moderate" | "high" | "very-high" | "very_high";
@@ -392,6 +400,17 @@ type OpenHydropowerGenerationResponse = {
     month: string;
     plannedMwh: number | null;
     actualMwh: number | null;
+  }[];
+};
+
+type OpenHydropowerReservoirResponse = {
+  damName: string;
+  damCode: string;
+  monthlyReservoirStatusDto: {
+    year: string;
+    month: string;
+    waterLevelElm: number | null;
+    waterStorageMcm: number | null;
   }[];
 };
 
@@ -659,7 +678,9 @@ export const DEFAULT_HYDROPOWER_DAM: HydropowerDamName =
 
 /**
  * 댐 하나의 전체 예측 이력(monthly-predict-history)과, 그 이력이 걸친 연도만큼의 실측
- * (monthly-generation, 연 단위 조회라 연도 수만큼 병렬로 부른다)을 합쳐 vintage 시계열을 만든다.
+ * (monthly-generation·monthly-reservoir, 둘 다 연 단위 조회라 연도 수만큼 병렬로 부른다)을
+ * 합쳐 발전량·저수량 두 vintage 시계열을 만든다. 예측 쪽은 이미 한 응답에 두 지표가 같이
+ * 온다(predictedPowerGenerationDto/predictedWaterStorageDto 성격의 필드).
  */
 export async function fetchHydropowerVintage({ signal, damName }: FetchHydropowerVintageOptions = {}) {
   const dam = damName ?? DEFAULT_HYDROPOWER_DAM;
@@ -669,41 +690,56 @@ export async function fetchHydropowerVintage({ signal, damName }: FetchHydropowe
     signal
   );
 
-  const predictions: HydropowerPredictionEntry[] = history.entries.map((entry) => ({
+  const generationPredictions: HydropowerPredictionEntry[] = history.entries.map((entry) => ({
     year: entry.year,
     month: entry.month,
     lowerBound: entry.predictedPowerGenerationLowerBound,
     upperBound: entry.predictedPowerGenerationUpperBound
   }));
+  const storagePredictions: HydropowerPredictionEntry[] = history.entries.map((entry) => ({
+    year: entry.year,
+    month: entry.month,
+    lowerBound: entry.predictedWaterStorageLowerBound,
+    upperBound: entry.predictedWaterStorageUpperBound
+  }));
 
-  const predictionYears = predictions.map((entry) => Number(entry.year));
+  const predictionYears = history.entries.map((entry) => Number(entry.year));
   const minYear = predictionYears.length > 0 ? Math.min(...predictionYears) : OPEN_API_DEFAULT_PERIOD.year;
   const maxYear = predictionYears.length > 0 ? Math.max(...predictionYears) : OPEN_API_DEFAULT_PERIOD.year;
 
   const actualsByYear = await Promise.all(
     Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index).map(async (year) => {
-      try {
-        const yearSearch = new URLSearchParams({ year: String(year), damName: dam });
-        const generation = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", yearSearch, signal);
-        return generation.monthlyGenerationDto;
-      } catch (error) {
-        // 이력이 걸친 연도 중 실측이 아직 없는 해(예: 미래 예측만 있는 연도)는 404가 정상이다 —
-        // 한 해가 없다고 나머지 연도까지 안 보여주면 안 된다.
-        if (signal?.aborted) throw error;
-        return [];
-      }
+      const yearSearch = new URLSearchParams({ year: String(year), damName: dam });
+      const [generation, reservoir] = await Promise.all([
+        getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", yearSearch, signal).catch((error) => {
+          // 이력이 걸친 연도 중 실측이 아직 없는 해(예: 미래 예측만 있는 연도)는 404가 정상이다 —
+          // 한 해가 없다고 나머지 연도까지 안 보여주면 안 된다.
+          if (signal?.aborted) throw error;
+          return null;
+        }),
+        getOpenApiData<OpenHydropowerReservoirResponse>("/api/v1/hydropower/monthly-reservoir", yearSearch, signal).catch((error) => {
+          if (signal?.aborted) throw error;
+          return null;
+        })
+      ]);
+      return {
+        generation: generation?.monthlyGenerationDto ?? [],
+        reservoir: reservoir?.monthlyReservoirStatusDto ?? []
+      };
     })
   );
 
-  const actuals: HydropowerActualEntry[] = actualsByYear.flat().map((entry) => ({
-    year: entry.year,
-    month: entry.month,
-    actualMwh: entry.actualMwh
-  }));
+  const generationActuals: HydropowerActualEntry[] = actualsByYear
+    .flatMap((year) => year.generation)
+    .map((entry) => ({ year: entry.year, month: entry.month, value: entry.actualMwh }));
+  const storageActuals: HydropowerActualEntry[] = actualsByYear
+    .flatMap((year) => year.reservoir)
+    .map((entry) => ({ year: entry.year, month: entry.month, value: entry.waterStorageMcm }));
 
   return {
     damName: history.damName,
-    series: buildHydropowerVintageSeries(predictions, actuals)
+    generation: buildHydropowerVintageSeries(generationPredictions, generationActuals),
+    storage: buildHydropowerVintageSeries(storagePredictions, storageActuals)
   };
 }
 
@@ -835,28 +871,33 @@ export async function fetchDroughtReportDetail(id: string, { signal }: FetchDrou
   return articleDetailToDroughtReportDetail(detail);
 }
 
-export function toHydropowerForecastView(damLabel: string, series: HydropowerVintageSeries): HydropowerForecastView {
-  const dated = series.latestActualDate ?? series.boundaryDate;
-  const change = series.delta === null ? "" : ` · 전월대비 ${formatSignedPercent(series.delta)}`;
+export function toHydropowerForecastView(
+  damLabel: string,
+  generation: HydropowerVintageSeries,
+  storage: HydropowerVintageSeries | null
+): HydropowerForecastView {
+  const dated = generation.latestActualDate ?? generation.boundaryDate;
+  const change = generation.delta === null ? "" : ` · 전월대비 ${formatSignedPercent(generation.delta)}`;
 
   return {
     label: "수력발전량",
-    current: series.current === null ? "–" : formatWholeNumber(series.current),
+    current: generation.current === null ? "–" : formatWholeNumber(generation.current),
     unit: "MWh / 월",
     error: "N/A",
     errorNote: "정확도 지표 미제공",
-    source: "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history",
+    source: "open-api /api/v1/hydropower/monthly-generation · monthly-reservoir · monthly-predict-history",
     sub: `${damLabel} · ${dated}${change}`,
-    note: [
-      "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
-      series.legacyBandUntilDate === null
-        ? null
-        : `${series.legacyBandUntilDate} 이전 구간은 모델 예측이 아니라 실적 기준 고정밴드(±80MWh)입니다`
-    ].filter((part): part is string => part !== null).join(" · "),
-    points: series.points,
-    boundaryDate: series.boundaryDate,
-    legacyBandUntilDate: series.legacyBandUntilDate,
-    latestActualDate: series.latestActualDate
+    note: "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
+    points: generation.points,
+    boundaryDate: generation.boundaryDate,
+    latestActualDate: generation.latestActualDate,
+    storage: storage === null ? null : {
+      current: storage.current === null ? "–" : formatWholeNumber(storage.current),
+      unit: "백만㎥ / 월",
+      sub: `${damLabel} · ${storage.latestActualDate ?? storage.boundaryDate}`,
+      points: storage.points,
+      boundaryDate: storage.boundaryDate
+    }
   };
 }
 
