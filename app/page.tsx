@@ -1151,15 +1151,6 @@ function Dashboard() {
                   <h3>이번 호 개요</h3>
                   <p className="lede">{buildReportOverview(selectedReport)}</p>
 
-                  <div className="caveat">
-                    <AlertTriangle size={16} />
-                    <p>
-                      <b>등급 배지는 실제 위기 시점과 어긋날 수 있습니다.</b> 등급은 그 달의 기사 언급량 기준(Jenks)이며,
-                      재해가 실제로 심각했던 시점을 그대로 반영하지는 않습니다. 새 호는 발행 즉시 &lsquo;관심&rsquo;으로 시작해
-                      1개월 뒤 실제 집계로 한 번 갱신되어 그 값으로 고정됩니다.
-                    </p>
-                  </div>
-
                   <h3>전국 17개 시도 현황</h3>
                   <div className="sidogrid">
                     {selectedReport.nationwide.map((status) =>
