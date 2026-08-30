@@ -271,71 +271,76 @@ export type SummaryResponse = {
   kpis: SummaryKpi[];
 };
 
-export type DroughtReportRegion = {
-  regionCode: string;
-  regionName: string;
-  sidoName: string;
-  note: string | null;
-};
+export type DroughtGrade = "관심" | "주의" | "경계" | "심각";
 
-export type DroughtReportSummary = {
-  id: string;
-  title: string;
-  impact: "minor" | "moderate" | "severe" | "critical";
-  impactName: string;
-  level: number;
-  publishedDate: string;
-  regions: DroughtReportRegion[];
-  summary: string;
-  sourceArticleCount: number;
-  keywords: string[];
-};
-
-export type DroughtReportSource = {
-  title: string;
-  publisher: string | null;
-  publishedDate: string | null;
-  url: string | null;
-};
-
-export type DroughtReportMentionedRegion = {
-  sidoName: string;
-  sigunguName: string | null;
-  sigunguCode: string | null;
-  regionCode: string | null;
-  regionName: string | null;
-  impactCode: string | null;
-  impactName: string;
-  note: string | null;
-  damageDetail: string | null;
-};
-
-export type DroughtReportImpactField = {
+export type DroughtImpactBucket = {
   impactCode: string;
   impactName: string;
-  count: number;
-};
-
-export type DroughtReportVisualSummary = {
+  grade: DroughtGrade;
+  gradeFinalized: boolean;
   articleCount: number;
-  sourceCount: number;
-  mentionedRegionCount: number;
-  impactFields: DroughtReportImpactField[];
+  representativeTitle: string | null;
+  representativeLink: string | null;
+  keywords: string[];
+  relevanceFlag: boolean;
+  continuityCount: number;
+  gradeLowerBound: number | null;
+  nextGradeLowerBound: number | null;
 };
 
-export type DroughtReportDetail = DroughtReportSummary & {
-  body: string[];
-  mentionedRegions: DroughtReportMentionedRegion[];
-  visualSummary: DroughtReportVisualSummary;
-  sources: DroughtReportSource[];
-  notice: string;
+export type DroughtRegionSection = {
+  sido: string;
+  sigungu: string;
+  impactFields: DroughtImpactBucket[];
 };
 
-export type DroughtReportListResponse = {
-  reports: DroughtReportSummary[];
+export type DroughtSidoStatus = {
+  sido: string;
+  detected: boolean;
+  maxGrade: DroughtGrade | null;
 };
 
-export type DroughtReportView = typeof reports[number];
+export type DroughtReportListItem = {
+  reportYm: string;
+  headlineGrade: DroughtGrade | null;
+  detectedSidoCount: number;
+  articleCount: number;
+  detectedSidoNames: string[];
+};
+
+export type DroughtReportListPage = {
+  content: DroughtReportListItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
+export type DroughtReportDetail = {
+  reportYm: string;
+  generatedAt: string;
+  articleCount: number;
+  detectedSidoCount: number;
+  nationwide: DroughtSidoStatus[];
+  regions: DroughtRegionSection[];
+};
+
+/**
+ * 목록/상세 화면이 공통으로 쓰는 뷰 타입. 목록에서 만든 뷰는 detailLoaded=false로
+ * regions/nationwide가 빈 배열 — 상세 진입 시 실제 상세를 불러오면 detailLoaded=true로 채워진다.
+ * (감지된 지역이 진짜 0건인 상태와 "아직 상세를 못 불러온" 상태를 이 플래그로 구분한다.)
+ */
+export type DroughtReportDetailView = {
+  reportYm: string;
+  headlineGrade: DroughtGrade | null;
+  generatedAt: string | null;
+  articleCount: number;
+  detectedSidoCount: number;
+  detectedSidoNames: string[];
+  nationwide: DroughtSidoStatus[];
+  regions: DroughtRegionSection[];
+  detailLoaded: boolean;
+};
 
 type FetchPriceForecastOptions = {
   signal?: AbortSignal;
@@ -365,6 +370,7 @@ type FetchSummaryOptions = {
 
 type FetchDroughtReportsOptions = {
   signal?: AbortSignal;
+  page?: number;
   size?: number;
 };
 
@@ -856,27 +862,22 @@ export async function fetchSummary({ signal }: FetchSummaryOptions = {}) {
   return payload.data;
 }
 
-export async function fetchDroughtReports({ signal, size = 20 }: FetchDroughtReportsOptions = {}) {
+export async function fetchDroughtReports(
+  { signal, page = 0, size = 20 }: FetchDroughtReportsOptions = {}
+): Promise<DroughtReportListPage> {
   const search = new URLSearchParams({
-    page: "0",
+    page: String(page),
     size: String(size),
-    sort: "updatedAt,desc"
+    sort: "reportYm,desc"
   });
-  const page = normalizeArticlePage(
-    await getPublicApiData<PublicArticlePageResponse>("/api/v1/articles", search, signal),
-    1,
-    size
-  );
-  return {
-    reports: page.content.map(articleListItemToDroughtReportSummary)
-  };
+  return getOpenApiData<DroughtReportListPage>("/api/v1/drought/reports", search, signal);
 }
 
-export async function fetchDroughtReportDetail(id: string, { signal }: FetchDroughtReportDetailOptions = {}) {
-  const detail = normalizeArticleDetail(
-    await getPublicApiData<PublicArticleDetailResponse>(`/api/v1/articles/${encodeURIComponent(id)}`, null, signal)
-  );
-  return articleDetailToDroughtReportDetail(detail);
+export async function fetchDroughtReportDetail(
+  reportYm: string,
+  { signal }: FetchDroughtReportDetailOptions = {}
+): Promise<DroughtReportDetail> {
+  return getOpenApiData<DroughtReportDetail>(`/api/v1/drought/reports/${encodeURIComponent(reportYm)}`, null, signal);
 }
 
 export function toHydropowerForecastView(
@@ -948,13 +949,43 @@ export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageS
   };
 }
 
-export function toDroughtReportViews(response: DroughtReportListResponse): DroughtReportView[] {
-  return response.reports.map((report) => toDroughtReportView(report));
+export function toDroughtReportListViews(page: DroughtReportListPage): DroughtReportDetailView[] {
+  return page.content.map((item) => ({
+    reportYm: item.reportYm,
+    headlineGrade: item.headlineGrade,
+    generatedAt: null,
+    articleCount: item.articleCount,
+    detectedSidoCount: item.detectedSidoCount,
+    detectedSidoNames: item.detectedSidoNames,
+    nationwide: [],
+    regions: [],
+    detailLoaded: false
+  }));
 }
 
-export function toDroughtReportDetailView(response: DroughtReportDetail): DroughtReportView {
-  return toDroughtReportView(response, response.body, response.sources, response.mentionedRegions, response.visualSummary);
+export function toDroughtReportDetailView(detail: DroughtReportDetail): DroughtReportDetailView {
+  const headlineGrade = detail.nationwide
+    .map((status) => status.maxGrade)
+    .filter((grade): grade is DroughtGrade => grade !== null)
+    .reduce<DroughtGrade | null>(
+      (highest, grade) => (highest === null || DROUGHT_GRADE_ORDER[grade] > DROUGHT_GRADE_ORDER[highest] ? grade : highest),
+      null
+    );
+
+  return {
+    reportYm: detail.reportYm,
+    headlineGrade,
+    generatedAt: detail.generatedAt,
+    articleCount: detail.articleCount,
+    detectedSidoCount: detail.detectedSidoCount,
+    detectedSidoNames: detail.nationwide.filter((status) => status.detected).map((status) => status.sido),
+    nationwide: detail.nationwide,
+    regions: detail.regions,
+    detailLoaded: true
+  };
 }
+
+const DROUGHT_GRADE_ORDER: Record<DroughtGrade, number> = { 관심: 0, 주의: 1, 경계: 2, 심각: 3 };
 
 export function toFireRiskView(response: FireRiskIndexResponse): FireRiskView | null {
   if (response.regions.length === 0) {
@@ -1224,121 +1255,6 @@ function isApiSummaryResponse(value: unknown): value is ApiResponse<SummaryRespo
   );
 }
 
-function isApiDroughtReportListResponse(value: unknown): value is ApiResponse<DroughtReportListResponse> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isDroughtReportListResponse(value.data)) &&
-    "error" in value
-  );
-}
-
-function isDroughtReportListResponse(value: unknown): value is DroughtReportListResponse {
-  if (!isRecord(value)) return false;
-  return Array.isArray(value.reports) && value.reports.every(isDroughtReportSummary);
-}
-
-function isApiDroughtReportDetailResponse(value: unknown): value is ApiResponse<DroughtReportDetail> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isDroughtReportDetail(value.data)) &&
-    "error" in value
-  );
-}
-
-function isDroughtReportDetail(value: unknown): value is DroughtReportDetail {
-  if (!isDroughtReportSummary(value) || !isRecord(value)) return false;
-  const record = value as Record<string, unknown>;
-  return (
-    Array.isArray(record.body) &&
-    record.body.every((paragraph) => typeof paragraph === "string") &&
-    Array.isArray(record.mentionedRegions) &&
-    record.mentionedRegions.every(isDroughtReportMentionedRegion) &&
-    isDroughtReportVisualSummary(record.visualSummary) &&
-    Array.isArray(record.sources) &&
-    record.sources.every(isDroughtReportSource) &&
-    typeof record.notice === "string"
-  );
-}
-
-function isDroughtReportSummary(value: unknown): value is DroughtReportSummary {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.id === "string" &&
-    typeof value.title === "string" &&
-    isDroughtReportImpact(value.impact) &&
-    typeof value.impactName === "string" &&
-    typeof value.level === "number" &&
-    typeof value.publishedDate === "string" &&
-    Array.isArray(value.regions) &&
-    value.regions.every(isDroughtReportRegion) &&
-    typeof value.summary === "string" &&
-    typeof value.sourceArticleCount === "number" &&
-    Array.isArray(value.keywords) &&
-    value.keywords.every((keyword) => typeof keyword === "string")
-  );
-}
-
-function isDroughtReportRegion(value: unknown): value is DroughtReportRegion {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.regionCode === "string" &&
-    typeof value.regionName === "string" &&
-    typeof value.sidoName === "string" &&
-    (value.note === null || typeof value.note === "string")
-  );
-}
-
-function isDroughtReportSource(value: unknown): value is DroughtReportSource {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.title === "string" &&
-    (value.publisher === null || typeof value.publisher === "string") &&
-    (value.publishedDate === null || typeof value.publishedDate === "string") &&
-    (value.url === null || typeof value.url === "string")
-  );
-}
-
-function isDroughtReportMentionedRegion(value: unknown): value is DroughtReportMentionedRegion {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.sidoName === "string" &&
-    (value.sigunguName === null || typeof value.sigunguName === "string") &&
-    (value.sigunguCode === null || typeof value.sigunguCode === "string") &&
-    (value.regionCode === null || typeof value.regionCode === "string") &&
-    (value.regionName === null || typeof value.regionName === "string") &&
-    (value.impactCode === null || typeof value.impactCode === "string") &&
-    typeof value.impactName === "string" &&
-    (value.note === null || typeof value.note === "string") &&
-    (value.damageDetail === null || typeof value.damageDetail === "string")
-  );
-}
-
-function isDroughtReportVisualSummary(value: unknown): value is DroughtReportVisualSummary {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.articleCount === "number" &&
-    typeof value.sourceCount === "number" &&
-    typeof value.mentionedRegionCount === "number" &&
-    Array.isArray(value.impactFields) &&
-    value.impactFields.every(isDroughtReportImpactField)
-  );
-}
-
-function isDroughtReportImpactField(value: unknown): value is DroughtReportImpactField {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.impactCode === "string" &&
-    typeof value.impactName === "string" &&
-    typeof value.count === "number"
-  );
-}
-
-function isDroughtReportImpact(value: unknown): value is DroughtReportSummary["impact"] {
-  return value === "minor" || value === "moderate" || value === "severe" || value === "critical";
-}
-
 function isSummaryResponse(value: unknown): value is SummaryResponse {
   if (!isRecord(value)) return false;
   return (
@@ -1390,86 +1306,6 @@ function isSummaryAlertSeverity(value: unknown): value is SummaryAlertSeverity {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function toDroughtReportView(
-  report: DroughtReportSummary,
-  body: string[] = [report.summary],
-  sources: DroughtReportSource[] = [],
-  mentionedRegions: DroughtReportMentionedRegion[] = [],
-  visualSummary: DroughtReportVisualSummary = {
-    articleCount: report.sourceArticleCount,
-    sourceCount: sources.length,
-    mentionedRegionCount: report.regions.length,
-    impactFields: []
-  }
-): DroughtReportView {
-  const regionLabels = report.regions.flatMap((region) => [region.regionName, region.sidoName]).filter(Boolean);
-  const uniqueRegions = Array.from(new Set(regionLabels));
-  const pinSource = mentionedRegions.length > 0
-    ? mentionedRegions.map((region) => ({
-      name: region.sigunguName ?? region.regionName ?? region.sidoName,
-      note: region.note ?? `${region.sigunguName ?? region.regionName ?? region.sidoName} 지역 언급`
-    }))
-    : report.regions.map((region) => ({
-      name: region.regionName,
-      note: region.note ?? `${region.regionName} 지역 언급`
-    }));
-  const normalizedMentionedRegions = mentionedRegions.map((region) => ({
-    sidoName: region.sidoName,
-    sigunguName: region.sigunguName ?? "",
-    sigunguCode: region.sigunguCode ?? "",
-    regionCode: region.regionCode ?? "",
-    regionName: region.regionName ?? "",
-    impactCode: region.impactCode ?? "",
-    impactName: region.impactName,
-    note: region.note ?? "",
-    damageDetail: region.damageDetail ?? ""
-  }));
-
-  return {
-    id: report.id,
-    title: report.title,
-    level: Math.min(Math.max(report.level, 1), 4),
-    levelName: report.impactName,
-    date: report.publishedDate,
-    regions: uniqueRegions.length > 0 ? uniqueRegions : ["전국"],
-    summary: report.summary,
-    count: report.sourceArticleCount,
-    body,
-    keywords: report.keywords,
-    pins: pinSource,
-    mentionedRegions: normalizedMentionedRegions,
-    visualSummary,
-    sources: sources.length > 0
-      ? sources.map((source) => `${source.title}${source.publisher ? ` · ${source.publisher}` : ""}${source.url ? ` · ${source.url}` : ""}`)
-      : []
-  };
-}
-
-function articleListItemToDroughtReportSummary(article: ArticleListItem): DroughtReportSummary {
-  const { impact, impactName, level } = articleImpact(article.sourceArticleCount, article.regionMentions.length);
-  const regions = article.regionMentions.length > 0
-    ? article.regionMentions.map((region) => ({
-      regionCode: region,
-      regionName: region,
-      sidoName: "",
-      note: `${region} 지역 언급`
-    }))
-    : [{ regionCode: "ALL", regionName: "전국", sidoName: "전국", note: null }];
-
-  return {
-    id: String(article.id),
-    title: article.title,
-    impact,
-    impactName,
-    level,
-    publishedDate: article.updatedAt.slice(0, 10),
-    regions,
-    summary: article.autoSummaryNotice ?? `${article.authorOrganization}에서 등록한 가뭄 영향 자료입니다.`,
-    sourceArticleCount: article.sourceArticleCount,
-    keywords: article.keywords
-  };
 }
 
 function normalizeArticlePage(page: PublicArticlePageResponse, uiPage: number, size: number): ArticlePage {
@@ -1529,76 +1365,12 @@ function normalizeArticleDetail(article: PublicArticleDetailResponse): ArticleDe
   };
 }
 
-function articleDetailToDroughtReportDetail(article: ArticleDetail): DroughtReportDetail {
-  const summary = articleListItemToDroughtReportSummary({
-    id: article.id,
-    title: article.title,
-    authorOrganization: article.authorOrganization,
-    updatedAt: article.updatedAt,
-    views: article.views,
-    documentType: article.classification?.code ?? article.classification?.name ?? "",
-    subjectDomain: article.serviceType?.code ?? article.serviceType?.name ?? "",
-    source: article.source,
-    // 리포트 변환에는 확장자를 쓰지 않지만 목록 항목 형태를 맞춘다.
-    extensions: article.files.map((file) => file.extension ?? "").filter(Boolean),
-    sourceUrl: article.sourceUrl,
-    sourceArticleCount: article.sourceArticleCount,
-    regionMentions: article.regionMentions,
-    keywords: article.keywords,
-    autoSummaryNotice: article.autoSummaryNotice
-  });
-  const mentionedRegions = summary.regions.map((region) => ({
-    sidoName: region.sidoName || region.regionName,
-    sigunguName: region.regionName === "전국" ? null : region.regionName,
-    sigunguCode: null,
-    regionCode: region.regionCode,
-    regionName: region.regionName,
-    impactCode: null,
-    impactName: summary.impactName,
-    note: region.note,
-    damageDetail: null
-  }));
-
-  return {
-    ...summary,
-    body: splitArticleBody(article.description),
-    mentionedRegions,
-    visualSummary: {
-      articleCount: Math.max(article.sourceArticleCount, 1),
-      sourceCount: article.sourceUrl ? 1 : 0,
-      mentionedRegionCount: mentionedRegions.length,
-      impactFields: article.keywords.slice(0, 5).map((keyword, index) => ({
-        impactCode: `keyword-${index + 1}`,
-        impactName: keyword,
-        count: 1
-      }))
-    },
-    sources: article.sourceUrl
-      ? [{
-        title: article.source ?? article.title,
-        publisher: article.authorOrganization,
-        publishedDate: article.updatedAt.slice(0, 10),
-        url: article.sourceUrl
-      }]
-      : [],
-    notice: article.autoSummaryNotice ?? "자료실 게시글을 기반으로 구성한 리포트입니다."
-  };
-}
-
 function splitArticleBody(description: string) {
   const paragraphs = description
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
   return paragraphs.length > 0 ? paragraphs : ["상세 설명이 등록되지 않았습니다."];
-}
-
-function articleImpact(sourceArticleCount: number, regionCount: number): Pick<DroughtReportSummary, "impact" | "impactName" | "level"> {
-  const score = sourceArticleCount + regionCount;
-  if (score >= 8) return { impact: "critical", impactName: "심각", level: 4 };
-  if (score >= 5) return { impact: "severe", impactName: "높음", level: 3 };
-  if (score >= 2) return { impact: "moderate", impactName: "보통", level: 2 };
-  return { impact: "minor", impactName: "낮음", level: 1 };
 }
 
 function toDisplayPrice(value: number, multiplier: number) {
