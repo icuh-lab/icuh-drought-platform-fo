@@ -447,6 +447,8 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
   displayMultiplier: number;
   location: string;
   kpiName: string;
+  /** 실제로 시장이 서는 달만. 안 주면(온션처럼 사철 거래) 모든 달의 예측을 그린다. */
+  seasonMonths?: number[];
 }> = {
   cabbage: {
     item: "napa-cabbage",
@@ -458,7 +460,10 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
     kpiUnit: "원/10kg망",
     displayMultiplier: 10,
     location: process.env.NEXT_PUBLIC_AGRI_CABBAGE_LOCATION ?? "강릉",
-    kpiName: "고랭지배추 도매가격"
+    kpiName: "고랭지배추 도매가격",
+    // 고랭지배추는 2022년부터 줄곧 7~10월에만 실제로 거래됐다 — 그 외 달은 forecast
+    // 모델이 lag+달력 정보만으로 값을 뽑아낼 뿐 근거가 없어 예측선을 그리지 않는다.
+    seasonMonths: [7, 8, 9, 10]
   },
   onion: {
     item: "onion",
@@ -540,7 +545,8 @@ export async function fetchOverlayPriceSeries(
   const multiplier = PRICE_FORECAST_CONFIG[key].displayMultiplier;
   return buildVintagePriceSeries({
     entries: scaleVintageEntriesForDisplay(vintage.entries, multiplier),
-    market: scaleMarketTrendForDisplay(trends, multiplier)
+    market: scaleMarketTrendForDisplay(trends, multiplier),
+    seasonMonths: PRICE_FORECAST_CONFIG[key].seasonMonths ?? null
   });
 }
 

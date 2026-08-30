@@ -215,6 +215,20 @@ const overridden = buildVintagePriceSeries({
 });
 check("daily-market 이 vintage 공백을 메운다", overridden?.points.find((p) => p.date === "2024-03-06")?.actual, 931);
 
+// --- seasonMonths: 실제로 시장이 서는 달만 예측선을 그린다(예: 고랭지배추 7~10월) ---
+// 실측은 원래 비수기엔 데이터가 없어 자연히 안 나온다 — 여기서 확인하는 건 예측만 걸러지는지다.
+const seasonalEntries: RawVintageEntry[] = [
+  reconstructedRow(180, "2026-01-15"),
+  reconstructedRow(180, "2026-07-15"),
+  liveRow(180, "2026-08-26")
+];
+const seasonal = buildVintagePriceSeries({ entries: seasonalEntries, market: [], seasonMonths: [7, 8, 9, 10] });
+check("비수기 예측은 포인트 자체가 안 생긴다", seasonal?.points.some((p) => p.date === "2026-01-15"), false);
+check("성수기 예측은 그대로 남는다", seasonal?.points.find((p) => p.date === "2026-07-15")?.predicted, 1000);
+
+const unrestricted = buildVintagePriceSeries({ entries: seasonalEntries, market: [] });
+check("seasonMonths 를 안 주면 비수기도 그대로 나온다", unrestricted?.points.some((p) => p.date === "2026-01-15"), true);
+
 // --- 창을 안 주면 데이터가 있는 만큼 전부 ---
 const full = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket });
 check("창 미지정이면 가장 이른 날부터", full?.points[0].date, shiftDate(B, -400));

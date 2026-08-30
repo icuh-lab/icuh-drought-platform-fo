@@ -220,13 +220,22 @@ type BuildOptions = {
   pastDays?: number | null;
   /** 기준일에서 앞으로 며칠까지. 안 주면 데이터가 있는 만큼 전부. */
   futureDays?: number | null;
+  /**
+   * 실제로 거래되는 달만 골라 예측선을 그릴 때 쓴다(예: 고랭지배추는 7~10월만
+   * 시장이 선다). 안 주면 모든 달의 예측을 그린다 — 온션처럼 사철 거래되는
+   * 품목은 이 옵션이 필요 없다. 실측은 원래도 비수기엔 데이터가 없어 자연히
+   * 끊기므로 여기서 따로 거르지 않는다 — 예측만 걸러야 비수기에 근거 없이
+   * 이어지는 선을 없앨 수 있다.
+   */
+  seasonMonths?: number[] | null;
 };
 
 export function buildVintagePriceSeries({
   entries,
   market,
   pastDays = null,
-  futureDays = null
+  futureDays = null,
+  seasonMonths = null
 }: BuildOptions): VintagePriceSeries | null {
   const boundaryDate = vintageBoundaryDate(entries);
   if (boundaryDate === null) return null;
@@ -242,6 +251,7 @@ export function buildVintagePriceSeries({
   const predicted = new Map<string, number>();
   for (const entry of entries) {
     if (entry.targetDate < start || entry.targetDate > end) continue;
+    if (seasonMonths !== null && !seasonMonths.includes(Number(entry.targetDate.slice(5, 7)))) continue;
 
     const isPastOverlay =
       entry.targetDate <= boundaryDate && entry.source === "reconstructed_forecast" && entry.horizonDays === horizonDays;
