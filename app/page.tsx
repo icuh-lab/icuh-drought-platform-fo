@@ -104,6 +104,7 @@ type ReportApiState = {
   details: Record<string, DroughtReportDetailView>;
   page: number;
   totalPages: number;
+  detailError: string | null;
 };
 
 const DROUGHT_GRADE_CLASS: Record<string, string> = { 관심: "lv1", 주의: "lv2", 경계: "lv3", 심각: "lv4" };
@@ -255,7 +256,8 @@ const initialReportApiState: ReportApiState = {
   reports: null,
   details: {},
   page: 0,
-  totalPages: 1
+  totalPages: 1,
+  detailError: null
 };
 
 export default function Page() {
@@ -596,7 +598,7 @@ function Dashboard() {
   }, [reportApi.page]);
 
   useEffect(() => {
-    if (reportApi.status !== "success" || reportApi.details[selectedReportId]) {
+    if (reportApi.status !== "success" || reportApi.details[selectedReportId] || reportApi.detailError === selectedReportId) {
       return;
     }
 
@@ -617,13 +619,14 @@ function Dashboard() {
         if (controller.signal.aborted) {
           return;
         }
+        setReportApi((current) => ({ ...current, detailError: selectedReportId }));
       }
     }
 
     loadDroughtReportDetail();
 
     return () => controller.abort();
-  }, [reportApi.details, reportApi.status, selectedReportId]);
+  }, [reportApi.details, reportApi.detailError, reportApi.status, selectedReportId]);
 
   const go = (next: ViewKey, target?: ForecastKey) => {
     if (target) setForecast(target);
@@ -954,12 +957,19 @@ function Dashboard() {
               </div>
               <h1>{selectedReport.reportYm.split("-")[0]}년 {Number(selectedReport.reportYm.split("-")[1])}월호</h1>
 
-              {!selectedReport.detailLoaded && <div className="data-note">상세 데이터를 불러오는 중입니다…</div>}
+              {!selectedReport.detailLoaded && reportApi.detailError === selectedReportId && (
+                <div className="notice">
+                  리포트를 찾을 수 없습니다. <button className="back" onClick={() => go("reports")}>목록으로 돌아가기</button>
+                </div>
+              )}
+              {!selectedReport.detailLoaded && reportApi.detailError !== selectedReportId && (
+                <div className="data-note">상세 데이터를 불러오는 중입니다…</div>
+              )}
 
               {selectedReport.detailLoaded && (
                 <>
                   <h3>전국 17개 시도 현황</h3>
-                  <div className="tags">
+                  <div className="article-meta">
                     {selectedReport.nationwide.map((status) => (
                       <span key={status.sido} className={status.detected ? `badge ${droughtGradeClass(status.maxGrade)}` : undefined}>
                         {status.sido}{status.detected ? ` · ${status.maxGrade}` : ""}
@@ -976,12 +986,16 @@ function Dashboard() {
                         <span>{region.sido}</span>
                         {region.impactFields.map((field) => (
                           <div key={field.impactCode} style={{ marginTop: 8 }}>
-                            <span className={`badge ${droughtGradeClass(field.grade)}`}>{field.grade}</span>
+                            <b className={`badge ${droughtGradeClass(field.grade)}`}>{field.grade}</b>
                             {" "}<b>{field.impactName}</b> · 기사 {field.articleCount}건
                             {field.gradeLowerBound !== null && (
                               <p style={{ margin: "4px 0", fontSize: 12 }}>
-                                등급 근거: 이 등급 기준 {field.gradeLowerBound}건
-                                {field.nextGradeLowerBound !== null && ` · 다음 등급까지 ${field.nextGradeLowerBound}건`}
+                                등급 근거: 이 등급 기준 {Math.round(field.gradeLowerBound)}건
+                                {field.nextGradeLowerBound !== null
+                                  ? ` · 다음 등급 기준 ${Math.round(field.nextGradeLowerBound)}건`
+                                  : field.grade === "심각"
+                                    ? " · 이미 최고 등급"
+                                    : " · 다음 등급 구간 데이터 없음"}
                               </p>
                             )}
                             {field.representativeTitle && <p>{field.representativeTitle}</p>}
