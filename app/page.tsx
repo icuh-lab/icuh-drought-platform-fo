@@ -193,7 +193,7 @@ function summaryStatusText(state: SummaryApiState) {
 }
 
 function reportStatusText(state: ReportApiState) {
-  if (state.usingCuratedFallback) return "리포트 API 오류 · 실측 데이터 캐시 표시";
+  if (state.usingCuratedFallback) return "리포트 API 응답 없음 · 실측 데이터 캐시 표시";
   if (state.status === "success") return "리포트 API 갱신";
   if (state.status === "loading") return "리포트 API 확인 중 · 목업 표시";
   if (state.status === "empty") return "리포트 API 데이터 없음 · 목업 표시";
@@ -624,51 +624,57 @@ function Dashboard() {
   useEffect(() => {
     const controller = new AbortController();
 
+    async function loadCuratedFallback(fallbackStatus: "error" | "empty") {
+      try {
+        const curatedResponse = await fetch("/data/drought-reports-curated.json", { signal: controller.signal });
+        if (!curatedResponse.ok) {
+          throw new Error(`curated fallback fetch failed: ${curatedResponse.status}`);
+        }
+        const curatedRaw = (await curatedResponse.json()) as DroughtReportDetail[];
+        const curatedReports = curatedRaw
+          .map((raw) => toDroughtReportDetailView(raw))
+          .sort((a, b) => (a.reportYm < b.reportYm ? 1 : -1));
+
+        setReportApi((current) => ({
+          ...current,
+          status: "success",
+          reports: curatedReports,
+          totalPages: 1,
+          usingCuratedFallback: true
+        }));
+        setSelectedReportId((current) =>
+          curatedReports.some((report) => report.reportYm === current) ? current : curatedReports[0].reportYm
+        );
+      } catch {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setReportApi((current) => ({ ...current, status: fallbackStatus, reports: null }));
+      }
+    }
+
     async function loadDroughtReports() {
       try {
         const response = await fetchDroughtReports({ signal: controller.signal, page: reportApi.page, size: 12 });
         const nextReports = toDroughtReportListViews(response);
 
+        if (nextReports.length === 0) {
+          await loadCuratedFallback("empty");
+          return;
+        }
+
         setReportApi((current) => ({
           ...current,
-          status: nextReports.length > 0 ? "success" : "empty",
-          reports: nextReports.length > 0 ? nextReports : null,
+          status: "success",
+          reports: nextReports,
           totalPages: response.totalPages
         }));
-        if (nextReports.length > 0) {
-          setSelectedReportId((current) => nextReports.some((report) => report.reportYm === current) ? current : nextReports[0].reportYm);
-        }
+        setSelectedReportId((current) => nextReports.some((report) => report.reportYm === current) ? current : nextReports[0].reportYm);
       } catch (error) {
         if (controller.signal.aborted) {
           return;
         }
-
-        try {
-          const curatedResponse = await fetch("/data/drought-reports-curated.json", { signal: controller.signal });
-          if (!curatedResponse.ok) {
-            throw new Error(`curated fallback fetch failed: ${curatedResponse.status}`);
-          }
-          const curatedRaw = (await curatedResponse.json()) as DroughtReportDetail[];
-          const curatedReports = curatedRaw
-            .map((raw) => toDroughtReportDetailView(raw))
-            .sort((a, b) => (a.reportYm < b.reportYm ? 1 : -1));
-
-          setReportApi((current) => ({
-            ...current,
-            status: "success",
-            reports: curatedReports,
-            totalPages: 1,
-            usingCuratedFallback: true
-          }));
-          setSelectedReportId((current) =>
-            curatedReports.some((report) => report.reportYm === current) ? current : curatedReports[0].reportYm
-          );
-        } catch {
-          if (controller.signal.aborted) {
-            return;
-          }
-          setReportApi((current) => ({ ...current, status: "error", reports: null }));
-        }
+        await loadCuratedFallback("error");
       }
     }
 
