@@ -294,7 +294,7 @@ function Dashboard() {
   const activeForecasts = useMemo(
     () => ({
       ...forecasts,
-      cabbage: priceApis.cabbage.forecast ?? forecasts.cabbage
+      cabbage: priceApis.cabbage.forecast
     }),
     [priceApis]
   );
@@ -765,18 +765,18 @@ function Dashboard() {
               <div className="tabs" role="tablist" aria-label="예측 지표 선택">
                 {(["cabbage", "onion", "hydro"] as ForecastKey[]).map((key) => (
                   <button key={key} role="tab" aria-selected={forecast === key} onClick={() => setForecast(key)}>
-                    {activeForecasts[key].label}
+                    {activeForecasts[key]?.label ?? forecasts[key].label}
                   </button>
                 ))}
               </div>
               <div className="chart-hd">
                 <div>
-                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : fc.current}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : fc.unit}</u></div>
-                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : forecast === "hydro" ? hydropowerForecast?.sub ?? "" : fc.sub}</div>
+                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : fc?.current ?? "–"}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : fc?.unit ?? "원 / 10kg망"}</u></div>
+                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : forecast === "hydro" ? hydropowerForecast?.sub ?? "" : fc?.sub ?? ""}</div>
                 </div>
                 <div className="accuracy">
                   <span>예측 정확도</span>
-                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc.error}</b>
+                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc?.error ?? "N/A"}</b>
                   <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? "최근 3개월 평균 오차율" : "최근 30일 평균 오차율"}</small>
                   {forecast === "onion" && onionForecast && onionForecast.years.length > 1 && (
                     <div className="accuracy-years">
@@ -797,20 +797,20 @@ function Dashboard() {
               ) : forecast === "hydro" ? (
                 hydropowerForecast && <ForecastChart actual={hydropowerForecast.actual} predicted={hydropowerForecast.predicted} band={hydropowerForecast.band} unit={hydropowerForecast.unit} periodLabel="개월" />
               ) : (
-                <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
+                fc && <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>
                 {/* 수력발전량은 예측 3개월이 전부 404(모델 미산출)일 수 있다 — 그릴 선이 없으면 범례에도 올리지 않는다. */}
                 {(forecast !== "hydro" || (hydropowerForecast?.predicted.length ?? 0) > 0) && <span><i className="dash" />예측치</span>}
                 {/* 양파는 일 단위 상·하한을 주는 엔드포인트가 없다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
-                {forecast !== "onion" && (forecast !== "hydro" || (hydropowerForecast?.band.length ?? 0) > 0) && (
+                {forecast !== "onion" && (forecast !== "hydro" || (hydropowerForecast?.band.length ?? 0) > 0) && (forecast !== "cabbage" || fc?.band?.some((value) => value > 0)) && (
                   <span><i className="band" />{forecast === "hydro" ? "예측구간(q10–q90)" : "신뢰구간 95%"}</span>
                 )}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
               {forecast === "hydro" && hydropowerForecast && hydropowerForecast.predicted.length > 0 && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
-              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc.source}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
+              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 
             <SectionHead title="지수형 지표" note="가뭄이 누적될수록 함께 상승하는 지표들을 표시합니다" />
