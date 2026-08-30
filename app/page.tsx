@@ -742,7 +742,7 @@ function Dashboard() {
 
         {view === "forecast" && (
           <section className="view">
-            <SectionHead title="예측형 지표" note="실측치와 예측치를 겹쳐 표시하고 예측 구간에는 신뢰구간을 함께 표기합니다" />
+            <SectionHead title="예측형 지표" note="실측치와 예측치를 같은 날짜축에 겹쳐 표시합니다" />
             <div className="card chart-card">
               <div className="tabs" role="tablist" aria-label="예측 지표 선택">
                 {(["cabbage", "onion", "hydro"] as ForecastKey[]).map((key) => (
