@@ -26,6 +26,13 @@ import {
   type OnionPriceSeries,
   type RawMarketTrendPoint
 } from "@/lib/onion-price";
+import {
+  buildHydropowerVintageSeries,
+  type HydropowerActualEntry,
+  type HydropowerPredictionEntry,
+  type HydropowerVintagePoint,
+  type HydropowerVintageSeries
+} from "@/lib/hydropower-vintage";
 import type {
   ArticleSearchParams, ArticlePage, ArticleDetail, ArticleCategories, ArticleListItem,
 } from "./archive-types";
@@ -138,26 +145,25 @@ export type OnionForecastView = {
 
 export type PriceForecastView = typeof forecasts.cabbage;
 export type PriceKpiView = (typeof kpis)[number];
-export type HydropowerForecastView = typeof forecasts.hydro;
-export type HydropowerKpiView = (typeof kpis)[number];
 
-export type HydropowerForecastDataType = "observed" | "predicted";
-
-export type HydropowerForecastPoint = {
-  baseDate: string;
-  value: number;
-  dataType: HydropowerForecastDataType;
-  lowerBound?: number | null;
-  upperBound?: number | null;
-  storageRate?: number | null;
-};
-
-export type HydropowerForecastResponse = {
-  plant: "hapcheon-dam";
-  regionCode: "48890";
+/**
+ * 수력발전량도 양파처럼 실측 뒤에 예측을 이어 붙이는 모양이 아니라 같은 날짜축 위에
+ * 겹치는 모양이다 — 과거에 예측한 값과 그 달의 실측이 나란히, 그리고 미래는 예측만.
+ */
+export type HydropowerForecastView = {
+  label: string;
+  current: string;
   unit: string;
-  errorRate: number | null;
-  points: HydropowerForecastPoint[];
+  error: string;
+  errorNote: string;
+  source: string;
+  sub: string;
+  note: string;
+  points: HydropowerVintagePoint[];
+  boundaryDate: string;
+  /** 이 날짜보다 이른 포인트는 실적 ±80MWh 고정밴드다(모델 예측 아님). 없으면 null. */
+  legacyBandUntilDate: string | null;
+  latestActualDate: string | null;
 };
 
 export type FireRiskGradeCode = "low" | "moderate" | "high" | "very-high" | "very_high";
@@ -327,10 +333,9 @@ type FetchPriceForecastOptions = {
   month?: number;
 };
 
-type FetchHydropowerForecastOptions = {
+type FetchHydropowerVintageOptions = {
   signal?: AbortSignal;
-  year?: number;
-  month?: number;
+  damName?: string;
 };
 
 type FetchFireRiskIndexOptions = {
@@ -390,17 +395,17 @@ type OpenHydropowerGenerationResponse = {
   }[];
 };
 
-type OpenHydropowerPredictionResponse = {
+type OpenHydropowerPredictionHistoryResponse = {
   damName: string;
   damCode: string;
-  predictedPowerGenerationDto: {
+  entries: {
+    year: string;
+    month: string;
     predictedPowerGenerationLowerBound: number | null;
     predictedPowerGenerationUpperBound: number | null;
-  };
-  predictedWaterStorageDto: {
     predictedWaterStorageLowerBound: number | null;
     predictedWaterStorageUpperBound: number | null;
-  };
+  }[];
 };
 
 type OpenWildFireRegion = {
@@ -616,78 +621,67 @@ export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
   };
 }
 
-/** "YYYY-MM-DD" 형태의 baseDate 에서 offset 개월 뒤(음수면 앞) 연/월을 구한다. 순수 함수. */
-export function shiftMonth(baseDate: string, offset: number) {
-  const [year, month] = baseDate.split("-").map(Number);
-  const total = year * 12 + (month - 1) + offset;
-  return { year: Math.floor(total / 12), month: (total % 12) + 1 };
-}
+/** open-api 가 찾는 댐 이름은 접미사 없는 짧은 이름이다 — "합천댐"으로 물으면 E404. */
+export const HYDROPOWER_DAMS = [
+  { queryName: "합천", label: "합천댐" },
+  { queryName: "소양강", label: "소양강댐" },
+  { queryName: "충주", label: "충주댐" },
+  { queryName: "대청", label: "대청댐" }
+] as const;
 
-export async function fetchHydropowerForecast({ signal, year, month }: FetchHydropowerForecastOptions = {}) {
-  // open-api 가 찾는 댐 이름은 "합천" 이다. "합천댐" 으로 물으면 E404 를 준다.
-  // 화면 문구의 "합천댐" 은 사람이 읽는 이름이라 그대로 두고, 질의 값만 맞춘다.
-  const damName = process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME ?? "합천";
-  const search = new URLSearchParams({
-    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
-    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
-    damName
-  });
-  const data = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", search, signal);
-  const observedPoints = data.monthlyGenerationDto
-    .filter((point) => typeof point.actualMwh === "number" || typeof point.plannedMwh === "number")
-    .map((point) => ({
-      baseDate: `${point.year}-${point.month.padStart(2, "0")}-01`,
-      value: (point.actualMwh ?? point.plannedMwh) as number,
-      dataType: "observed" as const,
-      lowerBound: null,
-      upperBound: null
-    }))
-    // 백엔드가 월 순서를 보장하지 않을 수 있어(별도 배포, 알려진 이슈) 방어적으로 정렬한다 —
-    // fetchFireRiskIndex 의 targetDate 정렬과 동일한 패턴. 정렬 없으면 observedPoints.at(-1) 이
-    // 최신 실측월이 아닐 수 있어 미래 예측 범위 계산이 틀어진다.
-    .sort((a, b) => a.baseDate.localeCompare(b.baseDate));
+export type HydropowerDamName = (typeof HYDROPOWER_DAMS)[number]["queryName"];
 
-  // /monthly-predict 는 (year, month, damName) 한 조합만 조회하는 단일 응답 엔드포인트라,
-  // 여러 달을 보려면 달마다 호출해야 한다. 마지막 실측 달 다음 3개월을 시도한다 — 모델이
-  // 실제로 그 범위만큼 채워두므로(운영 RDS 확인) 3이 근거 있는 상한이다. 아직 안 채워진
-  // 미래 달은 DATA_NOT_FOUND(404)로 오므로 개별적으로 건너뛴다 — 한 달이 없다고 나머지
-  // 달까지 안 보여주면 안 된다.
-  const lastObserved = observedPoints.at(-1);
-  const predictedPoints = lastObserved
-    ? (
-        await Promise.all(
-          Array.from({ length: 3 }, (_, index) => index + 1).map(async (offset) => {
-            const target = shiftMonth(lastObserved.baseDate, offset);
-            const predictSearch = new URLSearchParams({ year: String(target.year), month: String(target.month), damName });
-            try {
-              const prediction = await getOpenApiData<OpenHydropowerPredictionResponse>("/api/v1/hydropower/monthly-predict", predictSearch, signal);
-              const { predictedPowerGenerationLowerBound: lower, predictedPowerGenerationUpperBound: upper } = prediction.predictedPowerGenerationDto;
-              if (lower === null || upper === null) return null;
-              return {
-                baseDate: `${target.year}-${String(target.month).padStart(2, "0")}-01`,
-                // 백엔드가 중앙값(p50)을 별도로 안 줘서 상하한의 중점으로 근사한다 — 실제
-                // 예측 점값이 아니라 근사치라는 걸 화면 카피에 반드시 밝혀야 한다.
-                value: (lower + upper) / 2,
-                dataType: "predicted" as const,
-                lowerBound: lower,
-                upperBound: upper
-              };
-            } catch (error) {
-              if (signal?.aborted) throw error;
-              return null;
-            }
-          })
-        )
-      ).filter((point): point is NonNullable<typeof point> => point !== null)
-    : [];
+export const DEFAULT_HYDROPOWER_DAM: HydropowerDamName =
+  (HYDROPOWER_DAMS.find((dam) => dam.queryName === process.env.NEXT_PUBLIC_HYDROPOWER_DAM_NAME)?.queryName) ?? "합천";
+
+/**
+ * 댐 하나의 전체 예측 이력(monthly-predict-history)과, 그 이력이 걸친 연도만큼의 실측
+ * (monthly-generation, 연 단위 조회라 연도 수만큼 병렬로 부른다)을 합쳐 vintage 시계열을 만든다.
+ */
+export async function fetchHydropowerVintage({ signal, damName }: FetchHydropowerVintageOptions = {}) {
+  const dam = damName ?? DEFAULT_HYDROPOWER_DAM;
+  const history = await getOpenApiData<OpenHydropowerPredictionHistoryResponse>(
+    "/api/v1/hydropower/monthly-predict-history",
+    new URLSearchParams({ damName: dam }),
+    signal
+  );
+
+  const predictions: HydropowerPredictionEntry[] = history.entries.map((entry) => ({
+    year: entry.year,
+    month: entry.month,
+    lowerBound: entry.predictedPowerGenerationLowerBound,
+    upperBound: entry.predictedPowerGenerationUpperBound
+  }));
+
+  const predictionYears = predictions.map((entry) => Number(entry.year));
+  const minYear = predictionYears.length > 0 ? Math.min(...predictionYears) : OPEN_API_DEFAULT_PERIOD.year;
+  const maxYear = predictionYears.length > 0 ? Math.max(...predictionYears) : OPEN_API_DEFAULT_PERIOD.year;
+
+  const actualsByYear = await Promise.all(
+    Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index).map(async (year) => {
+      try {
+        const yearSearch = new URLSearchParams({ year: String(year), damName: dam });
+        const generation = await getOpenApiData<OpenHydropowerGenerationResponse>("/api/v1/hydropower/monthly-generation", yearSearch, signal);
+        return generation.monthlyGenerationDto;
+      } catch (error) {
+        // 이력이 걸친 연도 중 실측이 아직 없는 해(예: 미래 예측만 있는 연도)는 404가 정상이다 —
+        // 한 해가 없다고 나머지 연도까지 안 보여주면 안 된다.
+        if (signal?.aborted) throw error;
+        return [];
+      }
+    })
+  );
+
+  const actuals: HydropowerActualEntry[] = actualsByYear.flat().map((entry) => ({
+    year: entry.year,
+    month: entry.month,
+    actualMwh: entry.actualMwh
+  }));
 
   return {
-    plant: "hapcheon-dam",
-    regionCode: "48890",
-    unit: "MWh/month",
-    errorRate: null,
-    points: [...observedPoints, ...predictedPoints]
-  } satisfies HydropowerForecastResponse;
+    damName: history.damName,
+    series: buildHydropowerVintageSeries(predictions, actuals)
+  };
 }
 
 export async function fetchFireRiskIndex({ signal }: FetchFireRiskIndexOptions = {}) {
@@ -888,69 +882,54 @@ export function latestPriceForecastDate(response: PriceForecastResponse) {
   return response.points.at(-1)?.baseDate ?? null;
 }
 
-export function toHydropowerForecastView(response: HydropowerForecastResponse): HydropowerForecastView | null {
-  const observedPoints = response.points.filter((point) => point.dataType === "observed").slice(-30);
-  const predictedPoints = response.points.filter((point) => point.dataType === "predicted").slice(-7);
-  const actual = observedPoints.map((point) => point.value);
-
-  if (actual.length === 0) {
-    return null;
-  }
-
-  const predicted = predictedPoints.map((point) => point.value);
-  const band = predictedPoints.map((point, index) => {
-    const value = predicted[index];
-    if (value === undefined || point.lowerBound === null || point.lowerBound === undefined || point.upperBound === null || point.upperBound === undefined) {
-      return 0;
-    }
-
-    return Math.max(Math.abs(value - point.lowerBound), Math.abs(point.upperBound - value), (point.upperBound - point.lowerBound) / 2);
-  });
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const current = actual[actual.length - 1];
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : null;
+export function toHydropowerForecastView(damLabel: string, series: HydropowerVintageSeries): HydropowerForecastView {
+  const dated = series.latestActualDate ?? series.boundaryDate;
+  const change = series.delta === null ? "" : ` · 전월대비 ${formatSignedPercent(series.delta)}`;
 
   return {
-    label: "합천댐 수력발전량",
-    current: formatDecimalNumber(current),
-    unit: displayHydropowerUnit(response.unit),
-    error: formatErrorRate(response.errorRate),
-    source: "open-api /api/v1/hydropower/monthly-generation (합천댐)",
-    sub: `합천댐 · ${currentPoint.baseDate}${delta === null ? "" : ` · 전월대비 ${formatSignedPercent(delta)}`}`,
-    actual,
-    predicted,
-    band
+    label: "수력발전량",
+    current: series.current === null ? "–" : formatWholeNumber(series.current),
+    unit: "MWh / 월",
+    error: "N/A",
+    errorNote: "정확도 지표 미제공",
+    source: "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history",
+    sub: `${damLabel} · ${dated}${change}`,
+    note: [
+      "예측값은 모델이 낸 상·하한의 중점 근사치입니다",
+      series.legacyBandUntilDate === null
+        ? null
+        : `${series.legacyBandUntilDate} 이전 구간은 모델 예측이 아니라 실적 기준 고정밴드(±80MWh)입니다`
+    ].filter((part): part is string => part !== null).join(" · "),
+    points: series.points,
+    boundaryDate: series.boundaryDate,
+    legacyBandUntilDate: series.legacyBandUntilDate,
+    latestActualDate: series.latestActualDate
   };
 }
 
-export function toHydropowerKpiView(response: HydropowerForecastResponse): HydropowerKpiView | null {
-  const observedPoints = response.points.filter((point) => point.dataType === "observed");
-  if (observedPoints.length === 0) {
+export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageSeries): PriceKpiView | null {
+  if (series.current === null) {
     return null;
   }
 
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : 0;
+  const delta = series.delta ?? 0;
+  const spark = series.points
+    .filter((point) => point.actual !== null)
+    .slice(-7)
+    .map((point) => point.actual as number);
 
   return {
     tag: "예측 · 에너지",
-    region: "합천댐",
+    region: damLabel,
     name: "수력발전량",
-    value: formatDecimalNumber(currentPoint.value),
-    unit: displayHydropowerKpiUnit(response.unit),
+    value: formatWholeNumber(series.current),
+    unit: "MWh/월",
     delta: formatSignedPercent(delta),
     direction: delta >= 0 ? "up" : "down",
-    error: formatErrorRate(response.errorRate),
-    spark: observedPoints.slice(-7).map((point) => point.value),
+    error: "N/A",
+    spark,
     target: "hydro"
   };
-}
-
-export function latestHydropowerForecastDate(response: HydropowerForecastResponse) {
-  const observed = response.points.filter((point) => point.dataType === "observed");
-  return observed.at(-1)?.baseDate ?? null;
 }
 
 export function toDroughtReportViews(response: DroughtReportListResponse): DroughtReportView[] {
@@ -1168,39 +1147,6 @@ function isPredictionVintageEntry(value: unknown): value is PredictionVintageEnt
     typeof value.pred === "number" &&
     (value.actual === null || typeof value.actual === "number") &&
     (value.arrivalTon === null || typeof value.arrivalTon === "number")
-  );
-}
-
-function isApiHydropowerForecastResponse(value: unknown): value is ApiResponse<HydropowerForecastResponse> {
-  if (!isRecord(value)) return false;
-  return (
-    (value.result === "SUCCESS" || value.result === "ERROR") &&
-    (value.data === null || isHydropowerForecastResponse(value.data)) &&
-    "error" in value
-  );
-}
-
-function isHydropowerForecastResponse(value: unknown): value is HydropowerForecastResponse {
-  if (!isRecord(value)) return false;
-  return (
-    value.plant === "hapcheon-dam" &&
-    value.regionCode === "48890" &&
-    typeof value.unit === "string" &&
-    (typeof value.errorRate === "number" || value.errorRate === null) &&
-    Array.isArray(value.points) &&
-    value.points.every(isHydropowerForecastPoint)
-  );
-}
-
-function isHydropowerForecastPoint(value: unknown): value is HydropowerForecastPoint {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.baseDate === "string" &&
-    typeof value.value === "number" &&
-    (value.dataType === "observed" || value.dataType === "predicted") &&
-    (value.lowerBound === undefined || value.lowerBound === null || typeof value.lowerBound === "number") &&
-    (value.upperBound === undefined || value.upperBound === null || typeof value.upperBound === "number") &&
-    (value.storageRate === undefined || value.storageRate === null || typeof value.storageRate === "number")
   );
 }
 
@@ -1661,22 +1607,6 @@ function displayKpiUnit(unit: string, fallback: string) {
 
 function formatWholeNumber(value: number) {
   return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(value);
-}
-
-function formatDecimalNumber(value: number) {
-  return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 }).format(value);
-}
-
-function displayHydropowerUnit(unit: string) {
-  if (unit === "GWh/month") return "GWh / 월";
-  if (unit === "MWh/month") return "MWh / 월";
-  return unit;
-}
-
-function displayHydropowerKpiUnit(unit: string) {
-  if (unit === "GWh/month") return "GWh/월";
-  if (unit === "MWh/month") return "MWh/월";
-  return unit;
 }
 
 function displayFreshFoodUnit(unit: string) {

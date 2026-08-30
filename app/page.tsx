@@ -3,22 +3,23 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Braces, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, Flame, KeyRound, Send } from "lucide-react";
-import { Blocks, ForecastChart, OverlayForecastChart, Sparkline } from "@/components/charts";
+import { Blocks, ForecastChart, MonthlyOverlayChart, OverlayForecastChart, Sparkline } from "@/components/charts";
 import { FireRiskMap } from "@/components/FireRiskMap";
 import {
   API_BASE_URLS,
+  HYDROPOWER_DAMS,
+  DEFAULT_HYDROPOWER_DAM,
   OPEN_API_DEFAULT_PERIOD,
   fetchFireRiskIndex,
   fetchDroughtReportDetail,
   fetchDroughtReports,
   fetchFreshFoodIndex,
-  fetchHydropowerForecast,
+  fetchHydropowerVintage,
   fetchOnionPriceSeries,
   fetchPriceForecast,
   fetchPredictionVintage,
   fetchSummary,
   latestFireRiskObservedAt,
-  latestHydropowerForecastDate,
   latestPriceForecastDate,
   priceForecastLocation,
   toFireRiskView,
@@ -39,8 +40,8 @@ import {
   type FreshFoodGaugeView,
   type FreshFoodProvinceRow,
   type FreshFoodKpiView,
+  type HydropowerDamName,
   type HydropowerForecastView,
-  type HydropowerKpiView,
   type OnionForecastView,
   type OpenApiPeriod,
   type PriceForecastKey,
@@ -66,7 +67,7 @@ type PriceApiStates = Record<"cabbage", PriceApiState>;
 type HydropowerApiState = {
   status: "loading" | "success" | "empty" | "error";
   forecast: HydropowerForecastView | null;
-  kpi: HydropowerKpiView | null;
+  kpi: PriceKpiView | null;
   latestDate: string | null;
 };
 
@@ -284,6 +285,7 @@ function Dashboard() {
   const [priceApis, setPriceApis] = useState<PriceApiStates>({ cabbage: initialPriceApiState });
   const [onionApi, setOnionApi] = useState<OnionApiState>(initialOnionApiState);
   const [hydropowerApi, setHydropowerApi] = useState<HydropowerApiState>(initialHydropowerApiState);
+  const [selectedHydroDam, setSelectedHydroDam] = useState<HydropowerDamName>(DEFAULT_HYDROPOWER_DAM);
   const [fireRiskApi, setFireRiskApi] = useState<FireRiskApiState>(initialFireRiskApiState);
   const [freshFoodApi, setFreshFoodApi] = useState<FreshFoodApiState>(initialFreshFoodApiState);
   const [freshFoodKind, setFreshFoodKind] = useState<FreshFoodKind>("vegetable");
@@ -419,13 +421,24 @@ function Dashboard() {
       }
     }
 
-    async function loadHydropowerForecast() {
-      try {
-        const response = await fetchHydropowerForecast({ signal: controller.signal, year: period.year, month: period.month });
-        const nextForecast = toHydropowerForecastView(response);
-        const nextKpi = toHydropowerKpiView(response);
 
-        if (!nextForecast || !nextKpi) {
+
+    loadPriceForecast("cabbage");
+
+    return () => controller.abort();
+  }, [period]);
+
+  // 예측 이력은 연/월 필터가 없는 전체 이력이라, period 가 아니라 선택된 댐이 바뀔 때만 다시 부른다.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadHydropower() {
+      try {
+        const { damName, series } = await fetchHydropowerVintage({ signal: controller.signal, damName: selectedHydroDam });
+        const damLabel = HYDROPOWER_DAMS.find((dam) => dam.queryName === damName)?.label ?? damName;
+        const nextForecast = series && toHydropowerForecastView(damLabel, series);
+
+        if (!series || !nextForecast) {
           setHydropowerApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
           return;
         }
@@ -433,25 +446,19 @@ function Dashboard() {
         setHydropowerApi({
           status: "success",
           forecast: nextForecast,
-          kpi: nextKpi,
-          latestDate: latestHydropowerForecastDate(response)
+          kpi: toHydropowerKpiView(damLabel, series),
+          latestDate: series.latestActualDate
         });
       } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
+        if (controller.signal.aborted) return;
         setHydropowerApi({ status: "error", forecast: null, kpi: null, latestDate: null });
       }
     }
 
-
-
-    loadPriceForecast("cabbage");
-    loadHydropowerForecast();
+    loadHydropower();
 
     return () => controller.abort();
-  }, [period]);
+  }, [selectedHydroDam]);
 
   // vintage 로그는 연/월 필터가 없는 전체 이력이라, period 가 바뀔 때마다 다시 부를 이유가 없다.
   useEffect(() => {
@@ -769,6 +776,18 @@ function Dashboard() {
                   </button>
                 ))}
               </div>
+              {forecast === "hydro" && (
+                <label className="hydro-dam-select">
+                  <span>댐</span>
+                  <select
+                    value={selectedHydroDam}
+                    aria-label="댐 선택"
+                    onChange={(event) => setSelectedHydroDam(event.target.value as HydropowerDamName)}
+                  >
+                    {HYDROPOWER_DAMS.map((dam) => <option key={dam.queryName} value={dam.queryName}>{dam.label}</option>)}
+                  </select>
+                </label>
+              )}
               <div className="chart-hd">
                 <div>
                   <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : fc?.current ?? "–"}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : fc?.unit ?? "원 / 10kg망"}</u></div>
@@ -777,7 +796,7 @@ function Dashboard() {
                 <div className="accuracy">
                   <span>예측 정확도</span>
                   <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc?.error ?? "N/A"}</b>
-                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? "최근 3개월 평균 오차율" : "최근 30일 평균 오차율"}</small>
+                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? hydropowerForecast?.errorNote ?? "정확도 지표 미제공" : "최근 30일 평균 오차율"}</small>
                   {forecast === "onion" && onionForecast && onionForecast.years.length > 1 && (
                     <div className="accuracy-years">
                       {onionForecast.years.map((year) => (
@@ -795,22 +814,28 @@ function Dashboard() {
               {forecast === "onion" ? (
                 onionForecast && <OverlayForecastChart points={onionForecast.points} boundaryDate={onionForecast.boundaryDate} horizonSwitchDate={onionForecast.horizonSwitchDate} />
               ) : forecast === "hydro" ? (
-                hydropowerForecast && <ForecastChart actual={hydropowerForecast.actual} predicted={hydropowerForecast.predicted} band={hydropowerForecast.band} unit={hydropowerForecast.unit} periodLabel="개월" />
+                hydropowerForecast && (
+                  <MonthlyOverlayChart
+                    points={hydropowerForecast.points}
+                    boundaryDate={hydropowerForecast.boundaryDate}
+                    legacyBandUntilDate={hydropowerForecast.legacyBandUntilDate}
+                    unit="MWh"
+                  />
+                )
               ) : (
                 fc && <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>
-                {/* 수력발전량은 예측 3개월이 전부 404(모델 미산출)일 수 있다 — 그릴 선이 없으면 범례에도 올리지 않는다. */}
-                {(forecast !== "hydro" || (hydropowerForecast?.predicted.length ?? 0) > 0) && <span><i className="dash" />예측치</span>}
-                {/* 양파는 일 단위 상·하한을 주는 엔드포인트가 없다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
-                {forecast !== "onion" && (forecast !== "hydro" || (hydropowerForecast?.band.length ?? 0) > 0) && (forecast !== "cabbage" || fc?.band?.some((value) => value > 0)) && (
-                  <span><i className="band" />{forecast === "hydro" ? "예측구간(q10–q90)" : "신뢰구간 95%"}</span>
+                <span><i className="dash" />예측치</span>
+                {/* 양파·수력발전량은 상·하한 밴드 없이 예측선 하나만 겹쳐 그린다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
+                {forecast === "cabbage" && fc?.band?.some((value) => value > 0) && (
+                  <span><i className="band" />신뢰구간 95%</span>
                 )}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
-              {forecast === "hydro" && hydropowerForecast && hydropowerForecast.predicted.length > 0 && <div className="data-note">예측값은 모델이 낸 상·하한의 중점 근사치입니다.</div>}
-              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation (합천댐)" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
+              {forecast === "hydro" && hydropowerForecast && <div className="data-note">{hydropowerForecast.note}</div>}
+              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 
             <SectionHead title="지수형 지표" note="가뭄이 누적될수록 함께 상승하는 지표들을 표시합니다" />

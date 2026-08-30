@@ -11,6 +11,7 @@ import {
   shiftDate,
   type OnionPricePoint
 } from "@/lib/onion-price";
+import { niceAxisTicks, type HydropowerVintagePoint } from "@/lib/hydropower-vintage";
 
 type SparkProps = {
   data: number[];
@@ -150,6 +151,87 @@ export function ForecastChart({ actual, predicted, band, unit = "", periodLabel 
         <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="3" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
         {actualPts.length > 0 && (
           <line x1={todayX} x2={todayX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
+        )}
+      </svg>
+    </ChartFrame>
+  );
+}
+
+/**
+ * 댐 발전량 실측·예측을 같은 월 축 위에 겹쳐 그린다. 양파(OverlayForecastChart)와 같은
+ * "겹치는" 모양이 필요하지만, 월 단위라 2022~지금이 60개월 안팎이라서 양파처럼 하루 3px로
+ * 펼쳐 가로 스크롤할 필요가 없다 — ForecastChart와 같은 고정폭 좌표계를 그대로 쓴다.
+ *
+ * 인덱스(포인트 순서)로 x를 잡는다. 실측·예측이 없는 달도 points에 없으니 빈틈이 안 생긴다.
+ */
+export function MonthlyOverlayChart({
+  points,
+  boundaryDate,
+  legacyBandUntilDate = null,
+  unit = "MWh"
+}: {
+  points: HydropowerVintagePoint[];
+  boundaryDate: string;
+  /** 이 날짜 이전은 고정밴드 구간(모델 예측 아님) — 세로 점선으로만 표시, 설명은 카드의 캐비어트 문구가 맡는다. */
+  legacyBandUntilDate?: string | null;
+  unit?: string;
+}) {
+  const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
+  if (points.length === 0 || values.length === 0) return null;
+
+  const ticks = niceAxisTicks(Math.max(...values));
+  const axisTop = ticks[ticks.length - 1];
+  const valueToY = (value: number) => PAD.top + PLOT_HEIGHT - (value / axisTop) * PLOT_HEIGHT;
+  const xAt = (index: number) => PAD.left + (index * PLOT_WIDTH) / Math.max(points.length - 1, 1);
+  const indexOfDate = new Map(points.map((point, index) => [point.date, index]));
+
+  // 실측 구간을 이어 그리되, 한 달 넘게 비면 끊는다 — 없는 달을 직선으로 메우면 데이터가
+  // 있는 것처럼 보인다.
+  const actualSegments: (readonly [number, number])[][] = [];
+  let segment: (readonly [number, number])[] = [];
+  let previousIndex: number | null = null;
+  points.forEach((point, index) => {
+    if (point.actual === null) return;
+    if (previousIndex !== null && index - previousIndex > 1) {
+      actualSegments.push(segment);
+      segment = [];
+    }
+    segment.push([xAt(index), valueToY(point.actual)]);
+    previousIndex = index;
+  });
+  if (segment.length > 0) actualSegments.push(segment);
+
+  const predictedPts = points
+    .map((point, index) => (point.predicted === null ? null : ([xAt(index), valueToY(point.predicted)] as const)))
+    .filter((pt): pt is readonly [number, number] => pt !== null);
+
+  const boundaryX = xAt(indexOfDate.get(boundaryDate) ?? points.length - 1);
+  const legacyIndex = legacyBandUntilDate === null ? undefined : indexOfDate.get(legacyBandUntilDate);
+  const legacyX = legacyIndex === undefined ? null : xAt(legacyIndex);
+
+  // 라벨은 매년 1월만 표시한다 — 60개월을 900px 고정폭에 다 적으면 안 겹치는 게 불가능하다.
+  // 월 단위 경계는 값 없이 그리드선만(연도 밑줄이 촘촘한 눈금 대신 역할을 한다).
+  const xLabels: XLabel[] = points
+    .filter((point) => point.date.endsWith("-01-01"))
+    .map((point) => ({ text: point.date.slice(0, 4), x: xAt(indexOfDate.get(point.date)!), align: "middle" }));
+
+  return (
+    <ChartFrame
+      caption={`X축: 날짜(년/월, 예측 시작 시점부터) · Y축: 발전량(${unit})`}
+      yLabels={ticks.map((value) => ({ text: formatAxisValue(value), y: valueToY(value) }))}
+      xLabels={xLabels}
+    >
+      <svg className="forecast-chart" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none" role="img" aria-label="댐 발전량 실측·예측 비교 시계열 그래프">
+        {ticks.map((value, index) => (
+          <line key={index} x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
+        ))}
+        <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="2" strokeDasharray="6 6" strokeLinecap="round" strokeLinejoin="round" />
+        {actualSegments.map((pts, index) => (
+          <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        ))}
+        <line x1={boundaryX} x2={boundaryX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
+        {legacyX !== null && (
+          <line x1={legacyX} x2={legacyX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="2 8" />
         )}
       </svg>
     </ChartFrame>
