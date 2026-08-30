@@ -169,10 +169,10 @@ export const droughtReportFallback: DroughtReportDetailView[] = [
             grade: "경계",
             gradeFinalized: true,
             articleCount: 5,
-            representativeTitle: "합천댐 저수율 하락에 산업단지 비상",
+            representativeTitle: "합천군수, 지역 현안 간담회 개최",
             representativeLink: null,
             keywords: ["합천댐", "산단"],
-            relevanceFlag: false,
+            relevanceFlag: true,
             continuityCount: 2,
             gradeLowerBound: null,
             nextGradeLowerBound: null

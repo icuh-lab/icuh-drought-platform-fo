@@ -108,9 +108,58 @@ type ReportApiState = {
 };
 
 const DROUGHT_GRADE_CLASS: Record<string, string> = { 관심: "lv1", 주의: "lv2", 경계: "lv3", 심각: "lv4" };
+const DROUGHT_GRADE_LEVEL: Record<string, number> = { 관심: 1, 주의: 2, 경계: 3, 심각: 4 };
 
 function droughtGradeClass(grade: string | null) {
   return grade ? DROUGHT_GRADE_CLASS[grade] ?? "lv1" : "lv1";
+}
+
+function droughtGradeLevel(grade: string | null) {
+  return grade ? DROUGHT_GRADE_LEVEL[grade] ?? 1 : 1;
+}
+
+function buildReportOverview(report: DroughtReportDetailView): string {
+  if (report.regions.length === 0) {
+    return `이번 호는 전국 17개 시도 모두 가뭄영향 기사가 감지되지 않아 "이상 없음"으로 집계되었습니다.`;
+  }
+  const regionTotals = report.regions
+    .map((region) => ({
+      region,
+      total: region.impactFields.reduce((sum, field) => sum + field.articleCount, 0),
+      continuity: region.impactFields[0]?.continuityCount ?? 1,
+    }))
+    .sort((a, b) => b.total - a.total);
+  const top = regionTotals[0];
+  const topName = `${top.region.sido}${top.region.sigungu ? ` ${top.region.sigungu}` : ""}`;
+  const continuityPhrase = top.continuity > 1 ? `${top.continuity}개월째 연속으로 감지되는 사례로,` : "이번 호에 신규로 감지된 사례로,";
+
+  const fieldTotals = new Map<string, number>();
+  report.regions.forEach((region) =>
+    region.impactFields.forEach((field) => {
+      fieldTotals.set(field.impactName, (fieldTotals.get(field.impactName) ?? 0) + field.articleCount);
+    })
+  );
+  const topFields = Array.from(fieldTotals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name]) => name)
+    .join(", ");
+
+  return (
+    `이번 호는 전국 ${report.detectedSidoCount}/17개 시도, ${report.regions.length}개 지역에서 총 ${report.articleCount}건의 가뭄 관련 기사가 감지되었습니다. `
+    + `가장 많은 기사가 집중된 지역은 ${topName}(${top.total}건)이며, ${continuityPhrase} 주요 영향분야는 ${topFields}입니다.`
+  );
+}
+
+function GradeSteps({ grade }: { grade: string | null }) {
+  const level = droughtGradeLevel(grade);
+  return (
+    <span className="steps">
+      {[1, 2, 3, 4].map((step) => (
+        <i key={step} className={step <= level ? "filled" : undefined} />
+      ))}
+    </span>
+  );
 }
 
 function fireLevel(value: number) {
@@ -952,12 +1001,14 @@ function Dashboard() {
             <button className="back" onClick={() => go("reports")}><ChevronLeft size={16} />리포트 목록으로</button>
             <article className="article">
               <div className="article-meta">
-                <span className={`badge ${droughtGradeClass(selectedReport.headlineGrade)}`}>헤드라인 {selectedReport.headlineGrade ?? "등급 없음"}</span>
+                <span className={`badge ${droughtGradeClass(selectedReport.headlineGrade)}`}>
+                  <GradeSteps grade={selectedReport.headlineGrade} />헤드라인 {selectedReport.headlineGrade ?? "등급 없음"}
+                </span>
                 {selectedReport.generatedAt && <span>발행 {selectedReport.generatedAt.slice(0, 10)}</span>}
                 <span>분석 기사 {selectedReport.articleCount}건</span>
                 <span>감지 시도 {selectedReport.detectedSidoCount}/17</span>
               </div>
-              <h1>{selectedReport.reportYm.split("-")[0]}년 {Number(selectedReport.reportYm.split("-")[1])}월호</h1>
+              <h1>{selectedReport.reportYm.split("-")[0]}년 {Number(selectedReport.reportYm.split("-")[1])}월 가뭄영향 리포트</h1>
 
               {!selectedReport.detailLoaded && reportApi.detailError === selectedReportId && (
                 <div className="notice">
@@ -970,46 +1021,109 @@ function Dashboard() {
 
               {selectedReport.detailLoaded && (
                 <>
-                  <h3>전국 17개 시도 현황</h3>
-                  <div className="article-meta">
-                    {selectedReport.nationwide.map((status) => (
-                      <span key={status.sido} className={status.detected ? `badge ${droughtGradeClass(status.maxGrade)}` : undefined}>
-                        {status.sido}{status.detected ? ` · ${status.maxGrade}` : ""}
-                      </span>
-                    ))}
+                  <h3>이번 호 개요</h3>
+                  <p className="lede">{buildReportOverview(selectedReport)}</p>
+
+                  <div className="caveat">
+                    <AlertTriangle size={16} />
+                    <p>
+                      <b>등급 배지는 실제 위기 시점과 어긋날 수 있습니다.</b> 등급은 그 달의 기사 언급량 기준(Jenks)이며,
+                      재해가 실제로 심각했던 시점을 그대로 반영하지는 않습니다. 새 호는 발행 즉시 &lsquo;관심&rsquo;으로 시작해
+                      1개월 뒤 실제 집계로 한 번 갱신되어 그 값으로 고정됩니다.
+                    </p>
                   </div>
+
+                  <h3>전국 17개 시도 현황</h3>
+                  <div className="sidogrid">
+                    {selectedReport.nationwide.map((status) =>
+                      status.detected ? (
+                        <button
+                          key={status.sido}
+                          type="button"
+                          className="sido-cell active"
+                          onClick={() => document.getElementById(`region-${status.sido}`)?.scrollIntoView({ behavior: "smooth" })}
+                        >
+                          <span className="nm">{status.sido}</span>
+                          <span className="st">
+                            <span className={`dot ${droughtGradeClass(status.maxGrade)}`} />
+                            {status.maxGrade}
+                          </span>
+                        </button>
+                      ) : (
+                        <div key={status.sido} className="sido-cell clear">
+                          <span className="nm">{status.sido}</span>
+                          <span className="st"><span className="dot" />이상 없음</span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                  <p className="sido-legend">
+                    감지되지 않은 시도는 이번 호에 가뭄영향 기사가 0건이라는 뜻입니다. 클릭 가능한 카드는 아래 지역 상세로 이동합니다.
+                  </p>
 
                   <h3>감지된 지역</h3>
                   {selectedReport.regions.length === 0 && <p>이번 호에는 감지된 지역이 없습니다.</p>}
-                  <div className="mention-grid">
-                    {selectedReport.regions.map((region) => (
-                      <div className="mention-card" key={`${region.sido}-${region.sigungu}`}>
-                        <strong>{region.sigungu || region.sido}</strong>
-                        <span>{region.sido}</span>
-                        {region.impactFields.map((field) => (
-                          <div key={field.impactCode} style={{ marginTop: 8 }}>
-                            <b className={`badge ${droughtGradeClass(field.grade)}`}>{field.grade}</b>
-                            {" "}<b>{field.impactName}</b> · 기사 {field.articleCount}건
+                  {selectedReport.regions.map((region) => (
+                    <div className="rsec" id={`region-${region.sido}`} key={`${region.sido}-${region.sigungu}`}>
+                      <div className="rsec-hd">
+                        <h3>{region.sido}{region.sigungu ? ` ${region.sigungu}` : ""}</h3>
+                        {region.impactFields[0] && (
+                          <span className={`chip-cont${region.impactFields[0].continuityCount <= 1 ? " new" : ""}`}>
+                            {region.impactFields[0].continuityCount > 1 ? `${region.impactFields[0].continuityCount}개월째` : "신규"}
+                          </span>
+                        )}
+                        <span className="rn">{region.impactFields.length}개 분야</span>
+                      </div>
+                      {[...region.impactFields]
+                        .sort((a, b) => b.articleCount - a.articleCount)
+                        .map((field) => (
+                        <div className="fsub" key={field.impactCode}>
+                          <div className="fsub-badge">
+                            <span className={`badge ${droughtGradeClass(field.grade)}`}><GradeSteps grade={field.grade} />{field.grade}</span>
+                            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 5 }}>#{field.impactName}</div>
+                          </div>
+                          <div className="fsub-bd">
+                            <p className="fsub-ti">
+                              {field.representativeTitle}
+                              {field.relevanceFlag && (
+                                <>
+                                  {" "}
+                                  <span className="flag">
+                                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                      <path d="M8 1.5 15 14H1L8 1.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                                      <path d="M8 6.2v3.4M8 11.8v.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                                    </svg>
+                                    관련도 검토 필요
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                            {field.keywords.length > 0 && (
+                              <div className="fsub-kw">
+                                {field.keywords.map((keyword) => <span className="kw" key={keyword}>#{keyword}</span>)}
+                              </div>
+                            )}
+                            {field.relevanceFlag && (
+                              <div style={{ fontSize: 11, color: "var(--warn)" }}>
+                                대표기사가 이 지역·영향분야의 피해 키워드와 낮은 관련성을 보입니다 — 노출 전 재검토를 권장합니다.
+                              </div>
+                            )}
                             {field.gradeLowerBound !== null && (
-                              <p style={{ margin: "4px 0", fontSize: 12 }}>
+                              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
                                 등급 근거: 이 등급 기준 {Math.round(field.gradeLowerBound)}건
                                 {field.nextGradeLowerBound !== null
                                   ? ` · 다음 등급 기준 ${Math.round(field.nextGradeLowerBound)}건`
                                   : field.grade === "심각"
                                     ? " · 이미 최고 등급"
                                     : " · 다음 등급 구간 데이터 없음"}
-                              </p>
+                              </div>
                             )}
-                            {field.representativeTitle && <p>{field.representativeTitle}</p>}
-                            {field.keywords.length > 0 && (
-                              <small>{field.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>
-                            )}
-                            <small>{field.continuityCount > 1 ? `${field.continuityCount}개월째 감지` : "신규"}</small>
                           </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                          <div className="fsub-n">기사 {field.articleCount}건</div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
 
                   {selectedReportReferenceLinks.length > 0 && (
                     <>
