@@ -129,12 +129,10 @@ function buildReportOverview(report: DroughtReportDetailView): string {
     .map((region) => ({
       region,
       total: region.impactFields.reduce((sum, field) => sum + field.articleCount, 0),
-      continuity: region.impactFields[0]?.continuityCount ?? 1,
     }))
     .sort((a, b) => b.total - a.total);
   const top = regionTotals[0];
   const topName = `${top.region.sido}${top.region.sigungu ? ` ${top.region.sigungu}` : ""}`;
-  const continuityPhrase = top.continuity > 1 ? `${top.continuity}개월째 연속으로 감지되는 사례로,` : "이번 호에 신규로 감지된 사례로,";
 
   const fieldTotals = new Map<string, number>();
   report.regions.forEach((region) =>
@@ -150,7 +148,7 @@ function buildReportOverview(report: DroughtReportDetailView): string {
 
   return (
     `이번 호는 전국 ${report.detectedSidoCount}/17개 시도, ${report.regions.length}개 지역에서 총 ${report.articleCount}건의 가뭄 관련 기사가 감지되었습니다. `
-    + `가장 많은 기사가 집중된 지역은 ${topName}(${top.total}건)이며, ${continuityPhrase} 주요 영향분야는 ${topFields}입니다.`
+    + `가장 많은 기사가 집중된 지역은 ${topName}(${top.total}건)이며, 주요 영향분야는 ${topFields}입니다.`
   );
 }
 
@@ -167,11 +165,6 @@ function RegionCard({
     <div className={`rsec${nested ? " rsec-nested" : ""}`} id={anchorId}>
       <div className="rsec-hd">
         <h3>{region.sido}{region.sigungu ? ` ${region.sigungu}` : ""}</h3>
-        {region.impactFields[0] && (
-          <span className={`chip-cont${region.impactFields[0].continuityCount <= 1 ? " new" : ""}`}>
-            {region.impactFields[0].continuityCount > 1 ? `${region.impactFields[0].continuityCount}개월째` : "신규"}
-          </span>
-        )}
         <span className="rn">{region.impactFields.length}개 분야</span>
       </div>
       {[...region.impactFields]
