@@ -326,24 +326,26 @@ function Dashboard() {
   const hydropowerStatus = apiStatusText(hydropowerApi);
   const fireRiskStatus = apiStatusText(fireRiskApi);
   const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
-  const summaryStatus = summaryStatusText(summaryApi);
+  // 운영환경에서는 "집계 알림 없음 · 목업 표시" 같은 안내를 보여줄 필요가 없어 임시로 뺀다.
+  // const summaryStatus = summaryStatusText(summaryApi);
   const reportStatus = reportStatusText(reportApi);
   const fallbackSummaryAlerts: SummaryAlert[] = [
-    {
-      id: "mock-drought-goheung",
-      category: "drought-report",
-      dataset: "drought-report",
-      regionCode: "46770",
-      regionName: "고흥",
-      title: "고흥 가뭄영향 ‘매우높음’ 단계 진입",
-      description: "관수 차질 리포트 3건 발행 · 최근 3개월 강수량 평년 대비 48%",
-      severity: "danger",
-      score: 90,
-      value: 48,
-      unit: "rainfall_ratio",
-      observedAt: "2026-08-05",
-      relatedReportCount: 3
-    },
+    // 운영환경에서는 목업 데이터를 표시할 필요가 없어 임시로 뺀다.
+    // {
+    //   id: "mock-drought-goheung",
+    //   category: "drought-report",
+    //   dataset: "drought-report",
+    //   regionCode: "46770",
+    //   regionName: "고흥",
+    //   title: "고흥 가뭄영향 ‘매우높음’ 단계 진입",
+    //   description: "관수 차질 리포트 3건 발행 · 최근 3개월 강수량 평년 대비 48%",
+    //   severity: "danger",
+    //   score: 90,
+    //   value: 48,
+    //   unit: "rainfall_ratio",
+    //   observedAt: "2026-08-05",
+    //   relatedReportCount: 3
+    // },
     {
       id: "mock-fire-risk",
       category: "fire-risk",
@@ -699,7 +701,7 @@ function Dashboard() {
         {view === "home" && (
           <section className="view">
             <div className="alerts">
-              {summaryApi.status !== "success" && <div className="data-note">{summaryStatus}</div>}
+              {/* {summaryApi.status !== "success" && <div className="data-note">{summaryStatus}</div>} */}
               {activeSummaryAlerts.map((alert) => {
                 const action = alertAction(alert);
                 return (
