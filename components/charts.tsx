@@ -157,12 +157,15 @@ export function ForecastChart({ actual, predicted, band, unit = "", periodLabel 
   );
 }
 
+// 과거 몇 일 / 미래 몇 일을 초기 화면에 보여줄지. 양파(90/365, 일 단위 데이터)와 달리
+// 수력발전량은 월 단위라 과거 1년 + 예측이 뻗어나가는 근 미래를 기본값으로 삼는다.
+const HYDRO_VIEW_PAST_DAYS = 365;
+const HYDRO_VIEW_FUTURE_DAYS = 120;
+
 /**
- * 댐 발전량 실측·예측을 같은 월 축 위에 겹쳐 그린다. 양파(OverlayForecastChart)와 같은
- * "겹치는" 모양이 필요하지만, 월 단위라 2022~지금이 60개월 안팎이라서 양파처럼 하루 3px로
- * 펼쳐 가로 스크롤할 필요가 없다 — ForecastChart와 같은 고정폭 좌표계를 그대로 쓴다.
- *
- * 인덱스(포인트 순서)로 x를 잡는다. 실측·예측이 없는 달도 points에 없으니 빈틈이 안 생긴다.
+ * 댐 발전량 실측·예측을 양파(OverlayForecastChart)와 같은 방식 — 실제 날짜축 위에 겹쳐
+ * 그리고, 2022년부터의 전체 이력이라 가로로 스크롤한다 — 으로 그린다. 날짜로 x를 잡으므로
+ * 실측만·예측만 있는 달이 섞여도 선이 안 밀린다.
  */
 export function MonthlyOverlayChart({
   points,
@@ -172,69 +175,131 @@ export function MonthlyOverlayChart({
 }: {
   points: HydropowerVintagePoint[];
   boundaryDate: string;
-  /** 이 날짜 이전은 고정밴드 구간(모델 예측 아님) — 세로 점선으로만 표시, 설명은 카드의 캐비어트 문구가 맡는다. */
+  /** 이 날짜 이전은 고정밴드 구간(모델 예측 아님) — 세로 점선 + 라벨로 표시. */
   legacyBandUntilDate?: string | null;
   unit?: string;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ point: HydropowerVintagePoint; x: number } | null>(null);
+
   const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
+  const start = points[0]?.date ?? boundaryDate;
+  const end = points[points.length - 1]?.date ?? boundaryDate;
+  const span = Math.max(daysBetween(start, end), 1);
+  const plotWidth = Math.max(span * PX_PER_DAY, 600);
+
+  // 열자마자 기준월 근처가 보이게 스크롤을 옮긴다.
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node === null) return;
+    const viewStart = daysBetween(start, shiftDate(boundaryDate, -HYDRO_VIEW_PAST_DAYS)) * PX_PER_DAY;
+    const viewWidth = (HYDRO_VIEW_PAST_DAYS + HYDRO_VIEW_FUTURE_DAYS) * PX_PER_DAY;
+    node.scrollLeft = Math.max(0, viewStart - Math.max(0, (node.clientWidth - viewWidth) / 2));
+  }, [start, boundaryDate, plotWidth]);
+
   if (points.length === 0 || values.length === 0) return null;
 
   const ticks = niceAxisTicks(Math.max(...values));
   const axisTop = ticks[ticks.length - 1];
-  const valueToY = (value: number) => PAD.top + PLOT_HEIGHT - (value / axisTop) * PLOT_HEIGHT;
-  const xAt = (index: number) => PAD.left + (index * PLOT_WIDTH) / Math.max(points.length - 1, 1);
-  const indexOfDate = new Map(points.map((point, index) => [point.date, index]));
+  const valueToY = (value: number) => OVERLAY_PAD.top + OVERLAY_PLOT_HEIGHT - (value / axisTop) * OVERLAY_PLOT_HEIGHT;
+  const xAt = (date: string) => daysBetween(start, date) * PX_PER_DAY;
+  const xy = (value: number, date: string) => [xAt(date), valueToY(value)] as const;
 
-  // 실측 구간을 이어 그리되, 한 달 넘게 비면 끊는다 — 없는 달을 직선으로 메우면 데이터가
-  // 있는 것처럼 보인다.
+  // 월 하나가 비어도(28~31일) 이어 긋되, 그 두 배(45일)를 넘게 비면 끊는다 — 없는 달을
+  // 직선으로 메우면 데이터가 있는 것처럼 보인다.
   const actualSegments: (readonly [number, number])[][] = [];
   let segment: (readonly [number, number])[] = [];
-  let previousIndex: number | null = null;
-  points.forEach((point, index) => {
-    if (point.actual === null) return;
-    if (previousIndex !== null && index - previousIndex > 1) {
+  let previousDate: string | null = null;
+  for (const point of points) {
+    if (point.actual === null) continue;
+    if (previousDate !== null && daysBetween(previousDate, point.date) > 45) {
       actualSegments.push(segment);
       segment = [];
     }
-    segment.push([xAt(index), valueToY(point.actual)]);
-    previousIndex = index;
-  });
+    segment.push(xy(point.actual, point.date));
+    previousDate = point.date;
+  }
   if (segment.length > 0) actualSegments.push(segment);
 
-  const predictedPts = points
-    .map((point, index) => (point.predicted === null ? null : ([xAt(index), valueToY(point.predicted)] as const)))
-    .filter((pt): pt is readonly [number, number] => pt !== null);
+  const predictedPts = points.filter((point) => point.predicted !== null).map((point) => xy(point.predicted as number, point.date));
+  const boundaryX = xAt(boundaryDate);
+  const legacyX = legacyBandUntilDate !== null && legacyBandUntilDate > start && legacyBandUntilDate <= end ? xAt(legacyBandUntilDate) : null;
+  const months = monthTicks(start, end);
 
-  const boundaryX = xAt(indexOfDate.get(boundaryDate) ?? points.length - 1);
-  const legacyIndex = legacyBandUntilDate === null ? undefined : indexOfDate.get(legacyBandUntilDate);
-  const legacyX = legacyIndex === undefined ? null : xAt(legacyIndex);
-
-  // 라벨은 매년 1월만 표시한다 — 60개월을 900px 고정폭에 다 적으면 안 겹치는 게 불가능하다.
-  // 월 단위 경계는 값 없이 그리드선만(연도 밑줄이 촘촘한 눈금 대신 역할을 한다).
-  const xLabels: XLabel[] = points
-    .filter((point) => point.date.endsWith("-01-01"))
-    .map((point) => ({ text: point.date.slice(0, 4), x: xAt(indexOfDate.get(point.date)!), align: "middle" }));
+  function handleMove(event: React.MouseEvent<HTMLDivElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - box.left + event.currentTarget.scrollLeft;
+    const found = nearestPoint(points, shiftDate(start, Math.round(x / PX_PER_DAY)));
+    setHover(found === null ? null : { point: found, x: xAt(found.date) });
+  }
 
   return (
-    <ChartFrame
-      caption={`X축: 날짜(년/월, 예측 시작 시점부터) · Y축: 발전량(${unit})`}
-      yLabels={ticks.map((value) => ({ text: formatAxisValue(value), y: valueToY(value) }))}
-      xLabels={xLabels}
-    >
-      <svg className="forecast-chart" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none" role="img" aria-label="댐 발전량 실측·예측 비교 시계열 그래프">
-        {ticks.map((value, index) => (
-          <line key={index} x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
+    <div className="overlay-wrap">
+      <div className="overlay-caption">X축: 날짜(눈금은 월 단위) · Y축: 발전량({unit}) · 가로로 스크롤하면 {start.slice(0, 4)}년까지 갑니다</div>
+      <div className="overlay-chart">
+      <div className="overlay-axis" style={{ width: Y_GUTTER, height: OVERLAY_HEIGHT }} aria-hidden="true">
+        {ticks.map((value) => (
+          <span key={value} className="lbl-y" style={{ top: `${valueToY(value)}px`, left: Y_GUTTER - 8 }}>
+            {formatAxisValue(value)}
+          </span>
         ))}
-        <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="2" strokeDasharray="6 6" strokeLinecap="round" strokeLinejoin="round" />
-        {actualSegments.map((pts, index) => (
-          <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        ))}
-        <line x1={boundaryX} x2={boundaryX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
-        {legacyX !== null && (
-          <line x1={legacyX} x2={legacyX} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--line-2)" strokeDasharray="2 8" />
-        )}
-      </svg>
-    </ChartFrame>
+      </div>
+      <div
+        className="overlay-scroll"
+        ref={scrollRef}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHover(null)}
+        role="img"
+        aria-label={`댐 발전량 실측치와 예측치 비교 시계열 그래프. ${start} 부터 ${end} 까지. ${boundaryDate} 까지는 실측과 예측이 함께, 그 뒤는 예측만 표시`}
+      >
+        <div className="overlay-canvas" style={{ width: plotWidth, height: OVERLAY_HEIGHT }}>
+          <svg width={plotWidth} height={OVERLAY_HEIGHT} viewBox={`0 0 ${plotWidth} ${OVERLAY_HEIGHT}`} aria-hidden="true">
+            {ticks.map((value) => (
+              <line key={value} x1={0} x2={plotWidth} y1={valueToY(value)} y2={valueToY(value)} stroke="var(--line)" />
+            ))}
+            {months.map((month) => (
+              <line
+                key={month}
+                x1={xAt(month)}
+                x2={xAt(month)}
+                y1={OVERLAY_PAD.top}
+                y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom}
+                stroke="var(--line)"
+                strokeDasharray={month.endsWith("-01-01") ? undefined : "2 6"}
+              />
+            ))}
+            <polyline points={toLine(predictedPts)} fill="none" stroke="var(--up)" strokeWidth="2" strokeDasharray="6 6" strokeLinecap="round" strokeLinejoin="round" />
+            {actualSegments.map((pts, index) => (
+              <polyline key={index} points={toLine(pts)} fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+            <line x1={boundaryX} x2={boundaryX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="4 5" />
+            {legacyX !== null && (
+              <line x1={legacyX} x2={legacyX} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--line-2)" strokeDasharray="2 8" />
+            )}
+            {hover && <line x1={hover.x} x2={hover.x} y1={OVERLAY_PAD.top} y2={OVERLAY_HEIGHT - OVERLAY_PAD.bottom} stroke="var(--ink-3)" />}
+          </svg>
+          <div className="overlay-months" aria-hidden="true">
+            {months.map((month) => (
+              <span key={month} className={month.endsWith("-01-01") ? "is-year" : ""} style={{ left: `${xAt(month)}px` }}>
+                {month.endsWith("-01-01") ? month.slice(0, 4) : month.slice(5, 7) + "월"}
+              </span>
+            ))}
+          </div>
+          <span className="overlay-mark" style={{ left: `${boundaryX}px` }} aria-hidden="true">실측 종료</span>
+          {legacyX !== null && (
+            <span className="overlay-mark" style={{ left: `${legacyX}px` }} aria-hidden="true">고정밴드 이전</span>
+          )}
+          {hover && (
+            <div className={`overlay-tip ${hover.x > plotWidth - 160 ? "is-left" : ""}`} style={{ left: `${hover.x}px` }}>
+              <b>{hover.point.date}</b>
+              <span><i className="solid" />실측 {hover.point.actual === null ? "—" : `${formatAxisValue(hover.point.actual)}${unit}`}</span>
+              <span><i className="dash" />예측 {hover.point.predicted === null ? "—" : `${formatAxisValue(hover.point.predicted)}${unit}`}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      </div>
+    </div>
   );
 }
 
