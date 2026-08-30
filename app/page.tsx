@@ -15,12 +15,10 @@ import {
   fetchDroughtReports,
   fetchFreshFoodIndex,
   fetchHydropowerVintage,
-  fetchOnionPriceSeries,
-  fetchPriceForecast,
+  fetchOverlayPriceSeries,
   fetchPredictionVintage,
   fetchSummary,
   latestFireRiskObservedAt,
-  latestPriceForecastDate,
   priceForecastLocation,
   toFireRiskView,
   toFireRiskMapView,
@@ -30,10 +28,8 @@ import {
   toFreshFoodKpiView,
   toHydropowerForecastView,
   toHydropowerKpiView,
-  toOnionForecastView,
-  toOnionKpiView,
-  toPriceForecastView,
-  toPriceKpiView,
+  toOverlayForecastView,
+  toOverlayKpiView,
   type FireRiskView,
   type FireRiskMapView,
   type DroughtReportView,
@@ -42,10 +38,9 @@ import {
   type FreshFoodKpiView,
   type HydropowerDamName,
   type HydropowerForecastView,
-  type OnionForecastView,
   type OpenApiPeriod,
+  type OverlayForecastView,
   type PriceForecastKey,
-  type PriceForecastView,
   type PriceKpiView,
   type SummaryAlert
 } from "@/lib/api-client";
@@ -54,15 +49,13 @@ import { PERIOD_YEARS, availableMonths, clampPeriod, isPeriodAtEnd, isPeriodAtSt
 import { apiCatalog, fireRisk, forecasts, kpis, reports, type ApiCatalogItem, type ForecastKey, type ViewKey } from "@/lib/mock-data";
 import { freshFoodStatusText, type FreshFoodKind } from "@/lib/fresh-food";
 
-type PriceApiState = {
+/** 배추도 양파와 같은 prediction-vintage + daily-market 겹쳐그리기 경로를 쓴다. */
+type CabbageApiState = {
   status: "loading" | "success" | "empty" | "error";
-  forecast: PriceForecastView | null;
+  forecast: OverlayForecastView | null;
   kpi: PriceKpiView | null;
   latestDate: string | null;
 };
-
-/** 양파는 prediction-vintage + daily-market 경로를 쓴다. 여기 남는 건 배추뿐이다. */
-type PriceApiStates = Record<"cabbage", PriceApiState>;
 
 type HydropowerApiState = {
   status: "loading" | "success" | "empty" | "error";
@@ -73,7 +66,7 @@ type HydropowerApiState = {
 
 type OnionApiState = {
   status: "loading" | "success" | "empty" | "error";
-  forecast: OnionForecastView | null;
+  forecast: OverlayForecastView | null;
   kpi: PriceKpiView | null;
   latestDate: string | null;
 };
@@ -130,14 +123,7 @@ function fireBlockCount(levelClassName: string) {
   return 1;
 }
 
-function priceStatusText(state: PriceApiState) {
-  if (state.status === "success") return `API 갱신 ${state.latestDate ?? "최신"}`;
-  if (state.status === "loading") return "API 확인 중 · 목업 표시";
-  if (state.status === "empty") return "API 데이터 없음 · 목업 표시";
-  return "API 오류 · 목업 표시";
-}
-
-function apiStatusText(state: Pick<PriceApiState, "status" | "latestDate">) {
+function apiStatusText(state: Pick<CabbageApiState, "status" | "latestDate">) {
   if (state.status === "success") return `API 갱신 ${state.latestDate ?? "최신"}`;
   if (state.status === "loading") return "API 확인 중 · 목업 표시";
   if (state.status === "empty") return "API 데이터 없음 · 목업 표시";
@@ -220,7 +206,7 @@ function apiCurlExample(api: ApiCatalogItem) {
   return parts.join(" \\\n  ");
 }
 
-const initialPriceApiState: PriceApiState = {
+const initialCabbageApiState: CabbageApiState = {
   status: "loading",
   forecast: null,
   kpi: null,
@@ -282,7 +268,7 @@ function Dashboard() {
   const [forecast, setForecast] = useState<ForecastKey>("cabbage");
   const [selectedReportId, setSelectedReportId] = useState("r1");
   const [selectedApiPath, setSelectedApiPath] = useState(apiCatalog[0].path);
-  const [priceApis, setPriceApis] = useState<PriceApiStates>({ cabbage: initialPriceApiState });
+  const [cabbageApi, setCabbageApi] = useState<CabbageApiState>(initialCabbageApiState);
   const [onionApi, setOnionApi] = useState<OnionApiState>(initialOnionApiState);
   const [hydropowerApi, setHydropowerApi] = useState<HydropowerApiState>(initialHydropowerApiState);
   const [selectedHydroDam, setSelectedHydroDam] = useState<HydropowerDamName>(DEFAULT_HYDROPOWER_DAM);
@@ -293,24 +279,16 @@ function Dashboard() {
   const [summaryApi, setSummaryApi] = useState<SummaryApiState>(initialSummaryApiState);
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
-  const activeForecasts = useMemo(
-    () => ({
-      ...forecasts,
-      cabbage: priceApis.cabbage.forecast
-    }),
-    [priceApis]
-  );
   const activeKpis = useMemo(
     () => kpis.map((kpi) => {
-      if (kpi.name === "고랭지배추 도매가격") return priceApis.cabbage.kpi ?? kpi;
+      if (kpi.name === "고랭지배추 도매가격") return cabbageApi.kpi ?? kpi;
       if (kpi.name === "양파 도매가격") return onionApi.kpi ?? kpi;
       if (kpi.name === "수력발전량") return hydropowerApi.kpi ?? kpi;
       if (kpi.name === "신선식품물가지수") return freshFoodApi.kpi ?? kpi;
       return kpi;
     }),
-    [priceApis, onionApi, hydropowerApi, freshFoodApi]
+    [cabbageApi, onionApi, hydropowerApi, freshFoodApi]
   );
-  const fc = activeForecasts[forecast];
   const activeReports = reportApi.reports ?? reports;
   const selectedReport = useMemo(
     () => reportApi.details[selectedReportId] ?? activeReports.find((report) => report.id === selectedReportId) ?? activeReports[0] ?? reports[0],
@@ -336,13 +314,17 @@ function Dashboard() {
   // 181 개 시군구를 다 늘어놓는 대신 지도로 전체를 보여주고, 목록은 눈에 띄는 곳만 남긴다.
   const topFireRisk = [...activeFireRisk].sort((left, right) => right.value - left.value).slice(0, 5);
   const priceStatuses = {
-    cabbage: priceStatusText(priceApis.cabbage),
+    cabbage: apiStatusText(cabbageApi),
     onion: apiStatusText(onionApi)
   };
   // 양파 메인 차트는 목업 폴백을 쓰지 않는다. 실측·예측을 지어내면 정확도까지 지어내는 셈이다.
   const onionForecast = onionApi.forecast;
-  // 수력발전량도 동일하게 목업 폴백을 쓰지 않는다 — activeForecasts.hydro 는 탭 라벨 전용으로만 쓴다.
+  // 배추도 같은 원칙이다 — 겹쳐그리기 차트로 옮기면서 목업 폴백을 걷어냈다.
+  const cabbageForecast = cabbageApi.forecast;
+  // 수력발전량도 동일하게 목업 폴백을 쓰지 않는다 — 탭 라벨만 정적 목업을 쓴다.
   const hydropowerForecast = hydropowerApi.forecast;
+  // 배추·양파 둘 다 OverlayForecastView 라 연도별 정확도 칩을 같은 모양으로 쓴다.
+  const overlayYears = forecast === "onion" ? onionForecast?.years : forecast === "cabbage" ? cabbageForecast?.years : undefined;
   const hydropowerStatus = apiStatusText(hydropowerApi);
   const fireRiskStatus = apiStatusText(fireRiskApi);
   const freshFoodStatus = freshFoodStatusText(freshFoodApi.status, freshFoodApi.latestDate);
@@ -388,45 +370,6 @@ function Dashboard() {
     [selectedApiPath]
   );
   const selectedApiCurl = useMemo(() => apiCurlExample(selectedApi), [selectedApi]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadPriceForecast(key: "cabbage") {
-      try {
-        const response = await fetchPriceForecast(key, { signal: controller.signal, year: period.year, month: period.month });
-        const nextForecast = toPriceForecastView(key, response);
-        const nextKpi = toPriceKpiView(key, response);
-
-        if (!nextForecast || !nextKpi) {
-          setPriceApis((current) => ({ ...current, [key]: { status: "empty", forecast: null, kpi: null, latestDate: null } }));
-          return;
-        }
-
-        setPriceApis((current) => ({
-          ...current,
-          [key]: {
-            status: "success",
-            forecast: nextForecast,
-            kpi: nextKpi,
-            latestDate: latestPriceForecastDate(response)
-          }
-        }));
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setPriceApis((current) => ({ ...current, [key]: { status: "error", forecast: null, kpi: null, latestDate: null } }));
-      }
-    }
-
-
-
-    loadPriceForecast("cabbage");
-
-    return () => controller.abort();
-  }, [period]);
 
   // 예측 이력은 연/월 필터가 없는 전체 이력이라, period 가 아니라 선택된 댐이 바뀔 때만 다시 부른다.
   useEffect(() => {
@@ -476,8 +419,8 @@ function Dashboard() {
 
       try {
         // 실측은 daily-market 에서 창이 걸친 달만큼 더 부른다.
-        const series = await fetchOnionPriceSeries(response, controller.signal);
-        const nextForecast = series && toOnionForecastView(series);
+        const series = await fetchOverlayPriceSeries("onion", response, controller.signal);
+        const nextForecast = series && toOverlayForecastView("onion", series);
 
         if (!series || !nextForecast) {
           setOnionApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
@@ -487,7 +430,7 @@ function Dashboard() {
         setOnionApi({
           status: "success",
           forecast: nextForecast,
-          kpi: toOnionKpiView(series),
+          kpi: toOverlayKpiView("onion", series),
           latestDate: series.latestActualDate
         });
       } catch (error) {
@@ -496,7 +439,39 @@ function Dashboard() {
       }
     }
 
+    async function loadCabbage() {
+      let response;
+      try {
+        response = await fetchPredictionVintage(priceForecastLocation("cabbage"), controller.signal);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setCabbageApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        return;
+      }
+
+      try {
+        const series = await fetchOverlayPriceSeries("cabbage", response, controller.signal);
+        const nextForecast = series && toOverlayForecastView("cabbage", series);
+
+        if (!series || !nextForecast) {
+          setCabbageApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
+          return;
+        }
+
+        setCabbageApi({
+          status: "success",
+          forecast: nextForecast,
+          kpi: toOverlayKpiView("cabbage", series),
+          latestDate: series.latestActualDate
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setCabbageApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+      }
+    }
+
     loadOnion();
+    loadCabbage();
 
     return () => controller.abort();
   }, []);
@@ -772,7 +747,7 @@ function Dashboard() {
               <div className="tabs" role="tablist" aria-label="예측 지표 선택">
                 {(["cabbage", "onion", "hydro"] as ForecastKey[]).map((key) => (
                   <button key={key} role="tab" aria-selected={forecast === key} onClick={() => setForecast(key)}>
-                    {activeForecasts[key]?.label ?? forecasts[key].label}
+                    {key === "onion" ? onionForecast?.label ?? forecasts.onion.label : key === "hydro" ? forecasts.hydro.label : cabbageForecast?.label ?? forecasts.cabbage.label}
                   </button>
                 ))}
               </div>
@@ -794,16 +769,16 @@ function Dashboard() {
               )}
               <div className="chart-hd">
                 <div>
-                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : fc?.current ?? "–"}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : fc?.unit ?? "원 / 10kg망"}</u></div>
-                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : forecast === "hydro" ? hydropowerForecast?.sub ?? "" : fc?.sub ?? ""}</div>
+                  <div className="chart-val">{forecast === "onion" ? onionForecast?.current ?? "–" : forecast === "hydro" ? hydropowerForecast?.current ?? "–" : cabbageForecast?.current ?? "–"}<u>{forecast === "onion" ? onionForecast?.unit ?? "원 / kg" : forecast === "hydro" ? hydropowerForecast?.unit ?? "MWh / 월" : cabbageForecast?.unit ?? "원 / 10kg망"}</u></div>
+                  <div className="chart-sub">{forecast === "onion" ? onionForecast?.sub ?? "" : forecast === "hydro" ? hydropowerForecast?.sub ?? "" : cabbageForecast?.sub ?? ""}</div>
                 </div>
                 <div className="accuracy">
                   <span>예측 정확도</span>
-                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : fc?.error ?? "N/A"}</b>
-                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? hydropowerForecast?.errorNote ?? "정확도 지표 미제공" : "최근 30일 평균 오차율"}</small>
-                  {forecast === "onion" && onionForecast && onionForecast.years.length > 1 && (
+                  <b>{forecast === "onion" ? onionForecast?.error ?? "N/A" : forecast === "hydro" ? hydropowerForecast?.error ?? "N/A" : cabbageForecast?.error ?? "N/A"}</b>
+                  <small>{forecast === "onion" ? onionForecast?.errorNote ?? "실측 대기" : forecast === "hydro" ? hydropowerForecast?.errorNote ?? "정확도 지표 미제공" : cabbageForecast?.errorNote ?? "실측 대기"}</small>
+                  {overlayYears && overlayYears.length > 1 && (
                     <div className="accuracy-years">
-                      {onionForecast.years.map((year) => (
+                      {overlayYears.map((year) => (
                         <span key={year.year} title={`${year.year}년 · 표본 ${year.sampleDays}일`}>
                           <i>{String(year.year).slice(2)}</i>{year.mape.toFixed(1)}
                         </span>
@@ -812,7 +787,7 @@ function Dashboard() {
                   )}
                 </div>
               </div>
-              {forecast === "cabbage" && priceApis.cabbage.status !== "success" && <div className="data-note">{priceStatuses.cabbage}</div>}
+              {forecast === "cabbage" && cabbageApi.status !== "success" && <div className="data-note">{priceStatuses.cabbage}</div>}
               {forecast === "onion" && onionApi.status !== "success" && <div className="data-note">{priceStatuses.onion}</div>}
               {forecast === "hydro" && hydropowerApi.status !== "success" && <div className="data-note">{hydropowerStatus}</div>}
               {forecast === "onion" ? (
@@ -827,19 +802,16 @@ function Dashboard() {
                   />
                 )
               ) : (
-                fc && <ForecastChart actual={fc.actual} predicted={fc.predicted} band={fc.band} unit={fc.unit} />
+                cabbageForecast && <OverlayForecastChart points={cabbageForecast.points} boundaryDate={cabbageForecast.boundaryDate} horizonSwitchDate={cabbageForecast.horizonSwitchDate} />
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>
                 <span><i className="dash" />예측치</span>
-                {/* 양파·수력발전량은 상·하한 밴드 없이 예측선 하나만 겹쳐 그린다. 안 그리는 선을 범례에만 두면 거짓말이 된다. */}
-                {forecast === "cabbage" && fc?.band?.some((value) => value > 0) && (
-                  <span><i className="band" />신뢰구간 95%</span>
-                )}
               </div>
               {forecast === "onion" && onionForecast && <div className="data-note">{onionForecast.note}</div>}
+              {forecast === "cabbage" && cabbageForecast && <div className="data-note">{cabbageForecast.note}</div>}
               {forecast === "hydro" && hydropowerForecast && <div className="data-note">{hydropowerForecast.note}</div>}
-              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation" : fc?.source ?? "open-api /api/v1/agrimarket (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? priceApis.cabbage.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
+              <div className="source-line"><b>출처</b> {forecast === "onion" ? onionForecast?.source ?? "open-api /api/v1/agrimarket (합천)" : forecast === "hydro" ? hydropowerForecast?.source ?? "open-api /api/v1/hydropower/monthly-generation · monthly-predict-history" : cabbageForecast?.source ?? "open-api /api/v1/agrimarket/daily-market · prediction-vintage (강릉)"}<span>|</span><b>갱신</b> {forecast === "cabbage" ? cabbageApi.latestDate ?? priceStatuses.cabbage : forecast === "onion" ? onionApi.latestDate ?? priceStatuses.onion : hydropowerApi.latestDate ?? hydropowerStatus}</div>
             </div>
 
             <SectionHead title="지수형 지표" note="가뭄이 누적될수록 함께 상승하는 지표들을 표시합니다" />

@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ONION_VIEW_FUTURE_DAYS,
-  ONION_VIEW_PAST_DAYS,
+  VINTAGE_VIEW_FUTURE_DAYS,
+  VINTAGE_VIEW_PAST_DAYS,
   daysBetween,
   monthTicks,
   nearestPoint,
   priceAxisTicks,
   shiftDate,
-  type OnionPricePoint
-} from "@/lib/onion-price";
+  type VintagePricePoint
+} from "@/lib/vintage-price-series";
 import { niceAxisTicks, type HydropowerVintagePoint } from "@/lib/hydropower-vintage";
 
 type SparkProps = {
@@ -325,13 +325,13 @@ export function OverlayForecastChart({
   boundaryDate,
   horizonSwitchDate = null
 }: {
-  points: OnionPricePoint[];
+  points: VintagePricePoint[];
   boundaryDate: string;
   /** 미래선의 리드타임이 더 긴 모델로 넘어가는 날. 화면의 오차율이 못 미치는 구간의 시작. */
   horizonSwitchDate?: string | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState<{ point: OnionPricePoint; x: number } | null>(null);
+  const [hover, setHover] = useState<{ point: VintagePricePoint; x: number } | null>(null);
 
   const values = points.flatMap((point) => [point.actual, point.predicted]).filter((value): value is number => value !== null);
   const start = points[0]?.date ?? boundaryDate;
@@ -343,8 +343,8 @@ export function OverlayForecastChart({
   useEffect(() => {
     const node = scrollRef.current;
     if (node === null) return;
-    const viewStart = daysBetween(start, shiftDate(boundaryDate, -ONION_VIEW_PAST_DAYS)) * PX_PER_DAY;
-    const viewWidth = (ONION_VIEW_PAST_DAYS + ONION_VIEW_FUTURE_DAYS) * PX_PER_DAY;
+    const viewStart = daysBetween(start, shiftDate(boundaryDate, -VINTAGE_VIEW_PAST_DAYS)) * PX_PER_DAY;
+    const viewWidth = (VINTAGE_VIEW_PAST_DAYS + VINTAGE_VIEW_FUTURE_DAYS) * PX_PER_DAY;
     // 초기 창이 화면보다 넓으면 왼쪽 끝(=최근 과거)에 맞춘다.
     node.scrollLeft = Math.max(0, viewStart - Math.max(0, (node.clientWidth - viewWidth) / 2));
   }, [start, boundaryDate, plotWidth]);

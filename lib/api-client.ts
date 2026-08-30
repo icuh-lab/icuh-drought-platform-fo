@@ -17,15 +17,15 @@ import {
   type RawFreshFoodMonth
 } from "@/lib/fresh-food";
 import {
-  buildOnionPriceSeries,
+  buildVintagePriceSeries,
   monthsMissingActual,
   vintageBoundaryDate,
   yearlyAccuracy,
   type YearAccuracy,
-  type OnionPricePoint,
-  type OnionPriceSeries,
+  type VintagePricePoint,
+  type VintagePriceSeries,
   type RawMarketTrendPoint
-} from "@/lib/onion-price";
+} from "@/lib/vintage-price-series";
 import {
   buildHydropowerVintageSeries,
   type HydropowerActualEntry,
@@ -125,7 +125,7 @@ export type PredictionVintageResponse = {
  * 양파 메인 차트는 실측 뒤에 예측을 이어 붙이는 모양이 아니라 같은 날짜축 위에 겹치는
  * 모양이라 배열 두 개로는 표현이 안 된다. 날짜마다 실측·예측을 함께 들고 다닌다.
  */
-export type OnionForecastView = {
+export type OverlayForecastView = {
   label: string;
   current: string;
   unit: string;
@@ -136,7 +136,7 @@ export type OnionForecastView = {
   note: string;
   /** 연도별 정확도. 큰 숫자는 마지막 항목을 쓴다. */
   years: YearAccuracy[];
-  points: OnionPricePoint[];
+  points: VintagePricePoint[];
   boundaryDate: string;
   /** 미래선의 리드타임이 바뀌는 날. 오차율이 설명하지 못하는 구간의 시작이다. */
   horizonSwitchDate: string | null;
@@ -375,7 +375,7 @@ type OpenAgriDailyPriceResponse = {
 
 /**
  * 실측 도매가 계열. `daily-price` 의 예측값과는 다른 계열이다.
- * 기준일 이후 행은 실측이 아니라 예측으로 채워져 있어 그대로 쓰면 안 된다 — onion-price 가 자른다.
+ * 기준일 이후 행은 실측이 아니라 예측으로 채워져 있어 그대로 쓰면 안 된다 — vintage-price-series 가 자른다.
  */
 type OpenAgriDailyMarketResponse = {
   location: string;
@@ -446,6 +446,7 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
   kpiUnit: string;
   displayMultiplier: number;
   location: string;
+  kpiName: string;
 }> = {
   cabbage: {
     item: "napa-cabbage",
@@ -456,7 +457,8 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
     displayUnit: "원 / 10kg망",
     kpiUnit: "원/10kg망",
     displayMultiplier: 10,
-    location: process.env.NEXT_PUBLIC_AGRI_CABBAGE_LOCATION ?? "강릉"
+    location: process.env.NEXT_PUBLIC_AGRI_CABBAGE_LOCATION ?? "강릉",
+    kpiName: "고랭지배추 도매가격"
   },
   onion: {
     item: "onion",
@@ -467,42 +469,23 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
     displayUnit: "원 / kg",
     kpiUnit: "원/kg",
     displayMultiplier: 1,
-    location: process.env.NEXT_PUBLIC_AGRI_ONION_LOCATION ?? "합천"
+    location: process.env.NEXT_PUBLIC_AGRI_ONION_LOCATION ?? "합천",
+    kpiName: "양파 도매가격"
   }
 };
-
-export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, month }: FetchPriceForecastOptions = {}) {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const search = new URLSearchParams({
-    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
-    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
-    location: config.location
-  });
-  const data = await getOpenApiData<OpenAgriDailyPriceResponse>("/api/v1/agrimarket/daily-price", search, signal);
-  // daily-price 는 "predictedPrice" 한 컬럼뿐이라 실측과 예측이 구분되어 오지 않는다.
-  // 오늘(today) 이전 날짜는 이미 지나간 값(실측에 가장 가까움)으로, 오늘 이후는 아직
-  // 오지 않은 값(예측)으로 갈라서 observed/predicted 를 프론트에서 만든다.
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const points = data.calendarData
-    .filter((point) => typeof point.predictedPrice === "number")
-    .map((point) => ({
-      baseDate: point.predictionDate,
-      value: point.predictedPrice as number,
-      dataType: (point.predictionDate <= todayIso ? "observed" : "predicted") as PriceForecastDataType
-    }));
-
-  return {
-    item: config.item,
-    regionCode: config.region,
-    unit: "KRW/kg",
-    errorRate: null,
-    points
-  } satisfies PriceForecastResponse;
-}
 
 /** daily-price 가 쓰는 location 과 동일한 값을 얻는다("합천") — 호출부에서 문자열을 직접 하드코딩하지 않게. */
 export function priceForecastLocation(key: PriceForecastKey): string {
   return PRICE_FORECAST_CONFIG[key].location;
+}
+
+/**
+ * 절대 가격값에 곱해야 하는 배수. 배추는 모델이 원/kg 로 내지만 화면은 원/10kg망
+ * 관행이라 10, 양파는 원/kg 그대로라 1 — 테스트가 이 값을 그대로 참조해 하드코딩된
+ * 10/1 이 설정과 어긋나지 않게 한다.
+ */
+export function priceForecastDisplayMultiplier(key: PriceForecastKey): number {
+  return PRICE_FORECAST_CONFIG[key].displayMultiplier;
 }
 
 export async function fetchPredictionVintage(location: string, signal?: AbortSignal) {
@@ -522,13 +505,17 @@ export async function fetchPredictionVintage(location: string, signal?: AbortSig
  */
 const MARKET_FETCH_CONCURRENCY = 4;
 
-export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, signal?: AbortSignal) {
+export async function fetchOverlayPriceSeries(
+  key: PriceForecastKey,
+  vintage: PredictionVintageResponse,
+  signal?: AbortSignal
+) {
   const boundaryDate = vintageBoundaryDate(vintage.entries);
   if (boundaryDate === null) {
     return null;
   }
 
-  const location = PRICE_FORECAST_CONFIG.onion.location;
+  const location = PRICE_FORECAST_CONFIG[key].location;
   const earliest = vintage.entries.map((entry) => entry.targetDate).sort()[0] ?? boundaryDate;
   const months = monthsMissingActual(vintage.entries, earliest, boundaryDate);
   const trends: RawMarketTrendPoint[] = [];
@@ -550,15 +537,51 @@ export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, 
     trends.push(...batch.flat());
   }
 
-  return buildOnionPriceSeries({ entries: vintage.entries, market: trends });
+  const multiplier = PRICE_FORECAST_CONFIG[key].displayMultiplier;
+  return buildVintagePriceSeries({
+    entries: scaleVintageEntriesForDisplay(vintage.entries, multiplier),
+    market: scaleMarketTrendForDisplay(trends, multiplier)
+  });
 }
 
-export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView | null {
+/**
+ * 배추의 기반 모델은 원/kg 로 값을 내지만 화면은 "원/10kg망" 관행으로 표시한다
+ * (displayMultiplier=10). 양파는 원/kg 그대로라 배수가 1 이라 이 변환이 없어도
+ * 결과가 같다. onion 이 이 함수를 거쳐도 값이 그대로인 걸 테스트가 확인한다.
+ *
+ * vintage-price-series 의 순수 로직(합계·오차율 계산)은 건드리지 않는다 — 실측·예측
+ * 양쪽을 같은 배수로 미리 스케일해서 넘기면, 그 비율로 계산하는 delta·errorRate 는
+ * 배수가 상쇄돼 자동으로 맞는 값이 나온다.
+ */
+export function scaleVintageEntriesForDisplay(
+  entries: PredictionVintageEntry[],
+  multiplier: number
+): PredictionVintageEntry[] {
+  return entries.map((entry) => ({
+    ...entry,
+    pred: toDisplayPrice(entry.pred, multiplier),
+    actual: toOptionalDisplayPrice(entry.actual, multiplier)
+    // arrivalTon 은 물량이라 가격 배수의 영향을 받지 않는다.
+  }));
+}
+
+export function scaleMarketTrendForDisplay(
+  points: RawMarketTrendPoint[],
+  multiplier: number
+): RawMarketTrendPoint[] {
+  return points.map((point) => ({
+    ...point,
+    avgWholesalePrice: toOptionalDisplayPrice(point.avgWholesalePrice, multiplier)
+    // marketVolume 은 물량이라 가격 배수의 영향을 받지 않는다.
+  }));
+}
+
+export function toOverlayForecastView(key: PriceForecastKey, series: VintagePriceSeries): OverlayForecastView | null {
   if (series.points.length === 0) {
     return null;
   }
 
-  const config = PRICE_FORECAST_CONFIG.onion;
+  const config = PRICE_FORECAST_CONFIG[key];
   const years = yearlyAccuracy(series.points);
   const latestYear = years.at(-1) ?? null;
   const dated = series.latestActualDate ?? series.boundaryDate;
@@ -574,7 +597,7 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
     errorNote: latestYear === null
       ? "실측과 겹치는 구간 없음"
       : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}일`,
-    source: "open-api /api/v1/agrimarket/daily-market · prediction-vintage (합천)",
+    source: `open-api /api/v1/agrimarket/daily-market · prediction-vintage (${config.regionName})`,
     sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
     // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
     // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
@@ -594,12 +617,12 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
   };
 }
 
-export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
+export function toOverlayKpiView(key: PriceForecastKey, series: VintagePriceSeries): PriceKpiView | null {
   if (series.current === null) {
     return null;
   }
 
-  const config = PRICE_FORECAST_CONFIG.onion;
+  const config = PRICE_FORECAST_CONFIG[key];
   const latestYearMape = yearlyAccuracy(series.points).at(-1)?.mape ?? null;
   const spark = series.points
     .filter((point) => point.actual !== null)
@@ -610,14 +633,14 @@ export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
   return {
     tag: "예측 · 농산물",
     region: config.regionName,
-    name: "양파 도매가격",
+    name: config.kpiName,
     value: formatWholeNumber(series.current),
     unit: config.kpiUnit,
     delta: formatSignedPercent(delta),
     direction: delta >= 0 ? "up" : "down",
     error: latestYearMape === null ? "N/A" : `${latestYearMape.toFixed(1)}%`,
     spark,
-    target: "onion"
+    target: key
   };
 }
 
@@ -810,76 +833,6 @@ export async function fetchDroughtReportDetail(id: string, { signal }: FetchDrou
     await getPublicApiData<PublicArticleDetailResponse>(`/api/v1/articles/${encodeURIComponent(id)}`, null, signal)
   );
   return articleDetailToDroughtReportDetail(detail);
-}
-
-export function toPriceForecastView(key: PriceForecastKey, response: PriceForecastResponse): PriceForecastView | null {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const observedPoints = response.points.filter((point) => point.dataType === "observed").slice(-30);
-  const predictedPoints = response.points.filter((point) => point.dataType === "predicted").slice(-7);
-  const actual = observedPoints.map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-
-  if (actual.length === 0) {
-    return null;
-  }
-
-  const predicted = predictedPoints.map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-  const band = predictedPoints.map((point, index) => {
-    const value = predicted[index];
-    const lower = toOptionalDisplayPrice(point.lowerBound, config.displayMultiplier);
-    const upper = toOptionalDisplayPrice(point.upperBound, config.displayMultiplier);
-
-    if (lower === null || upper === null) {
-      return 0;
-    }
-
-    return Math.max(Math.abs(value - lower), Math.abs(upper - value), (upper - lower) / 2);
-  });
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const current = actual[actual.length - 1];
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : null;
-
-  return {
-    label: config.label,
-    current: formatWholeNumber(current),
-    unit: displayUnit(response.unit, config.displayUnit),
-    error: formatErrorRate(response.errorRate),
-    source: config.source,
-    sub: `${config.regionName} 출하 물량 기준 · ${currentPoint.baseDate}${delta === null ? "" : ` · 전일대비 ${formatSignedPercent(delta)}`}`,
-    actual,
-    predicted,
-    band
-  };
-}
-
-export function toPriceKpiView(key: PriceForecastKey, response: PriceForecastResponse): PriceKpiView | null {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const observedPoints = response.points.filter((point) => point.dataType === "observed");
-  if (observedPoints.length === 0) {
-    return null;
-  }
-
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const spark = observedPoints.slice(-7).map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : 0;
-
-  return {
-    tag: "예측 · 농산물",
-    region: config.regionName,
-    name: key === "cabbage" ? "고랭지배추 도매가격" : "양파 도매가격",
-    value: formatWholeNumber(toDisplayPrice(currentPoint.value, config.displayMultiplier)),
-    unit: displayKpiUnit(response.unit, config.kpiUnit),
-    delta: formatSignedPercent(delta),
-    direction: delta >= 0 ? "up" : "down",
-    error: formatErrorRate(response.errorRate),
-    spark,
-    target: key
-  };
-}
-
-export function latestPriceForecastDate(response: PriceForecastResponse) {
-  return response.points.at(-1)?.baseDate ?? null;
 }
 
 export function toHydropowerForecastView(damLabel: string, series: HydropowerVintageSeries): HydropowerForecastView {
