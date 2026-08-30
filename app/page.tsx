@@ -13,7 +13,7 @@ import {
   fetchDroughtReports,
   fetchFreshFoodIndex,
   fetchHydropowerForecast,
-  fetchOnionPriceSeries,
+  fetchVintagePriceSeries,
   fetchPriceForecast,
   fetchPredictionVintage,
   fetchSummary,
@@ -469,7 +469,7 @@ function Dashboard() {
 
       try {
         // 실측은 daily-market 에서 창이 걸친 달만큼 더 부른다.
-        const series = await fetchOnionPriceSeries(response, controller.signal);
+        const series = await fetchVintagePriceSeries(response, controller.signal);
         const nextForecast = series && toOnionForecastView(series);
 
         if (!series || !nextForecast) {

@@ -17,15 +17,15 @@ import {
   type RawFreshFoodMonth
 } from "@/lib/fresh-food";
 import {
-  buildOnionPriceSeries,
+  buildVintagePriceSeries,
   monthsMissingActual,
   vintageBoundaryDate,
   yearlyAccuracy,
   type YearAccuracy,
-  type OnionPricePoint,
-  type OnionPriceSeries,
+  type VintagePricePoint,
+  type VintagePriceSeries,
   type RawMarketTrendPoint
-} from "@/lib/onion-price";
+} from "@/lib/vintage-price-series";
 import type {
   ArticleSearchParams, ArticlePage, ArticleDetail, ArticleCategories, ArticleListItem,
 } from "./archive-types";
@@ -129,7 +129,7 @@ export type OnionForecastView = {
   note: string;
   /** 연도별 정확도. 큰 숫자는 마지막 항목을 쓴다. */
   years: YearAccuracy[];
-  points: OnionPricePoint[];
+  points: VintagePricePoint[];
   boundaryDate: string;
   /** 미래선의 리드타임이 바뀌는 날. 오차율이 설명하지 못하는 구간의 시작이다. */
   horizonSwitchDate: string | null;
@@ -517,7 +517,7 @@ export async function fetchPredictionVintage(location: string, signal?: AbortSig
  */
 const MARKET_FETCH_CONCURRENCY = 4;
 
-export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, signal?: AbortSignal) {
+export async function fetchVintagePriceSeries(vintage: PredictionVintageResponse, signal?: AbortSignal) {
   const boundaryDate = vintageBoundaryDate(vintage.entries);
   if (boundaryDate === null) {
     return null;
@@ -545,10 +545,10 @@ export async function fetchOnionPriceSeries(vintage: PredictionVintageResponse, 
     trends.push(...batch.flat());
   }
 
-  return buildOnionPriceSeries({ entries: vintage.entries, market: trends });
+  return buildVintagePriceSeries({ entries: vintage.entries, market: trends });
 }
 
-export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView | null {
+export function toOnionForecastView(series: VintagePriceSeries): OnionForecastView | null {
   if (series.points.length === 0) {
     return null;
   }
@@ -589,7 +589,7 @@ export function toOnionForecastView(series: OnionPriceSeries): OnionForecastView
   };
 }
 
-export function toOnionKpiView(series: OnionPriceSeries): PriceKpiView | null {
+export function toOnionKpiView(series: VintagePriceSeries): PriceKpiView | null {
   if (series.current === null) {
     return null;
   }

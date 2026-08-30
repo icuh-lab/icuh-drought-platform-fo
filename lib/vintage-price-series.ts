@@ -30,14 +30,14 @@ export type RawMarketTrendPoint = {
   avgWholesalePrice: number | null;
 };
 
-export type OnionPricePoint = {
+export type VintagePricePoint = {
   date: string;
   actual: number | null;
   predicted: number | null;
 };
 
-export type OnionPriceSeries = {
-  points: OnionPricePoint[];
+export type VintagePriceSeries = {
+  points: VintagePricePoint[];
   /** 실측이 끝나고 예측만 남는 경계. 모델 학습 종료일이다. */
   boundaryDate: string;
   /** 겹침 구간에 쓴 리드타임. 미래 구간과 같은 값이어야 선이 한 줄로 읽힌다. */
@@ -67,8 +67,8 @@ export type OnionPriceSeries = {
  * 과거 90일 / 미래 365일 은 onion-wholesale-price-forecast 스펙(2026-08-29 재정의)이
  * 정한 값이다 — 임의로 늘리거나 줄이지 않는다.
  */
-export const ONION_VIEW_PAST_DAYS = 90;
-export const ONION_VIEW_FUTURE_DAYS = 365;
+export const VINTAGE_VIEW_PAST_DAYS = 90;
+export const VINTAGE_VIEW_FUTURE_DAYS = 365;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -147,7 +147,7 @@ export type YearAccuracy = {
  * 다만 예측이 전부 한 모델로 과거를 되짚은 값이라, 연도 차이는 **모델의 발전이 아니라
  * 그 해의 난이도**다. 화면 문구가 이걸 뒤집어 읽지 않게 해야 한다.
  */
-export function yearlyAccuracy(points: OnionPricePoint[]): YearAccuracy[] {
+export function yearlyAccuracy(points: VintagePricePoint[]): YearAccuracy[] {
   const byYear = new Map<number, number[]>();
 
   for (const point of points) {
@@ -192,8 +192,8 @@ export function monthTicks(start: string, end: string) {
  * 마우스가 가리킨 날짜에 가장 가까운 포인트. toleranceDays 를 넘게 떨어져 있으면 null.
  * 휴장일과 실측 공백이 많아 "그 날짜의 포인트" 를 그대로 찾으면 대개 빈손이 된다.
  */
-export function nearestPoint(points: OnionPricePoint[], date: string, toleranceDays = 4) {
-  let best: OnionPricePoint | null = null;
+export function nearestPoint(points: VintagePricePoint[], date: string, toleranceDays = 4) {
+  let best: VintagePricePoint | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
 
   for (const point of points) {
@@ -222,12 +222,12 @@ type BuildOptions = {
   futureDays?: number | null;
 };
 
-export function buildOnionPriceSeries({
+export function buildVintagePriceSeries({
   entries,
   market,
   pastDays = null,
   futureDays = null
-}: BuildOptions): OnionPriceSeries | null {
+}: BuildOptions): VintagePriceSeries | null {
   const boundaryDate = vintageBoundaryDate(entries);
   if (boundaryDate === null) return null;
 

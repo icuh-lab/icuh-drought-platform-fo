@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import {
-  ONION_VIEW_FUTURE_DAYS,
-  ONION_VIEW_PAST_DAYS,
-  buildOnionPriceSeries,
+  VINTAGE_VIEW_FUTURE_DAYS,
+  VINTAGE_VIEW_PAST_DAYS,
+  buildVintagePriceSeries,
   monthTicks,
   monthsInWindow,
   monthsMissingActual,
@@ -14,7 +14,7 @@ import {
   vintageBoundaryDate,
   type RawMarketTrendPoint,
   type RawVintageEntry
-} from "../lib/onion-price";
+} from "../lib/vintage-price-series";
 
 let failed = 0;
 function check(name: string, actual: unknown, expected: unknown) {
@@ -74,7 +74,7 @@ check("live 의 최소 리드타임", nearestHorizon(vintage.entries), 180);
 check("live 가 없으면 null", nearestHorizon(vintage.entries.filter((entry) => entry.source !== "live")), null);
 
 // --- 시리즈 조립 ---
-const series = buildOnionPriceSeries({
+const series = buildVintagePriceSeries({
   entries: vintage.entries,
   market: market.monthlyTrend,
   pastDays: 24,
@@ -122,9 +122,9 @@ if (series === null) {
 }
 
 // --- 데이터가 없을 때 ---
-check("vintage 가 비면 null", buildOnionPriceSeries({ entries: [], market: market.monthlyTrend, pastDays: 24, futureDays: 16 }), null);
+check("vintage 가 비면 null", buildVintagePriceSeries({ entries: [], market: market.monthlyTrend, pastDays: 24, futureDays: 16 }), null);
 
-const noActual = buildOnionPriceSeries({ entries: vintage.entries, market: [], pastDays: 24, futureDays: 16 });
+const noActual = buildVintagePriceSeries({ entries: vintage.entries, market: [], pastDays: 24, futureDays: 16 });
 if (noActual === null) {
   console.log("FAIL  실측이 없어도 예측선은 그려야 한다");
   failed++;
@@ -139,7 +139,7 @@ const nullPrices: RawMarketTrendPoint[] = [
   { trendDate: "2026-08-20", marketVolume: 500, avgWholesalePrice: null },
   { trendDate: "2026-08-21", marketVolume: null, avgWholesalePrice: 1164 }
 ];
-const sparse = buildOnionPriceSeries({ entries: vintage.entries, market: nullPrices, pastDays: 24, futureDays: 16 });
+const sparse = buildVintagePriceSeries({ entries: vintage.entries, market: nullPrices, pastDays: 24, futureDays: 16 });
 check("가격이 null 인 행은 버린다", sparse?.points.filter((point) => point.actual !== null).length, 1);
 check("물량이 null 이어도 가격이 있으면 실측", sparse?.points.find((point) => point.date === "2026-08-21")?.actual, 1164);
 
@@ -168,26 +168,26 @@ const wideMarket: RawMarketTrendPoint[] = wideEntries
   .map((entry) => ({ trendDate: entry.targetDate, marketVolume: 500, avgWholesalePrice: 1000 }));
 
 // 창을 명시하면 그 경계가 그대로 적용된다.
-const windowed = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: ONION_VIEW_PAST_DAYS, futureDays: ONION_VIEW_FUTURE_DAYS });
+const windowed = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket, pastDays: VINTAGE_VIEW_PAST_DAYS, futureDays: VINTAGE_VIEW_FUTURE_DAYS });
 if (windowed === null) {
   console.log("FAIL  창을 명시해도 시리즈가 만들어져야 한다");
   failed++;
 } else {
-  check("명시한 창 시작", windowed.points[0].date, shiftDate(B, -ONION_VIEW_PAST_DAYS));
-  check("명시한 창 끝", windowed.points[windowed.points.length - 1].date, shiftDate(B, ONION_VIEW_FUTURE_DAYS));
+  check("명시한 창 시작", windowed.points[0].date, shiftDate(B, -VINTAGE_VIEW_PAST_DAYS));
+  check("명시한 창 끝", windowed.points[windowed.points.length - 1].date, shiftDate(B, VINTAGE_VIEW_FUTURE_DAYS));
 }
 // 초기 스크롤 위치를 정하는 값이라 화면이 바뀌면 같이 바뀐다. 스펙이 정한 값이라 고정해 둔다.
-check("초기 뷰 과거는 90일", ONION_VIEW_PAST_DAYS, 90);
-check("초기 뷰 미래는 365일", ONION_VIEW_FUTURE_DAYS, 365);
+check("초기 뷰 과거는 90일", VINTAGE_VIEW_PAST_DAYS, 90);
+check("초기 뷰 미래는 365일", VINTAGE_VIEW_FUTURE_DAYS, 365);
 
 // --- 리드타임이 바뀌는 지점 ---
 // 미래 창이 짧으면 미래선이 단일 리드타임이지만, 길어지면 중간에 더 긴 모델로 넘어간다.
 // 화면의 "예측 정확도" 는 짧은 쪽 리드타임으로 계산한 값이라, 넘어가는 자리를 표시하지
 // 않으면 그 숫자가 선 전체를 설명하는 것처럼 읽힌다.
-const shortWindow = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 183 });
+const shortWindow = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 183 });
 check("미래 창이 짧으면 리드타임이 안 바뀐다", shortWindow?.horizonSwitchDate, null);
 
-const longWindow = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 365 });
+const longWindow = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket, pastDays: 90, futureDays: 365 });
 check("미래 창이 길면 T+206 에서 바뀐다", longWindow?.horizonSwitchDate, shiftDate(B, 206));
 check("겹침 계산은 짧은 리드타임 기준", longWindow?.horizonDays, 180);
 
@@ -203,20 +203,20 @@ const vintageActual: RawVintageEntry[] = [
   { targetDate: "2024-03-06", horizonDays: 180, source: "reconstructed_forecast", modelType: "rf", modelTrainEndDate: B, pred: 920, actual: null, arrivalTon: null },
   liveRow(180, "2026-08-26")
 ];
-const merged = buildOnionPriceSeries({ entries: vintageActual, market: [] });
+const merged = buildVintagePriceSeries({ entries: vintageActual, market: [] });
 check("vintage 의 actual 만으로도 실측선이 생긴다", merged?.points.filter((p) => p.actual !== null).length, 2);
 check("vintage actual 값이 그대로 실린다", merged?.points.find((p) => p.date === "2024-03-05")?.actual, 905);
 check("actual 이 null 인 행은 실측이 아니다", merged?.points.find((p) => p.date === "2024-03-06")?.actual, null);
 
 // 같은 날짜가 양쪽에 있으면 daily-market 이 이긴다 — 실측이 갱신되는 쪽이라서.
-const overridden = buildOnionPriceSeries({
+const overridden = buildVintagePriceSeries({
   entries: vintageActual,
   market: [{ trendDate: "2024-03-06", marketVolume: 100, avgWholesalePrice: 931 }]
 });
 check("daily-market 이 vintage 공백을 메운다", overridden?.points.find((p) => p.date === "2024-03-06")?.actual, 931);
 
 // --- 창을 안 주면 데이터가 있는 만큼 전부 ---
-const full = buildOnionPriceSeries({ entries: wideEntries, market: wideMarket });
+const full = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket });
 check("창 미지정이면 가장 이른 날부터", full?.points[0].date, shiftDate(B, -400));
 check("창 미지정이면 가장 늦은 날까지", full?.points[full.points.length - 1].date, shiftDate(B, 400));
 
