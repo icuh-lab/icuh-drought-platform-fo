@@ -215,19 +215,27 @@ const overridden = buildVintagePriceSeries({
 });
 check("daily-market 이 vintage 공백을 메운다", overridden?.points.find((p) => p.date === "2024-03-06")?.actual, 931);
 
-// --- seasonMonths: 실제로 시장이 서는 달만 예측선을 그린다(예: 고랭지배추 7~10월) ---
-// 실측은 원래 비수기엔 데이터가 없어 자연히 안 나온다 — 여기서 확인하는 건 예측만 걸러지는지다.
+// --- seasonMonths: 실제로 시장이 서는 달만 그린다(예: 고랭지배추 7~10월) — 실측·예측 둘 다 ---
+const offSeasonActualEntry: RawVintageEntry = { ...reconstructedRow(180, "2026-02-10"), actual: 900 };
 const seasonalEntries: RawVintageEntry[] = [
   reconstructedRow(180, "2026-01-15"),
+  offSeasonActualEntry,
   reconstructedRow(180, "2026-07-15"),
   liveRow(180, "2026-08-26")
 ];
-const seasonal = buildVintagePriceSeries({ entries: seasonalEntries, market: [], seasonMonths: [7, 8, 9, 10] });
+const seasonalMarket: RawMarketTrendPoint[] = [
+  { trendDate: "2026-03-05", marketVolume: 100, avgWholesalePrice: 950 }
+];
+const seasonal = buildVintagePriceSeries({ entries: seasonalEntries, market: seasonalMarket, seasonMonths: [7, 8, 9, 10] });
 check("비수기 예측은 포인트 자체가 안 생긴다", seasonal?.points.some((p) => p.date === "2026-01-15"), false);
+check("비수기 vintage 실측도 걸러진다", seasonal?.points.some((p) => p.date === "2026-02-10"), false);
+check("비수기 daily-market 실측도 걸러진다", seasonal?.points.some((p) => p.date === "2026-03-05"), false);
 check("성수기 예측은 그대로 남는다", seasonal?.points.find((p) => p.date === "2026-07-15")?.predicted, 1000);
 
-const unrestricted = buildVintagePriceSeries({ entries: seasonalEntries, market: [] });
-check("seasonMonths 를 안 주면 비수기도 그대로 나온다", unrestricted?.points.some((p) => p.date === "2026-01-15"), true);
+const unrestricted = buildVintagePriceSeries({ entries: seasonalEntries, market: seasonalMarket });
+check("seasonMonths 를 안 주면 비수기 예측도 그대로 나온다", unrestricted?.points.some((p) => p.date === "2026-01-15"), true);
+check("seasonMonths 를 안 주면 비수기 실측도 그대로 나온다", unrestricted?.points.some((p) => p.date === "2026-02-10"), true);
+check("seasonMonths 를 안 주면 비수기 daily-market 실측도 그대로 나온다", unrestricted?.points.some((p) => p.date === "2026-03-05"), true);
 
 // --- 창을 안 주면 데이터가 있는 만큼 전부 ---
 const full = buildVintagePriceSeries({ entries: wideEntries, market: wideMarket });

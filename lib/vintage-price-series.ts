@@ -222,10 +222,10 @@ type BuildOptions = {
   futureDays?: number | null;
   /**
    * 실제로 거래되는 달만 골라 예측선을 그릴 때 쓴다(예: 고랭지배추는 7~10월만
-   * 시장이 선다). 안 주면 모든 달의 예측을 그린다 — 온션처럼 사철 거래되는
-   * 품목은 이 옵션이 필요 없다. 실측은 원래도 비수기엔 데이터가 없어 자연히
-   * 끊기므로 여기서 따로 거르지 않는다 — 예측만 걸러야 비수기에 근거 없이
-   * 이어지는 선을 없앨 수 있다.
+   * 시장이 선다). 실측·예측 둘 다 이 달에 속한 날짜만 남긴다 — 실측도 daily-market
+   * 쪽에 어쩌다 비수기 값이 섞여 들어올 수 있어(휴장일 보정 등) 예측만 거르면
+   * 실측·예측 구간이 안 맞아 보여 오히려 헷갈린다. 안 주면 모든 달을 그대로
+   * 그린다 — 온션처럼 사철 거래되는 품목은 이 옵션이 필요 없다.
    */
   seasonMonths?: number[] | null;
 };
@@ -247,11 +247,12 @@ export function buildVintagePriceSeries({
   const start = pastDays === null ? allDates[0] ?? boundaryDate : shiftDate(boundaryDate, -pastDays);
   const end = futureDays === null ? allDates[allDates.length - 1] ?? boundaryDate : shiftDate(boundaryDate, futureDays);
   const horizonDays = nearestHorizon(entries) ?? minReconstructedHorizon(entries);
+  const inSeason = (date: string) => seasonMonths === null || seasonMonths.includes(Number(date.slice(5, 7)));
 
   const predicted = new Map<string, number>();
   for (const entry of entries) {
     if (entry.targetDate < start || entry.targetDate > end) continue;
-    if (seasonMonths !== null && !seasonMonths.includes(Number(entry.targetDate.slice(5, 7)))) continue;
+    if (!inSeason(entry.targetDate)) continue;
 
     const isPastOverlay =
       entry.targetDate <= boundaryDate && entry.source === "reconstructed_forecast" && entry.horizonDays === horizonDays;
@@ -269,6 +270,7 @@ export function buildVintagePriceSeries({
   for (const entry of entries) {
     if (entry.actual === null) continue;
     if (entry.targetDate < start || entry.targetDate > boundaryDate) continue;
+    if (!inSeason(entry.targetDate)) continue;
     actual.set(entry.targetDate, entry.actual);
   }
   // 같은 날짜가 겹치면 daily-market 이 이긴다 — 실측이 갱신되는 쪽이다.
@@ -277,6 +279,7 @@ export function buildVintagePriceSeries({
     // 그리면 예측을 실측이라고 말하게 된다.
     if (point.trendDate < start || point.trendDate > boundaryDate) continue;
     if (point.avgWholesalePrice === null) continue;
+    if (!inSeason(point.trendDate)) continue;
     actual.set(point.trendDate, point.avgWholesalePrice);
   }
 
