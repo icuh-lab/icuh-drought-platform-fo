@@ -469,35 +469,6 @@ const PRICE_FORECAST_CONFIG: Record<PriceForecastKey, {
   }
 };
 
-export async function fetchPriceForecast(key: PriceForecastKey, { signal, year, month }: FetchPriceForecastOptions = {}) {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const search = new URLSearchParams({
-    year: String(year ?? OPEN_API_DEFAULT_PERIOD.year),
-    month: String(month ?? OPEN_API_DEFAULT_PERIOD.month),
-    location: config.location
-  });
-  const data = await getOpenApiData<OpenAgriDailyPriceResponse>("/api/v1/agrimarket/daily-price", search, signal);
-  // daily-price 는 "predictedPrice" 한 컬럼뿐이라 실측과 예측이 구분되어 오지 않는다.
-  // 오늘(today) 이전 날짜는 이미 지나간 값(실측에 가장 가까움)으로, 오늘 이후는 아직
-  // 오지 않은 값(예측)으로 갈라서 observed/predicted 를 프론트에서 만든다.
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const points = data.calendarData
-    .filter((point) => typeof point.predictedPrice === "number")
-    .map((point) => ({
-      baseDate: point.predictionDate,
-      value: point.predictedPrice as number,
-      dataType: (point.predictionDate <= todayIso ? "observed" : "predicted") as PriceForecastDataType
-    }));
-
-  return {
-    item: config.item,
-    regionCode: config.region,
-    unit: "KRW/kg",
-    errorRate: null,
-    points
-  } satisfies PriceForecastResponse;
-}
-
 /** daily-price 가 쓰는 location 과 동일한 값을 얻는다("합천") — 호출부에서 문자열을 직접 하드코딩하지 않게. */
 export function priceForecastLocation(key: PriceForecastKey): string {
   return PRICE_FORECAST_CONFIG[key].location;
@@ -823,76 +794,6 @@ export async function fetchDroughtReportDetail(id: string, { signal }: FetchDrou
     await getPublicApiData<PublicArticleDetailResponse>(`/api/v1/articles/${encodeURIComponent(id)}`, null, signal)
   );
   return articleDetailToDroughtReportDetail(detail);
-}
-
-export function toPriceForecastView(key: PriceForecastKey, response: PriceForecastResponse): PriceForecastView | null {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const observedPoints = response.points.filter((point) => point.dataType === "observed").slice(-30);
-  const predictedPoints = response.points.filter((point) => point.dataType === "predicted").slice(-7);
-  const actual = observedPoints.map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-
-  if (actual.length === 0) {
-    return null;
-  }
-
-  const predicted = predictedPoints.map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-  const band = predictedPoints.map((point, index) => {
-    const value = predicted[index];
-    const lower = toOptionalDisplayPrice(point.lowerBound, config.displayMultiplier);
-    const upper = toOptionalDisplayPrice(point.upperBound, config.displayMultiplier);
-
-    if (lower === null || upper === null) {
-      return 0;
-    }
-
-    return Math.max(Math.abs(value - lower), Math.abs(upper - value), (upper - lower) / 2);
-  });
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const current = actual[actual.length - 1];
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : null;
-
-  return {
-    label: config.label,
-    current: formatWholeNumber(current),
-    unit: displayUnit(response.unit, config.displayUnit),
-    error: formatErrorRate(response.errorRate),
-    source: config.source,
-    sub: `${config.regionName} 출하 물량 기준 · ${currentPoint.baseDate}${delta === null ? "" : ` · 전일대비 ${formatSignedPercent(delta)}`}`,
-    actual,
-    predicted,
-    band
-  };
-}
-
-export function toPriceKpiView(key: PriceForecastKey, response: PriceForecastResponse): PriceKpiView | null {
-  const config = PRICE_FORECAST_CONFIG[key];
-  const observedPoints = response.points.filter((point) => point.dataType === "observed");
-  if (observedPoints.length === 0) {
-    return null;
-  }
-
-  const currentPoint = observedPoints[observedPoints.length - 1];
-  const previousPoint = observedPoints[observedPoints.length - 2];
-  const spark = observedPoints.slice(-7).map((point) => toDisplayPrice(point.value, config.displayMultiplier));
-  const delta = previousPoint ? percentDelta(currentPoint.value, previousPoint.value) : 0;
-
-  return {
-    tag: "예측 · 농산물",
-    region: config.regionName,
-    name: key === "cabbage" ? "고랭지배추 도매가격" : "양파 도매가격",
-    value: formatWholeNumber(toDisplayPrice(currentPoint.value, config.displayMultiplier)),
-    unit: displayKpiUnit(response.unit, config.kpiUnit),
-    delta: formatSignedPercent(delta),
-    direction: delta >= 0 ? "up" : "down",
-    error: formatErrorRate(response.errorRate),
-    spark,
-    target: key
-  };
-}
-
-export function latestPriceForecastDate(response: PriceForecastResponse) {
-  return response.points.at(-1)?.baseDate ?? null;
 }
 
 export function toHydropowerForecastView(response: HydropowerForecastResponse): HydropowerForecastView | null {
