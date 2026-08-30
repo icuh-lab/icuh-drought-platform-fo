@@ -76,7 +76,7 @@ export const forecasts = {
     band: [28, 36, 44, 53, 62, 71, 80]
   },
   hydro: {
-    label: "합천댐 수력발전량",
+    label: "수력발전량",
     current: "4.8",
     unit: "GWh / 일",
     error: "5.2%",

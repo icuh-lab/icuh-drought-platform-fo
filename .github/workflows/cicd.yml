@@ -35,7 +35,7 @@ jobs:
       - run: npx tsx scripts/fire-region.test.mts
       - run: npx tsx scripts/fresh-food.test.mts
       - run: npx tsx scripts/onion-price.test.mts
-      - run: npx tsx scripts/hydropower-forecast.test.mts
+      - run: npx tsx scripts/hydropower-vintage.test.mts
 
   build-and-push:
     name: Build and push image
