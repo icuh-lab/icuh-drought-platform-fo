@@ -802,7 +802,7 @@ function Dashboard() {
                   />
                 )
               ) : (
-                cabbageForecast && <OverlayForecastChart points={cabbageForecast.points} boundaryDate={cabbageForecast.boundaryDate} horizonSwitchDate={cabbageForecast.horizonSwitchDate} />
+                cabbageForecast && <OverlayForecastChart points={cabbageForecast.points} boundaryDate={cabbageForecast.boundaryDate} horizonSwitchDate={cabbageForecast.horizonSwitchDate} axisStep={5000} />
               )}
               <div className="legend">
                 <span><i className="solid" />실측치</span>

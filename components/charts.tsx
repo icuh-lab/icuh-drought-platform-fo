@@ -323,12 +323,15 @@ const Y_GUTTER = 56;
 export function OverlayForecastChart({
   points,
   boundaryDate,
-  horizonSwitchDate = null
+  horizonSwitchDate = null,
+  axisStep = 500
 }: {
   points: VintagePricePoint[];
   boundaryDate: string;
   /** 미래선의 리드타임이 더 긴 모델로 넘어가는 날. 화면의 오차율이 못 미치는 구간의 시작. */
   horizonSwitchDate?: string | null;
+  /** Y축 눈금 간격(원). 크롭마다 가격대가 달라 기본값(500)이 안 맞을 수 있다. */
+  axisStep?: number;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ point: VintagePricePoint; x: number } | null>(null);
@@ -351,7 +354,7 @@ export function OverlayForecastChart({
 
   if (points.length === 0 || values.length === 0) return null;
 
-  const ticks = priceAxisTicks(Math.max(...values));
+  const ticks = priceAxisTicks(Math.max(...values), axisStep);
   const axisTop = ticks[ticks.length - 1];
   const valueToY = (value: number) => OVERLAY_PAD.top + OVERLAY_PLOT_HEIGHT - (value / axisTop) * OVERLAY_PLOT_HEIGHT;
   const xAt = (date: string) => daysBetween(start, date) * PX_PER_DAY;
