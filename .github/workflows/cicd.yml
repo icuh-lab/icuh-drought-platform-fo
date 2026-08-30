@@ -26,16 +26,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      # 순수 함수 검증 스크립트. 백엔드 없이 동작한다.
-      - run: npx tsx scripts/period.test.mts
-      - run: npx tsx scripts/dashboard-view.test.mts
-      - run: npx tsx scripts/archive-upload.test.mts
-      - run: npx tsx scripts/archive-page-conversion.test.mts
-      - run: npx tsx scripts/archive-fallback.test.mts
-      - run: npx tsx scripts/fire-region.test.mts
-      - run: npx tsx scripts/fresh-food.test.mts
-      - run: npx tsx scripts/onion-price.test.mts
-      - run: npx tsx scripts/hydropower-vintage.test.mts
+      # 순수 함수 검증 스크립트. 백엔드 없이 동작한다. 파일명을 하드코딩하면 새
+      # 테스트 파일 추가나 리네임 때마다 이 목록도 같이 고쳐야 하는데 잊어버리기
+      # 쉽다(실제로 한 번 겪음 — onion-price.test.mts가 vintage-price-series.test.mts로
+      # 리네임되며 CI가 조용히 그 파일만 건너뛰지 않고 아예 죽었다). scripts/*.test.mts
+      # 전체를 동적으로 순회해 이 문제 자체를 구조적으로 없앤다.
+      - run: |
+          set -e
+          for f in scripts/*.test.mts; do
+            echo "::group::$f"
+            npx tsx "$f"
+            echo "::endgroup::"
+          done
 
   build-and-push:
     name: Build and push image
