@@ -11,7 +11,7 @@ import {
   priceAxisTicks,
   shiftDate,
   yearlyAccuracy,
-  walkforwardAccuracy,
+  walkforwardYearlyAccuracy,
   vintageBoundaryDate,
   type RawMarketTrendPoint,
   type RawVintageEntry
@@ -308,21 +308,24 @@ checkJson("실측 0 원인 날은 뺀다", yearlyAccuracy([
   { date: "2026-01-02", actual: 1000, predicted: 900 }
 ]), [{ year: 2026, mape: 10, sampleDays: 1 }]);
 
-// --- walk-forward(진짜 out-of-sample) 표본만 모아 전체 MAPE ---
-const WALKFORWARD_ENTRIES: RawVintageEntry[] = [
+// --- walk-forward(진짜 out-of-sample) 표본의 연도별 MAPE ---
+const WALKFORWARD_YEARLY_ENTRIES: RawVintageEntry[] = [
   { targetDate: "2022-07-30", horizonDays: 180, source: "reconstructed_walkforward", modelType: "random_forest", modelTrainEndDate: "2022-01-31", pred: 1000, actual: 1100, arrivalTon: null },
   { targetDate: "2022-08-31", horizonDays: 180, source: "reconstructed_walkforward", modelType: "random_forest", modelTrainEndDate: "2022-02-28", pred: 900, actual: 1000, arrivalTon: null },
+  { targetDate: "2023-01-31", horizonDays: 180, source: "reconstructed_walkforward", modelType: "random_forest", modelTrainEndDate: "2022-07-31", pred: 1200, actual: 1000, arrivalTon: null },
   // 다른 source 는 섞여 있어도 무시해야 한다
-  { targetDate: "2022-07-30", horizonDays: 180, source: "reconstructed_forecast", modelType: "random_forest", modelTrainEndDate: "2026-08-25", pred: 1, actual: 1, arrivalTon: null }
+  { targetDate: "2022-07-30", horizonDays: 180, source: "reconstructed_forecast", modelType: "random_forest", modelTrainEndDate: "2026-08-25", pred: 1, actual: 1, arrivalTon: null },
+  // 실측 0 원인 행은 뺀다
+  { targetDate: "2023-02-28", horizonDays: 180, source: "reconstructed_walkforward", modelType: "random_forest", modelTrainEndDate: "2022-08-31", pred: 100, actual: 0, arrivalTon: null }
 ];
-checkJson("walk-forward 행만 골라 전체 MAPE 계산", walkforwardAccuracy(WALKFORWARD_ENTRIES), {
-  // (100/1100 + 100/1000) / 2 * 100 = (9.0909...+10)/2 = 9.545... (부동소수점 오차로 마지막 자리 547)
-  mape: 9.545454545454547,
-  sampleCount: 2
-});
-checkJson("walk-forward 표본이 없으면 null", walkforwardAccuracy([
+checkJson("연도별로 묶어 MAPE 계산, 연도순 정렬", walkforwardYearlyAccuracy(WALKFORWARD_YEARLY_ENTRIES), [
+  // (100/1100 + 100/1000) / 2 * 100 = 9.545...(부동소수점 오차로 마지막 자리 547)
+  { year: 2022, mape: 9.545454545454547, sampleDays: 2 },
+  { year: 2023, mape: 20, sampleDays: 1 }
+]);
+checkJson("walk-forward 표본이 없으면 빈 배열", walkforwardYearlyAccuracy([
   { targetDate: "2022-07-30", horizonDays: 180, source: "reconstructed_forecast", modelType: null, modelTrainEndDate: null, pred: 1, actual: 1, arrivalTon: null }
-]), null);
+]), []);
 
 console.log(failed === 0 ? "\n모든 검증 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

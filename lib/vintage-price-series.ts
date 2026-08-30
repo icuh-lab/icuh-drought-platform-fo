@@ -169,22 +169,31 @@ export function yearlyAccuracy(points: VintagePricePoint[]): YearAccuracy[] {
 }
 
 /**
- * walk-forward(진짜 out-of-sample) 표본만 모아 전체 MAPE 하나로 집계한다.
- * 연도로 안 나누는 이유: 표본이 몇십 건뿐이라 연도로 쪼개면 연도당 표본이
- * 너무 적어 통계적으로 의미가 약하다.
+ * walk-forward(진짜 out-of-sample) 표본의 연도별 예측 정확도. `yearlyAccuracy`와 같은
+ * 모양(`YearAccuracy[]`)으로 돌려줘서 카드가 두 소스를 구분 없이 쓸 수 있게 한다.
+ *
+ * `sampleDays`는 이름과 달리 여기서는 "일수"가 아니라 그 해의 walk-forward 표본
+ * 건수다(매달 cutoff 하나씩이라 월 단위) — 타입을 공유하려고 이름만 재사용한다.
  */
-export function walkforwardAccuracy(entries: RawVintageEntry[]): { mape: number; sampleCount: number } | null {
-  const errors: number[] = [];
+export function walkforwardYearlyAccuracy(entries: RawVintageEntry[]): YearAccuracy[] {
+  const byYear = new Map<number, number[]>();
+
   for (const entry of entries) {
     if (entry.source !== "reconstructed_walkforward") continue;
     if (entry.actual === null || entry.actual === 0) continue;
+    const year = Number(entry.targetDate.slice(0, 4));
+    const errors = byYear.get(year) ?? [];
     errors.push(Math.abs(entry.actual - entry.pred) / entry.actual);
+    byYear.set(year, errors);
   }
-  if (errors.length === 0) return null;
-  return {
-    mape: (errors.reduce((sum, value) => sum + value, 0) / errors.length) * 100,
-    sampleCount: errors.length
-  };
+
+  return Array.from(byYear.entries())
+    .sort(([left], [right]) => left - right)
+    .map(([year, errors]) => ({
+      year,
+      mape: (errors.reduce((sum, value) => sum + value, 0) / errors.length) * 100,
+      sampleDays: errors.length
+    }));
 }
 
 /** Y축 눈금. 0 원부터 step 원 간격으로, 최댓값을 덮는 데까지. */
