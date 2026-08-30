@@ -21,6 +21,7 @@ import {
   monthsMissingActual,
   vintageBoundaryDate,
   yearlyAccuracy,
+  walkforwardAccuracy,
   type YearAccuracy,
   type VintagePricePoint,
   type VintagePriceSeries,
@@ -100,7 +101,11 @@ export type PriceForecastResponse = {
   points: PriceForecastPoint[];
 };
 
-export type PredictionVintageSource = "live" | "reconstructed_forecast" | "reconstructed_nowcast_walkforward";
+export type PredictionVintageSource =
+  | "live"
+  | "reconstructed_forecast"
+  | "reconstructed_nowcast_walkforward"
+  | "reconstructed_walkforward";
 
 /** onion_prediction_vintage_log 한 행. pred 는 재학습돼도 안 바뀌는 불변값, actual 만 갱신된다. */
 export type PredictionVintageEntry = {
@@ -609,7 +614,11 @@ export function scaleMarketTrendForDisplay(
   }));
 }
 
-export function toOverlayForecastView(key: PriceForecastKey, series: VintagePriceSeries): OverlayForecastView | null {
+export function toOverlayForecastView(
+  key: PriceForecastKey,
+  series: VintagePriceSeries,
+  entries: PredictionVintageEntry[]
+): OverlayForecastView | null {
   if (series.points.length === 0) {
     return null;
   }
@@ -617,6 +626,10 @@ export function toOverlayForecastView(key: PriceForecastKey, series: VintagePric
   const config = PRICE_FORECAST_CONFIG[key];
   const years = yearlyAccuracy(series.points);
   const latestYear = years.at(-1) ?? null;
+  // walk-forward(매달 그 시점까지의 데이터로만 재학습해 검증한 진짜 out-of-sample 표본)가
+  // 있으면 그 값이 우선이다 — in-sample 재구성보다 훨씬 신뢰할 수 있다. 아직 이 백테스트를
+  // 안 돌린 품목(고랭지배추 등)은 표본이 없어 자동으로 연도별 in-sample 계산으로 떨어진다.
+  const walkforward = walkforwardAccuracy(entries);
   const dated = series.latestActualDate ?? series.boundaryDate;
   const change = series.delta === null ? "" : ` · 전일대비 ${formatSignedPercent(series.delta)}`;
 
@@ -626,17 +639,24 @@ export function toOverlayForecastView(key: PriceForecastKey, series: VintagePric
     unit: config.displayUnit,
     // 전체 평균은 유난히 어려웠던 해가 끌어올린다. 최근 연도가 "지금 이 예측선을 믿어도
     // 되나" 에 더 맞는 답이라 큰 숫자는 마지막 연도를 쓴다.
-    error: latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
-    errorNote: latestYear === null
-      ? "실측과 겹치는 구간 없음"
-      : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}일`,
+    error: walkforward !== null
+      ? `${walkforward.mape.toFixed(1)}%`
+      : latestYear === null ? "N/A" : `${latestYear.mape.toFixed(1)}%`,
+    errorNote: walkforward !== null
+      ? `실제 재학습 기반 검증(out-of-sample) · 표본 ${walkforward.sampleCount}건`
+      : latestYear === null
+        ? "실측과 겹치는 구간 없음"
+        : `${latestYear.year}년 평균 오차율 · 표본 ${latestYear.sampleDays}일`,
     source: `open-api /api/v1/agrimarket/daily-market · prediction-vintage (${config.regionName})`,
     sub: `${config.regionName} 출하 물량 기준 · ${dated}${change}`,
     // 과거 예측선은 지금 모델로 과거를 되짚은 값이다. "그때 실제로 이렇게 예측했다" 가
     // 아니라는 걸 화면에 적어 두지 않으면 정확도를 실제보다 후하게 읽게 된다.
     note: [
       `실측은 ${series.boundaryDate}까지 · 그 뒤는 예측만`,
-      `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측이라, 연도별 차이는 모델의 발전이 아니라 그 해의 난이도다`,
+      // walk-forward 값은 이미 진짜 out-of-sample 이라 이 캐비어트가 필요 없다.
+      walkforward !== null
+        ? null
+        : `과거 예측선은 현재 모델(${series.boundaryDate} 학습)로 되짚은 재구성 예측이라, 연도별 차이는 모델의 발전이 아니라 그 해의 난이도다`,
       // 미래선이 중간에 더 긴 리드타임 모델로 넘어가면 위 오차율은 그 앞 구간만 설명한다.
       series.horizonSwitchDate === null
         ? null
@@ -1199,7 +1219,7 @@ function isPredictionVintageEntry(value: unknown): value is PredictionVintageEnt
   return (
     typeof value.targetDate === "string" &&
     typeof value.horizonDays === "number" &&
-    (value.source === "live" || value.source === "reconstructed_forecast" || value.source === "reconstructed_nowcast_walkforward") &&
+    (value.source === "live" || value.source === "reconstructed_forecast" || value.source === "reconstructed_nowcast_walkforward" || value.source === "reconstructed_walkforward") &&
     (value.modelType === null || typeof value.modelType === "string") &&
     (value.modelTrainEndDate === null || typeof value.modelTrainEndDate === "string") &&
     typeof value.pred === "number" &&

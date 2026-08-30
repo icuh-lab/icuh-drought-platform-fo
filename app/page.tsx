@@ -469,7 +469,7 @@ function Dashboard() {
       try {
         // 실측은 daily-market 에서 창이 걸친 달만큼 더 부른다.
         const series = await fetchOverlayPriceSeries("onion", response, controller.signal);
-        const nextForecast = series && toOverlayForecastView("onion", series);
+        const nextForecast = series && toOverlayForecastView("onion", series, response.entries);
 
         if (!series || !nextForecast) {
           setOnionApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
@@ -500,7 +500,7 @@ function Dashboard() {
 
       try {
         const series = await fetchOverlayPriceSeries("cabbage", response, controller.signal);
-        const nextForecast = series && toOverlayForecastView("cabbage", series);
+        const nextForecast = series && toOverlayForecastView("cabbage", series, response.entries);
 
         if (!series || !nextForecast) {
           setCabbageApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
