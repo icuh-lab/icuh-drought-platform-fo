@@ -777,16 +777,20 @@ function Dashboard() {
                 ))}
               </div>
               {forecast === "hydro" && (
-                <label className="hydro-dam-select">
-                  <span>댐</span>
-                  <select
-                    value={selectedHydroDam}
-                    aria-label="댐 선택"
-                    onChange={(event) => setSelectedHydroDam(event.target.value as HydropowerDamName)}
-                  >
-                    {HYDROPOWER_DAMS.map((dam) => <option key={dam.queryName} value={dam.queryName}>{dam.label}</option>)}
-                  </select>
-                </label>
+                <div className="hydro-dam-picker">
+                  <span className="period-tag">댐</span>
+                  <div className="period-fields">
+                    <label>
+                      <select
+                        value={selectedHydroDam}
+                        aria-label="댐 선택"
+                        onChange={(event) => setSelectedHydroDam(event.target.value as HydropowerDamName)}
+                      >
+                        {HYDROPOWER_DAMS.map((dam) => <option key={dam.queryName} value={dam.queryName}>{dam.label}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </div>
               )}
               <div className="chart-hd">
                 <div>
