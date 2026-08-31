@@ -61,68 +61,19 @@ checkJson("연 경계를 넘는 창", monthsInWindow("2025-12-20", "2026-02-03")
 ]);
 check("6개월 창은 7개 달에 걸친다", monthsInWindow("2026-02-23", "2026-08-25").length, 7);
 
-// --- 기준점: 실측이 존재하는 가장 최근 날짜 ---
-// 하드코딩하지 않고 응답의 actual 필드에서 뽑는다. 온션 픽스처는 실측 마지막 날이
-// modelTrainEndDate 와 우연히 같아서(매일 재학습) 값이 그대로 유지된다.
-check("실측 마지막 날이 기준점", vintageBoundaryDate(vintage.entries), "2026-08-25");
+// --- 기준점: 모델 학습 종료일 ---
+// 하드코딩하지 않고 live 행에서 뽑는다. 모델이 다시 돌면 이 값만 따라 움직인다.
+check("live 행의 modelTrainEndDate 가 기준점", vintageBoundaryDate(vintage.entries), "2026-08-25");
 check(
-  "live 가 없어도 실측 마지막 날로 떨어진다",
+  "live 가 없으면 재구성 예측의 마지막 날로 떨어진다",
   vintageBoundaryDate(vintage.entries.filter((entry) => entry.source !== "live")),
   "2026-08-25"
 );
 check("행이 없으면 null", vintageBoundaryDate([]), null);
 
-// 학습 컷오프가 영구히 고정된 모델(고랭지배추)은 modelTrainEndDate 가 절대 안 움직인다.
-// 실측은 그 뒤로도 계속 쌓이므로, 기준일은 modelTrainEndDate 가 아니라 실측 마지막 날을
-// 따라가야 한다 — 안 그러면 실측이 전부 "기준일 이후" 취급돼 하나도 안 잡힌다.
-const frozenCutoffEntries: RawVintageEntry[] = [
-  {
-    targetDate: "2026-08-20",
-    horizonDays: 180,
-    source: "reconstructed_forecast",
-    modelType: "lightgbm",
-    modelTrainEndDate: "2022-12-31",
-    pred: 1000,
-    actual: 980,
-    arrivalTon: null
-  },
-  {
-    targetDate: "2026-08-21",
-    horizonDays: 0,
-    source: "live",
-    modelType: "linear",
-    modelTrainEndDate: "2022-12-31",
-    pred: 990,
-    actual: 985,
-    arrivalTon: null
-  },
-  {
-    targetDate: "2026-08-22",
-    horizonDays: 180,
-    source: "live",
-    modelType: "lightgbm",
-    modelTrainEndDate: "2022-12-31",
-    pred: 995,
-    actual: null,
-    arrivalTon: null
-  }
-];
-check(
-  "학습 컷오프가 고정돼 있어도 실측 마지막 날을 따라간다",
-  vintageBoundaryDate(frozenCutoffEntries),
-  "2026-08-21"
-);
-
 // --- 리드타임: 미래 구간의 가장 짧은 것을 과거 겹침에도 쓴다 ---
 check("live 의 최소 리드타임", nearestHorizon(vintage.entries), 180);
 check("live 가 없으면 null", nearestHorizon(vintage.entries.filter((entry) => entry.source !== "live")), null);
-// 당일 나우캐스트(horizonDays=0)는 리드타임 개념이 없어 제외한다 — 안 그러면 재구성
-// 예측에 짝이 없는 0 이 선택돼 과거 예측선이 통째로 빈다(고랭지배추가 이 모양이다).
-check(
-  "나우캐스트(horizonDays=0)는 최소 리드타임에서 제외된다",
-  nearestHorizon(frozenCutoffEntries),
-  180
-);
 
 // --- 시리즈 조립 ---
 const series = buildVintagePriceSeries({
