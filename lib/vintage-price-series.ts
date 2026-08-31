@@ -97,14 +97,40 @@ export function monthsInWindow(start: string, end: string) {
 }
 
 /**
- * 실측과 예측이 갈리는 기준일. live 행의 `modelTrainEndDate` 가 그 값이다.
- * 하드코딩하면 모델이 다시 돌 때마다 화면이 어긋나므로 응답에서 뽑는다.
+ * 실측과 예측이 갈리는 기준일. "실측이 존재하는 가장 최근 날짜"와 "재구성 예측
+ * (reconstructed_forecast)의 마지막 날" 중 더 늦은 쪽으로 데이터에서 직접 뽑는다.
+ *
+ * 매일 재학습하는 모델(양파)은 `modelTrainEndDate`가 거의 항상 이 값과 같아서 예전엔 그걸
+ * 기준으로 썼다. 그러나 학습 컷오프가 영구히 고정된 모델(고랭지배추, 2022-12-31 이후 데이터
+ * 학습 금지)은 `modelTrainEndDate`가 절대 움직이지 않아서 그 뒤로 쌓인 실측이 전부
+ * "기준일 이후" 취급돼 하나도 안 잡힌다 — 그래서 실측 자체에서 마지막 날을 뽑는다.
+ *
+ * reconstructed_forecast의 마지막 날도 같이 보는 이유: 재구성 예측은 정의상 항상 과거를
+ * 되짚은 값이다. 실측 기록에 공백(휴장일 보정 등으로 값이 아직 안 채워진 날)이 있으면
+ * "실측 마지막 날"이 재구성 예측의 마지막 날보다 앞설 수 있는데, 그러면 그 공백 뒤의
+ * 재구성 예측 행이 "기준일 이후" 취급돼 과거 예측선에서 통째로 빠진다.
  */
 export function vintageBoundaryDate(entries: RawVintageEntry[]) {
+  const lastActual = entries
+    .filter((entry) => entry.actual !== null)
+    .map((entry) => entry.targetDate)
+    .sort()
+    .at(-1);
+  const lastReconstructed = entries
+    .filter((entry) => entry.source === "reconstructed_forecast")
+    .map((entry) => entry.targetDate)
+    .sort()
+    .at(-1);
+  const anchored = [lastActual, lastReconstructed].filter((date): date is string => Boolean(date)).sort().at(-1);
+  if (anchored) return anchored;
+
+  // 실측도 재구성 예측도 없으면(daily-market 으로만 채우는 창처럼) live 행의
+  // modelTrainEndDate 가 "지금"에 가장 가까운 값이다 — 마지막 targetDate(미래 예측일 수
+  // 있다)로 떨어지기 전에 먼저 시도한다.
   const trainEnd = entries.find((entry) => entry.source === "live" && entry.modelTrainEndDate)?.modelTrainEndDate;
   if (trainEnd) return trainEnd;
 
-  // live 가 아직 없는 응답이면 예측 기록의 마지막 날을 경계로 삼는다.
+  // 그것도 없으면 예측 기록의 마지막 날을 경계로 삼는다.
   const lastTarget = entries.map((entry) => entry.targetDate).sort().at(-1);
   return lastTarget ?? null;
 }
@@ -235,8 +261,13 @@ export function nearestPoint(points: VintagePricePoint[], date: string, toleranc
   return bestDistance <= toleranceDays ? best : null;
 }
 
+/**
+ * horizonDays 가 0 인 live 행(당일 나우캐스트)은 제외한다. 나우캐스트는 리드타임 개념이
+ * 없는 별도 모델이라 재구성 예측(reconstructed_forecast)에 짝이 없다 — 과거 겹침 선택에
+ * 섞이면 그 리드타임을 쓰는 재구성 예측이 하나도 안 걸려 과거 예측선이 통째로 빈다.
+ */
 export function nearestHorizon(entries: RawVintageEntry[]) {
-  const live = entries.filter((entry) => entry.source === "live");
+  const live = entries.filter((entry) => entry.source === "live" && entry.horizonDays > 0);
   if (live.length === 0) return null;
   return Math.min(...live.map((entry) => entry.horizonDays));
 }
