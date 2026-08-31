@@ -141,20 +141,36 @@ export function vintageBoundaryDate(entries: RawVintageEntry[]) {
  * 예측선이 같은 성격이 된다.
  */
 /**
- * daily-market 으로 채워야 할 달. vintage 에 실측이 한 건도 없는 달만 고른다.
+ * daily-market 으로 채워야 할 달. 그 달의 거래일(일요일 제외) 중 하나라도 vintage 에
+ * 실측이 없으면 부른다.
+ *
+ * 예전엔 "그 달에 실측이 하나라도 있으면 스킵"이었다 — walk-forward 백테스트처럼 달에
+ * 딱 하루만 실측을 남기는 소스가 섞이면 그 하루 때문에 나머지 날이 영영 안 채워지는
+ * 버그가 있었다(2026년 대부분 달이 이 패턴이라 실측선이 거의 통째로 비어 있었다).
+ * 일요일만 정기휴장으로 확정해서 뺀다 — 실측 요일 분포를 직접 세어 일요일 0건·
+ * 나머지 요일은 고르게 있는 걸 확인했다. 설날·추석 같은 공휴일은 미리 알 수 없어
+ * 그 달도 "필요"로 잡히지만, 어차피 daily-market 도 그날은 못 채우니 요청 하나
+ * 낭비되는 것뿐이라 안전한 쪽으로 치우친다.
  *
  * 2022년부터의 전 구간을 월별로 부르면 56 회다. 운영 서버는 동시 요청을 몰아치면
- * 넘어간 전력이 있어(2026-08-28) 부를 달을 최소로 줄인다. vintage 의 actual 이
- * 2022~2025 대부분을 이미 덮고 있어서, 실제로 비는 달만 남는다.
+ * 넘어간 전력이 있어(2026-08-28) `MARKET_FETCH_CONCURRENCY` 로 동시 요청 수를 제한해
+ * 부른다 — 이 함수가 부를 달 수를 줄여도 그 자체가 안전장치는 아니다.
  */
 export function monthsMissingActual(entries: RawVintageEntry[], start: string, end: string) {
-  const covered = new Set(
-    entries.filter((entry) => entry.actual !== null).map((entry) => entry.targetDate.slice(0, 7))
-  );
+  const actualDates = new Set(entries.filter((entry) => entry.actual !== null).map((entry) => entry.targetDate));
 
-  return monthsInWindow(start, end).filter(
-    (month) => !covered.has(`${month.year}-${String(month.month).padStart(2, "0")}`)
-  );
+  return monthsInWindow(start, end).filter(({ year, month }) => {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = `${prefix}-${String(day).padStart(2, "0")}`;
+      if (date < start || date > end) continue;
+      if (new Date(`${date}T00:00:00Z`).getUTCDay() === 0) continue;
+      if (!actualDates.has(date)) return true;
+    }
+    return false;
+  });
 }
 
 export type YearAccuracy = {

@@ -245,12 +245,35 @@ check("창 미지정이면 가장 이른 날부터", full?.points[0].date, shift
 check("창 미지정이면 가장 늦은 날까지", full?.points[full.points.length - 1].date, shiftDate(B, 400));
 
 // --- daily-market 으로 채워야 할 달 ---
-// vintage 에 실측이 한 건도 없는 달만 고른다. 전 구간을 부르면 56 회가 된다.
-checkJson("실측이 없는 달만 고른다", monthsMissingActual(vintageActual, "2024-02-01", "2024-04-30"), [
-  { year: 2024, month: 2 },
-  { year: 2024, month: 4 }
-]);
-checkJson("기준일 이후 달은 안 부른다", monthsMissingActual(vintageActual, "2024-03-01", "2024-03-31"), []);
+// 예전엔 "그 달에 실측이 하나라도 있으면 스킵" 이었다 — walk-forward 백테스트처럼 달에
+// 딱 하루만 실측을 남기는 소스가 섞이면, 그 하루 때문에 나머지 날이 영영 안 채워지는
+// 버그가 있었다(실운영 데이터로 확인: 2026년 대부분 달이 이 패턴이라 실측선이 거의
+// 통째로 비어 있었다). 지금은 그 달의 거래일(일요일 제외) 중 하나라도 비어 있으면
+// 부른다 — 일요일만 정기휴장으로 확정해서 뺀 이유는 실측 요일 분포를 직접 세어
+// 일요일 0건·나머지 요일은 고르게 있는 걸 확인했기 때문이다.
+function actualRow(targetDate: string, actual: number | null): RawVintageEntry {
+  return { targetDate, horizonDays: 180, source: "reconstructed_forecast", modelType: "rf", modelTrainEndDate: B, pred: 900, actual, arrivalTon: null };
+}
+function weekdaysOf(year: number, month: number) {
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const dates: string[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (new Date(`${date}T00:00:00Z`).getUTCDay() !== 0) dates.push(date);
+  }
+  return dates;
+}
+const monthCoverageEntries: RawVintageEntry[] = [
+  ...weekdaysOf(2024, 5).map((date) => actualRow(date, 900)), // 5월: 거래일 전부 채워짐
+  actualRow("2024-06-15", 900) // 6월: walk-forward 스타일로 딱 하루만
+  // 7월: 아예 없음(별도로 추가 안 함)
+];
+checkJson("거래일이 전부 채워진 달은 안 부른다", monthsMissingActual(monthCoverageEntries, "2024-05-01", "2024-05-31"), []);
+checkJson(
+  "하루만 있어도 나머지 거래일이 비면 부른다(예전엔 이 하루 때문에 스킵됐다)",
+  monthsMissingActual(monthCoverageEntries, "2024-06-01", "2024-06-30"),
+  [{ year: 2024, month: 6 }]
+);
 checkJson("실측이 하나도 없으면 전부", monthsMissingActual([], "2026-01-01", "2026-03-31"), [
   { year: 2026, month: 1 },
   { year: 2026, month: 2 },
