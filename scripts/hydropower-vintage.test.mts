@@ -1,4 +1,4 @@
-import { buildHydropowerVintageSeries, niceAxisStep, niceAxisTicks } from "../lib/hydropower-vintage";
+import { actualAtPeriod, buildHydropowerVintageSeries, niceAxisStep, niceAxisTicks } from "../lib/hydropower-vintage";
 
 let failed = 0;
 function check(name: string, actual: unknown, expected: unknown) {
@@ -72,5 +72,22 @@ check("0 이하 최댓값은 1을 돌려준다", niceAxisStep(0), 1);
 check("눈금이 최댓값을 덮을 때까지 0부터 간격대로 나온다", niceAxisTicks(117206), [
   0, 50000, 100000, 150000
 ]);
+
+// --- 기간 선택기: 선택한 연/월의 실측(monthly-generation 은 기간 파라미터가 없어 전체 이력에서 골라낸다) ---
+const hydroPeriodPoints = [
+  { date: "2026-06-01", actual: 9000, predicted: 8800 },
+  { date: "2026-07-01", actual: 9500, predicted: 9300 },
+  { date: "2026-08-01", actual: 10000, predicted: 9800 },
+  { date: "2026-09-01", actual: null, predicted: 10200 }
+];
+check("선택한 연/월의 실측값", actualAtPeriod(hydroPeriodPoints, 2026, 8).current, 10000);
+check("고른 실측의 날짜도 돌려준다", actualAtPeriod(hydroPeriodPoints, 2026, 8).currentDate, "2026-08-01");
+check("직전 실측월 대비 변동률", actualAtPeriod(hydroPeriodPoints, 2026, 8).delta, ((10000 - 9500) / 9500) * 100);
+check("그 달에 실측이 없으면 전부 null", actualAtPeriod(hydroPeriodPoints, 2026, 9), {
+  current: null,
+  currentDate: null,
+  delta: null
+});
+check("가장 이른 달은 직전 실측이 없어 delta null", actualAtPeriod(hydroPeriodPoints, 2026, 6).delta, null);
 
 process.exit(failed === 0 ? 0 : 1);

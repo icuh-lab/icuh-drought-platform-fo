@@ -43,7 +43,6 @@ import {
   type OpenApiPeriod,
   type OverlayForecastView,
   type PriceForecastKey,
-  type PriceKpiView,
   type SummaryAlert
 } from "@/lib/api-client";
 import { parseView, viewHref } from "@/lib/dashboard-view";
@@ -52,25 +51,29 @@ import { apiCatalog, fireRisk, forecasts, kpis, droughtReportFallback, type ApiC
 import { freshFoodStatusText, type FreshFoodKind } from "@/lib/fresh-food";
 import { Pagination } from "@/components/archive/Pagination";
 
-/** 배추도 양파와 같은 prediction-vintage + daily-market 겹쳐그리기 경로를 쓴다. */
+/**
+ * 배추도 양파와 같은 prediction-vintage + daily-market 겹쳐그리기 경로를 쓴다.
+ *
+ * KPI 카드 값은 여기 저장하지 않는다 — vintage 는 기간 파라미터가 없어 fetch effect 가
+ * period 를 모르고, "최신 실측"을 fetch 시점에 고정해 버리면 기간 선택기를 바꿔도 값이
+ * 안 바뀐다. 대신 forecast.points(이미 전체 이력)에서 activeKpis 가 매 렌더에 선택된
+ * period 로 직접 골라낸다.
+ */
 type CabbageApiState = {
   status: "loading" | "success" | "empty" | "error";
   forecast: OverlayForecastView | null;
-  kpi: PriceKpiView | null;
   latestDate: string | null;
 };
 
 type HydropowerApiState = {
   status: "loading" | "success" | "empty" | "error";
   forecast: HydropowerForecastView | null;
-  kpi: PriceKpiView | null;
   latestDate: string | null;
 };
 
 type OnionApiState = {
   status: "loading" | "success" | "empty" | "error";
   forecast: OverlayForecastView | null;
-  kpi: PriceKpiView | null;
   latestDate: string | null;
 };
 
@@ -331,21 +334,18 @@ function apiCurlExample(api: ApiCatalogItem) {
 const initialCabbageApiState: CabbageApiState = {
   status: "loading",
   forecast: null,
-  kpi: null,
   latestDate: null
 };
 
 const initialOnionApiState: OnionApiState = {
   status: "loading",
   forecast: null,
-  kpi: null,
   latestDate: null
 };
 
 const initialHydropowerApiState: HydropowerApiState = {
   status: "loading",
   forecast: null,
-  kpi: null,
   latestDate: null
 };
 
@@ -406,16 +406,25 @@ function Dashboard() {
   const [reportApi, setReportApi] = useState<ReportApiState>(initialReportApiState);
   const [expandedSidoGroups, setExpandedSidoGroups] = useState<Set<string>>(new Set());
   const [period, setPeriod] = useState<OpenApiPeriod>(() => ({ ...OPEN_API_DEFAULT_PERIOD }));
-  const activeKpis = useMemo(
-    () => kpis.map((kpi) => {
-      if (kpi.name === "고랭지배추 도매가격") return cabbageApi.kpi ?? kpi;
-      if (kpi.name === "양파 도매가격") return onionApi.kpi ?? kpi;
-      if (kpi.name === "수력발전량") return hydropowerApi.kpi ?? kpi;
+  // 배추·양파·수력은 기간 파라미터가 없는 전체 이력을 fetch effect 가 한 번만 받아 두므로,
+  // "선택된 기간의 실측"은 매 렌더에 이 메모가 forecast.points 에서 직접 골라낸다 — 그래야
+  // 기간 선택기를 움직일 때 신선식품물가지수처럼 다 같이 반응한다.
+  const activeKpis = useMemo(() => {
+    const cabbageKpi = cabbageApi.forecast ? toOverlayKpiView("cabbage", cabbageApi.forecast.points, period) : null;
+    const onionKpi = onionApi.forecast ? toOverlayKpiView("onion", onionApi.forecast.points, period) : null;
+    const hydroDamLabel = HYDROPOWER_DAMS.find((dam) => dam.queryName === selectedHydroDam)?.label ?? selectedHydroDam;
+    const hydropowerKpi = hydropowerApi.forecast
+      ? toHydropowerKpiView(hydroDamLabel, hydropowerApi.forecast.points, period)
+      : null;
+
+    return kpis.map((kpi) => {
+      if (kpi.name === "고랭지배추 도매가격") return cabbageKpi ?? kpi;
+      if (kpi.name === "양파 도매가격") return onionKpi ?? kpi;
+      if (kpi.name === "수력발전량") return hydropowerKpi ?? kpi;
       if (kpi.name === "신선식품물가지수") return freshFoodApi.kpi ?? kpi;
       return kpi;
-    }),
-    [cabbageApi, onionApi, hydropowerApi, freshFoodApi]
-  );
+    });
+  }, [cabbageApi.forecast, onionApi.forecast, hydropowerApi.forecast, selectedHydroDam, freshFoodApi, period]);
   const activeReports = reportApi.reports ?? droughtReportFallback;
   const selectedReport = useMemo(
     () => reportApi.details[selectedReportId] ?? activeReports.find((report) => report.reportYm === selectedReportId) ?? activeReports[0] ?? droughtReportFallback[0],
@@ -524,19 +533,18 @@ function Dashboard() {
         const nextForecast = generation && toHydropowerForecastView(damLabel, generation, storage);
 
         if (!generation || !nextForecast) {
-          setHydropowerApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
+          setHydropowerApi({ status: "empty", forecast: null, latestDate: null });
           return;
         }
 
         setHydropowerApi({
           status: "success",
           forecast: nextForecast,
-          kpi: toHydropowerKpiView(damLabel, generation),
           latestDate: generation.latestActualDate
         });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setHydropowerApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        setHydropowerApi({ status: "error", forecast: null, latestDate: null });
       }
     }
 
@@ -555,7 +563,7 @@ function Dashboard() {
         response = await fetchPredictionVintage(priceForecastLocation("onion"), controller.signal);
       } catch (error) {
         if (controller.signal.aborted) return;
-        setOnionApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        setOnionApi({ status: "error", forecast: null, latestDate: null });
         return;
       }
 
@@ -565,19 +573,18 @@ function Dashboard() {
         const nextForecast = series && toOverlayForecastView("onion", series, response.entries);
 
         if (!series || !nextForecast) {
-          setOnionApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
+          setOnionApi({ status: "empty", forecast: null, latestDate: null });
           return;
         }
 
         setOnionApi({
           status: "success",
           forecast: nextForecast,
-          kpi: toOverlayKpiView("onion", series),
           latestDate: series.latestActualDate
         });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setOnionApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        setOnionApi({ status: "error", forecast: null, latestDate: null });
       }
     }
 
@@ -587,7 +594,7 @@ function Dashboard() {
         response = await fetchPredictionVintage(priceForecastLocation("cabbage"), controller.signal);
       } catch (error) {
         if (controller.signal.aborted) return;
-        setCabbageApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        setCabbageApi({ status: "error", forecast: null, latestDate: null });
         return;
       }
 
@@ -596,19 +603,18 @@ function Dashboard() {
         const nextForecast = series && toOverlayForecastView("cabbage", series, response.entries);
 
         if (!series || !nextForecast) {
-          setCabbageApi({ status: "empty", forecast: null, kpi: null, latestDate: null });
+          setCabbageApi({ status: "empty", forecast: null, latestDate: null });
           return;
         }
 
         setCabbageApi({
           status: "success",
           forecast: nextForecast,
-          kpi: toOverlayKpiView("cabbage", series),
           latestDate: series.latestActualDate
         });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setCabbageApi({ status: "error", forecast: null, kpi: null, latestDate: null });
+        setCabbageApi({ status: "error", forecast: null, latestDate: null });
       }
     }
 

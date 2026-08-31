@@ -17,6 +17,7 @@ import {
   type RawFreshFoodMonth
 } from "@/lib/fresh-food";
 import {
+  actualAtPeriod as actualPriceAtPeriod,
   buildVintagePriceSeries,
   monthsMissingActual,
   vintageBoundaryDate,
@@ -28,6 +29,7 @@ import {
   type RawMarketTrendPoint
 } from "@/lib/vintage-price-series";
 import {
+  actualAtPeriod as actualHydropowerAtPeriod,
   buildHydropowerVintageSeries,
   type HydropowerActualEntry,
   type HydropowerPredictionEntry,
@@ -656,27 +658,33 @@ export function toOverlayForecastView(
   };
 }
 
-export function toOverlayKpiView(key: PriceForecastKey, series: VintagePriceSeries): PriceKpiView | null {
-  if (series.current === null) {
+/**
+ * 배추·양파 KPI 카드 값. prediction-vintage 는 연·월 파라미터가 없어 기간이 바뀌어도
+ * 다시 부르지 않고([[open-api-verified-facts]]) 항상 전체 이력을 준다 — 그래서 "최신
+ * 실측"이 아니라 선택된 기간의 실측을 이미 받아 둔 points 에서 직접 골라야 기간
+ * 선택기에 반응한다.
+ */
+export function toOverlayKpiView(key: PriceForecastKey, points: VintagePricePoint[], period: OpenApiPeriod): PriceKpiView | null {
+  const { current, currentDate, delta } = actualPriceAtPeriod(points, period.year, period.month);
+  if (current === null || currentDate === null) {
     return null;
   }
 
   const config = PRICE_FORECAST_CONFIG[key];
-  const latestYearMape = yearlyAccuracy(series.points).at(-1)?.mape ?? null;
-  const spark = series.points
-    .filter((point) => point.actual !== null)
+  const latestYearMape = yearlyAccuracy(points).at(-1)?.mape ?? null;
+  const spark = points
+    .filter((point) => point.actual !== null && point.date <= currentDate)
     .slice(-7)
     .map((point) => point.actual as number);
-  const delta = series.delta ?? 0;
 
   return {
     tag: "예측 · 농산물",
     region: config.regionName,
     name: config.kpiName,
-    value: formatWholeNumber(series.current),
+    value: formatWholeNumber(current),
     unit: config.kpiUnit,
-    delta: formatSignedPercent(delta),
-    direction: delta >= 0 ? "up" : "down",
+    delta: formatSignedPercent(delta ?? 0),
+    direction: (delta ?? 0) >= 0 ? "up" : "down",
     error: latestYearMape === null ? "N/A" : `${latestYearMape.toFixed(1)}%`,
     spark,
     target: key
@@ -933,26 +941,31 @@ export function toHydropowerForecastView(
   };
 }
 
-export function toHydropowerKpiView(damLabel: string, series: HydropowerVintageSeries): PriceKpiView | null {
-  if (series.current === null) {
+/**
+ * 수력발전량 KPI 카드 값. monthly-generation 은 연 단위 응답이라 기간이 바뀌어도 다시
+ * 부르지 않고 항상 전체 이력을 준다 — 그래서 "최신 실측"이 아니라 선택된 기간의 실측을
+ * 이미 받아 둔 points 에서 직접 골라야 기간 선택기에 반응한다.
+ */
+export function toHydropowerKpiView(damLabel: string, points: HydropowerVintagePoint[], period: OpenApiPeriod): PriceKpiView | null {
+  const { current, currentDate, delta } = actualHydropowerAtPeriod(points, period.year, period.month);
+  if (current === null || currentDate === null) {
     return null;
   }
 
-  const delta = series.delta ?? 0;
-  const spark = series.points
-    .filter((point) => point.actual !== null)
+  const spark = points
+    .filter((point) => point.actual !== null && point.date <= currentDate)
     .slice(-7)
     .map((point) => point.actual as number);
-  const latestYearMape = yearlyAccuracy(excludeJanuaryReset(series.points)).at(-1)?.mape ?? null;
+  const latestYearMape = yearlyAccuracy(excludeJanuaryReset(points)).at(-1)?.mape ?? null;
 
   return {
     tag: "예측 · 에너지",
     region: damLabel,
     name: "수력발전량",
-    value: formatWholeNumber(series.current),
+    value: formatWholeNumber(current),
     unit: "MWh/월",
-    delta: formatSignedPercent(delta),
-    direction: delta >= 0 ? "up" : "down",
+    delta: formatSignedPercent(delta ?? 0),
+    direction: (delta ?? 0) >= 0 ? "up" : "down",
     error: latestYearMape === null ? "N/A" : `${latestYearMape.toFixed(1)}%`,
     spark,
     target: "hydro"

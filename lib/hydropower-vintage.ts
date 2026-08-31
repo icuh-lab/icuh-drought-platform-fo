@@ -47,6 +47,30 @@ function toMonthDate(year: string, month: string) {
   return `${year}-${month.padStart(2, "0")}-01`;
 }
 
+/**
+ * 선택한 연/월의 실측값과, 직전 실측월 대비 변동률(%). monthly-generation 은 연·월
+ * 파라미터로 걸러 받을 수 없어(연 단위 응답) 기간을 바꿔도 다시 부르지 않고 항상 전체
+ * 이력을 준다 — 그래서 KPI 카드는 이미 받아 둔 points 에서 그 달의 값을 직접 골라야
+ * 기간 선택기에 반응한다. 그 달에 실측이 없으면 current 가 null.
+ */
+export function actualAtPeriod(points: HydropowerVintagePoint[], year: number, month: number) {
+  const targetDate = toMonthDate(String(year), String(month));
+  const actualDates = points.filter((point) => point.actual !== null).map((point) => point.date).sort();
+
+  if (!actualDates.includes(targetDate)) {
+    return { current: null, currentDate: null, delta: null };
+  }
+
+  const currentIndex = actualDates.indexOf(targetDate);
+  const previousDate = currentIndex > 0 ? actualDates[currentIndex - 1] : null;
+  const byDate = new Map(points.map((point) => [point.date, point.actual] as const));
+  const current = byDate.get(targetDate) ?? null;
+  const previous = previousDate === null ? null : byDate.get(previousDate) ?? null;
+  const delta = current === null || previous === null || previous === 0 ? null : ((current - previous) / previous) * 100;
+
+  return { current, currentDate: targetDate, delta };
+}
+
 export function buildHydropowerVintageSeries(
   predictions: HydropowerPredictionEntry[],
   actuals: HydropowerActualEntry[]
