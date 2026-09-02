@@ -180,7 +180,11 @@ function RegionCard({
           </div>
           <div className="fsub-bd">
             <p className="fsub-ti">
-              {field.representativeTitle}
+              {field.representativeLink ? (
+                <a href={field.representativeLink} target="_blank" rel="noreferrer">{field.representativeTitle}</a>
+              ) : (
+                field.representativeTitle
+              )}
               {field.relevanceFlag && (
                 <>
                   {" "}
