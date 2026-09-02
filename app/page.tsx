@@ -826,55 +826,59 @@ function Dashboard() {
   return (
     <>
 
-      <div className="fbar">
-        <div className="fbar-in">
-          <div className="period" role="group" aria-label="조회 기간">
-            <span className="period-tag">기간</span>
-            <button
-              type="button"
-              className="period-step"
-              onClick={() => setPeriod((current) => shiftPeriod(current, -1))}
-              disabled={isPeriodAtStart(period)}
-              aria-label="이전 달"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <div className="period-fields">
-              <label>
-                <select
-                  value={period.year}
-                  aria-label="조회 연도"
-                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, year: Number(event.target.value) }))}
+      {view !== "reports" && (
+        <>
+          <div className="fbar">
+            <div className="fbar-in">
+              <div className="period" role="group" aria-label="조회 기간">
+                <span className="period-tag">기간</span>
+                <button
+                  type="button"
+                  className="period-step"
+                  onClick={() => setPeriod((current) => shiftPeriod(current, -1))}
+                  disabled={isPeriodAtStart(period)}
+                  aria-label="이전 달"
                 >
-                  {PERIOD_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
-                <span>년</span>
-              </label>
-              <label>
-                <select
-                  value={period.month}
-                  aria-label="조회 월"
-                  onChange={(event) => setPeriod((current) => clampPeriod({ ...current, month: Number(event.target.value) }))}
+                  <ChevronLeft size={14} />
+                </button>
+                <div className="period-fields">
+                  <label>
+                    <select
+                      value={period.year}
+                      aria-label="조회 연도"
+                      onChange={(event) => setPeriod((current) => clampPeriod({ ...current, year: Number(event.target.value) }))}
+                    >
+                      {PERIOD_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                    </select>
+                    <span>년</span>
+                  </label>
+                  <label>
+                    <select
+                      value={period.month}
+                      aria-label="조회 월"
+                      onChange={(event) => setPeriod((current) => clampPeriod({ ...current, month: Number(event.target.value) }))}
+                    >
+                      {availableMonths(period.year).map((month) => <option key={month} value={month}>{month}</option>)}
+                    </select>
+                    <span>월</span>
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="period-step"
+                  onClick={() => setPeriod((current) => shiftPeriod(current, 1))}
+                  disabled={isPeriodAtEnd(period)}
+                  aria-label="다음 달"
                 >
-                  {availableMonths(period.year).map((month) => <option key={month} value={month}>{month}</option>)}
-                </select>
-                <span>월</span>
-              </label>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+              <p className="period-note">예측·지수 데이터는 월 1회 재학습되어 갱신됩니다</p>
             </div>
-            <button
-              type="button"
-              className="period-step"
-              onClick={() => setPeriod((current) => shiftPeriod(current, 1))}
-              disabled={isPeriodAtEnd(period)}
-              aria-label="다음 달"
-            >
-              <ChevronRight size={14} />
-            </button>
           </div>
-          <p className="period-note">예측·지수 데이터는 월 1회 재학습되어 갱신됩니다</p>
-        </div>
-      </div>
-      <div className="rule" />
+          <div className="rule" />
+        </>
+      )}
 
       <main className="wrap">
         {view === "home" && (
