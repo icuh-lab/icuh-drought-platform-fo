@@ -1,7 +1,7 @@
 [
   {
     "reportYm": "2022-03",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:29",
     "articleCount": 40,
     "detectedSidoCount": 6,
     "nationwide": [
@@ -703,7 +703,7 @@
   },
   {
     "reportYm": "2022-05",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:30",
     "articleCount": 22,
     "detectedSidoCount": 7,
     "nationwide": [
@@ -1139,7 +1139,7 @@
   },
   {
     "reportYm": "2022-06",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:31",
     "articleCount": 40,
     "detectedSidoCount": 10,
     "nationwide": [
@@ -1985,7 +1985,7 @@
   },
   {
     "reportYm": "2022-07",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:32",
     "articleCount": 29,
     "detectedSidoCount": 10,
     "nationwide": [
@@ -2569,9 +2569,9 @@
   },
   {
     "reportYm": "2022-08",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 9,
-    "detectedSidoCount": 4,
+    "generatedAt": "2026-09-02T20:51:33",
+    "articleCount": 8,
+    "detectedSidoCount": 3,
     "nationwide": [
       {
         "sido": "서울",
@@ -2595,8 +2595,8 @@
       },
       {
         "sido": "광주",
-        "detected": true,
-        "maxGrade": "주의"
+        "detected": false,
+        "maxGrade": null
       },
       {
         "sido": "대전",
@@ -2727,28 +2727,6 @@
         ]
       },
       {
-        "sido": "광주",
-        "sigungu": "광주시",
-        "impactFields": [
-          {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "전남 7월 물가 7.3%…광주 6.6·전국평균 6.3% 상승",
-            "representativeLink": "http://www.kwangju.co.kr/article.php?aid=1659437400741777005",
-            "keywords": [
-              "수산물"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 19,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          }
-        ]
-      },
-      {
         "sido": "부산",
         "sigungu": "남구",
         "impactFields": [
@@ -2859,7 +2837,7 @@
   },
   {
     "reportYm": "2022-10",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:34",
     "articleCount": 8,
     "detectedSidoCount": 4,
     "nationwide": [
@@ -3134,7 +3112,7 @@
   },
   {
     "reportYm": "2022-11",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:34",
     "articleCount": 47,
     "detectedSidoCount": 8,
     "nationwide": [
@@ -3423,7 +3401,7 @@
               "저수지"
             ],
             "relevanceFlag": false,
-            "continuityCount": 20,
+            "continuityCount": 19,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           },
@@ -3439,7 +3417,7 @@
               "기타"
             ],
             "relevanceFlag": true,
-            "continuityCount": 20,
+            "continuityCount": 19,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -3712,7 +3690,7 @@
   },
   {
     "reportYm": "2022-12",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:35",
     "articleCount": 11,
     "detectedSidoCount": 5,
     "nationwide": [
@@ -3886,7 +3864,7 @@
               "식수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 21,
+            "continuityCount": 20,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -3902,7 +3880,7 @@
               "생산량"
             ],
             "relevanceFlag": false,
-            "continuityCount": 21,
+            "continuityCount": 20,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
           },
@@ -3918,7 +3896,7 @@
               "기타"
             ],
             "relevanceFlag": true,
-            "continuityCount": 21,
+            "continuityCount": 20,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -4013,7 +3991,7 @@
   },
   {
     "reportYm": "2023-02",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:36",
     "articleCount": 26,
     "detectedSidoCount": 6,
     "nationwide": [
@@ -4193,7 +4171,7 @@
               "식수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 23,
+            "continuityCount": 22,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           },
@@ -4209,7 +4187,7 @@
               "기타"
             ],
             "relevanceFlag": true,
-            "continuityCount": 23,
+            "continuityCount": 22,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -4421,7 +4399,7 @@
   },
   {
     "reportYm": "2025-08",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:37",
     "articleCount": 25,
     "detectedSidoCount": 1,
     "nationwide": [
@@ -4604,7 +4582,7 @@
             "relevanceFlag": true,
             "continuityCount": 22,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       }
@@ -4613,7 +4591,7 @@
   },
   {
     "reportYm": "2025-09",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:38",
     "articleCount": 37,
     "detectedSidoCount": 1,
     "nationwide": [
@@ -4758,7 +4736,7 @@
             "relevanceFlag": true,
             "continuityCount": 22,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -4850,7 +4828,7 @@
   },
   {
     "reportYm": "2025-10",
-    "generatedAt": "2026-08-30T23:46:05",
+    "generatedAt": "2026-09-02T20:51:39",
     "articleCount": 1,
     "detectedSidoCount": 1,
     "nationwide": [
@@ -4968,9 +4946,9 @@
   },
   {
     "reportYm": "2025-12",
-    "generatedAt": "2026-08-31T07:02:51",
-    "articleCount": 453,
-    "detectedSidoCount": 16,
+    "generatedAt": "2026-09-02T20:51:40",
+    "articleCount": 444,
+    "detectedSidoCount": 15,
     "nationwide": [
       {
         "sido": "서울",
@@ -5004,8 +4982,8 @@
       },
       {
         "sido": "울산",
-        "detected": true,
-        "maxGrade": "관심"
+        "detected": false,
+        "maxGrade": null
       },
       {
         "sido": "세종",
@@ -5111,7 +5089,7 @@
             "relevanceFlag": false,
             "continuityCount": 23,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -5166,22 +5144,6 @@
             "nextGradeLowerBound": null
           },
           {
-            "impactCode": "A3",
-            "impactName": "축산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "민주당 초선 이병진 의원, 2년 연속 국감 우수의원 수상",
-            "representativeLink": "https://www.polinews.co.kr/news/articleView.html?idxno=717385",
-            "keywords": [
-              "가축"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 25,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A6",
             "impactName": "환경",
             "grade": "주의",
@@ -5209,7 +5171,7 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 25,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -5345,7 +5307,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -5540,7 +5502,7 @@
             "relevanceFlag": false,
             "continuityCount": 11,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -5677,26 +5639,6 @@
       },
       {
         "sido": "경기",
-        "sigungu": "양주",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "현안사업 ‘가뭄에 단비’…양주시, 특조금 66억-특교세 21억 재원 확보",
-            "representativeLink": "https://www.cnbnews.com/news/article.html?no=770812",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 1,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "경기",
         "sigungu": "여주",
         "impactFields": [
           {
@@ -5731,7 +5673,7 @@
             "relevanceFlag": false,
             "continuityCount": 4,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -6101,22 +6043,6 @@
         "sigungu": "고령",
         "impactFields": [
           {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[위클리오늘] 정희용 의원, 고령·성주·칠곡에 장학금 6900만원 기탁",
-            "representativeLink": "http://www.weeklytoday.com/news/articleView.html?idxno=747857",
-            "keywords": [
-              "어가"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 3,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A7",
             "impactName": "사회경제",
             "grade": "주의",
@@ -6131,20 +6057,6 @@
             "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 5,
-            "representativeTitle": "정희용 의원, 5년 넘게 이어온 ‘장학 나눔’…고령·성주·칠곡 미래에...",
-            "representativeLink": "https://www.news2day.co.kr/article/20251228500051",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 3,
-            "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
           }
         ]
       },
@@ -6416,7 +6328,7 @@
             "relevanceFlag": false,
             "continuityCount": 10,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -6467,8 +6379,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 30,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -6504,27 +6416,7 @@
             "relevanceFlag": false,
             "continuityCount": 4,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
-          }
-        ]
-      },
-      {
-        "sido": "울산",
-        "sigungu": "",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "\"국평 12억 뚫었다\"…서울 제치고 주간 상승률 1위 등극한 울산 아파트...",
-            "representativeLink": "https://view.asiae.co.kr/article/2025121915151590468",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 16,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -6682,7 +6574,7 @@
             "relevanceFlag": false,
             "continuityCount": 18,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -6891,7 +6783,7 @@
             "relevanceFlag": false,
             "continuityCount": 15,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -6960,7 +6852,7 @@
             "relevanceFlag": false,
             "continuityCount": 26,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -7272,8 +7164,8 @@
   },
   {
     "reportYm": "2026-01",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 752,
+    "generatedAt": "2026-09-02T20:51:41",
+    "articleCount": 745,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -7429,7 +7321,7 @@
             "relevanceFlag": false,
             "continuityCount": 24,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -7532,7 +7424,7 @@
           {
             "impactCode": "A8",
             "impactName": "기타",
-            "grade": "심각",
+            "grade": "경계",
             "gradeFinalized": true,
             "articleCount": 51,
             "representativeTitle": "“평균 기온 상승과 극한기후, 관광업에 부정적 영향”",
@@ -7540,8 +7432,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 26,
-            "gradeLowerBound": 51.0,
-            "nextGradeLowerBound": null
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -7761,7 +7653,7 @@
             "relevanceFlag": false,
             "continuityCount": 8,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -8015,7 +7907,7 @@
             "relevanceFlag": false,
             "continuityCount": 12,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -8031,26 +7923,6 @@
             "articleCount": 1,
             "representativeTitle": "6개월째 흙속에 파묻힌 집… ‘숨 막히는’ 이재민들의 삶 [기후재난, 남...",
             "representativeLink": "https://www.kyeongin.com/article/1757850",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 1,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "경기",
-        "sigungu": "과천",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[분양캘린더] 과천, 남양주 등 LH 공공물량 포함, 전국 5400여 가구 분양",
-            "representativeLink": "https://www.rcast.co.kr/news/articleView.html?idxno=29904",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 1,
@@ -8226,7 +8098,7 @@
               "영농"
             ],
             "relevanceFlag": false,
-            "continuityCount": 2,
+            "continuityCount": 1,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -8262,8 +8134,8 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "정득모 여주시장 출마자, 4대강 보 개방 논쟁에 '제3의 대안' 제시",
-            "representativeLink": "http://www.fieldnews.kr/news/articleView.html?idxno=25148",
+            "representativeTitle": "여주시의회, 남한강 취·양수시설 개선사업에 제동…\"일방 행정 중단하...",
+            "representativeLink": "http://www.newstown.co.kr/news/articleView.html?idxno=685286",
             "keywords": [
               "용수",
               "취수"
@@ -8274,29 +8146,13 @@
             "nextGradeLowerBound": 10.0
           },
           {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "정득모 여주시장 출마자 “여주보 개방, 전면 개방 아닌 ‘제3의 길’ 가...",
-            "representativeLink": "https://view.asiae.co.kr/article/2026011223191688005",
-            "keywords": [
-              "어업"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 5,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "정득모 국힘 여주시장 출마자 “여주보 개방, ‘전면도 유지도 아닌 제...",
-            "representativeLink": "https://www.ekn.kr/web/view.php?key=20260112021457671",
+            "representativeTitle": "[클릭 핫이슈] 여주 한강보 취양수시설 개선",
+            "representativeLink": "https://www.kyeongin.com/article/1757353",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 5,
@@ -8413,7 +8269,7 @@
             "relevanceFlag": false,
             "continuityCount": 8,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -8589,8 +8445,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "[경제인칼럼] 경남 미분양 4000호의 착시, ‘입주 절벽’이 온다- 정지영...",
-            "representativeLink": "https://www.knnews.co.kr/news/articleView.php?idxno=1479929",
+            "representativeTitle": "양산 물금읍에 ‘힐스테이트 물금센트럴’ 선보인다",
+            "representativeLink": "https://www.busan.com/view/busan/view.php?code=2026010610011689178",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 3,
@@ -8767,26 +8623,6 @@
       },
       {
         "sido": "경북",
-        "sigungu": "경산",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 2,
-            "representativeTitle": "공급가뭄 경산, 국평 분양가 최소 5억 원 시대 오나... ‘4년 전 분양가...",
-            "representativeLink": "https://www.etoday.co.kr/news/view/2548198",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 2,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "경북",
         "sigungu": "고령",
         "impactFields": [
           {
@@ -8824,26 +8660,6 @@
             "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          }
-        ]
-      },
-      {
-        "sido": "경북",
-        "sigungu": "김천",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "\"공급 가뭄 속 단비\"... 김천서 보기 드문 '대형 명품', 김천혁신 동일하...",
-            "representativeLink": "http://www.newsroad.co.kr/news/articleView.html?idxno=52630",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 3,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -9262,7 +9078,7 @@
             "relevanceFlag": false,
             "continuityCount": 3,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -9344,22 +9160,6 @@
             "nextGradeLowerBound": 3.0
           },
           {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "2026년 부동산 시장, 공급 절벽과 신축 희소성의 시대로 전환... 주목 받...",
-            "representativeLink": "https://www.sedaily.com/NewsView/2K76NLANJ3",
-            "keywords": [
-              "어가"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 31,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A6",
             "impactName": "환경",
             "grade": "주의",
@@ -9369,8 +9169,7 @@
             "representativeLink": "https://science.ytn.co.kr/program/view.php?mcd=0082&hcd=0023&key=202601061107137478",
             "keywords": [
               "생태계",
-              "산불",
-              "생태"
+              "산불"
             ],
             "relevanceFlag": false,
             "continuityCount": 31,
@@ -9388,7 +9187,7 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 31,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -9437,13 +9236,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 7,
-            "representativeTitle": "[더세종] 올해 행복도시에 4,740호 공급..신축 가뭄 해소될까?",
-            "representativeLink": "https://www.cjb.co.kr/home/sub.php?menukey=61&mod=view&P_NO=260120507&PRO_CODE=99",
+            "representativeTitle": "밀양의 강물 흐르는 겨울, 천년의 이야기가 스며든 누각의 시간",
+            "representativeLink": "https://www.tournews21.com/news/articleView.html?idxno=126279",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 5,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -9466,7 +9265,7 @@
               "취수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 17,
+            "continuityCount": 16,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -9482,7 +9281,7 @@
               "산불"
             ],
             "relevanceFlag": false,
-            "continuityCount": 17,
+            "continuityCount": 16,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -9496,7 +9295,7 @@
             "representativeLink": "https://www.etoday.co.kr/news/view/2550633",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 17,
+            "continuityCount": 16,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -9638,7 +9437,7 @@
             "relevanceFlag": false,
             "continuityCount": 27,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -9913,7 +9712,7 @@
             "relevanceFlag": false,
             "continuityCount": 19,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -10279,7 +10078,7 @@
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -10318,20 +10117,6 @@
             "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[분양캘린더] 2월 분양시장 개장···전국 2곳·1194가구 공급",
-            "representativeLink": "http://www.koreastocknews.com/news/articleView.html?idxno=116516",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -10351,7 +10136,7 @@
             "relevanceFlag": false,
             "continuityCount": 21,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -10799,8 +10584,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "올해 민간 아파트 분양 '가뭄'...기분양 '음성자이 센트럴시티'에 눈길...",
-            "representativeLink": "https://www.ksilbo.co.kr/news/articleView.html?idxno=1046449",
+            "representativeTitle": "선지자 엘리야에게 들렸던 ‘세미한 음성’의 힘",
+            "representativeLink": "https://www.christiantoday.co.kr/news/373110",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 3,
@@ -10958,8 +10743,8 @@
   },
   {
     "reportYm": "2026-02",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 822,
+    "generatedAt": "2026-09-02T20:51:41",
+    "articleCount": 819,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -11081,7 +10866,6 @@
             "representativeTitle": "[인터뷰] \"강원도정, 농산물 가격안정 대책·현장 농민과 소통 시급\"",
             "representativeLink": "https://www.kado.net/news/articleView.html?idxno=2032582",
             "keywords": [
-              "관정",
               "밭",
               "농가"
             ],
@@ -11118,7 +10902,7 @@
             "relevanceFlag": false,
             "continuityCount": 25,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -11192,8 +10976,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 27,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -11497,7 +11281,7 @@
             "relevanceFlag": false,
             "continuityCount": 12,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -11706,7 +11490,7 @@
             "relevanceFlag": false,
             "continuityCount": 13,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -11744,7 +11528,7 @@
             "representativeLink": "https://news.mtn.co.kr/news-detail/2026020721331843038",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 2,
+            "continuityCount": 1,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -11938,7 +11722,7 @@
             "relevanceFlag": false,
             "continuityCount": 6,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -12005,8 +11789,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "수도권 '공급 가뭄' 지역 속출...경기 24곳·인천 3곳 분양 3곳 미만",
-            "representativeLink": "https://www.ebn.co.kr/news/articleView.html?idxno=1701199",
+            "representativeTitle": "설산의 악몽, 빙판 위 대관식...그리고 빈 손의 빙속 [2026 밀라노 결산...",
+            "representativeLink": "https://www.mhnse.com/news/articleView.html?idxno=511105",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 3,
@@ -12091,20 +11875,6 @@
             "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[6.3 지방선거 이모저모] 민주당 5명 뛰는데 국힘은 '0'… 평택시장 후보...",
-            "representativeLink": "https://www.joongboo.com/news/articleView.html?idxno=363717735",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -12156,7 +11926,7 @@
             "relevanceFlag": false,
             "continuityCount": 9,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -12314,22 +12084,6 @@
         "sigungu": "밀양",
         "impactFields": [
           {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "농촌 인력 가뭄에 단비...외국인 계절근로자 입국",
-            "representativeLink": "http://www.breaknews.com/1182286",
-            "keywords": [
-              "농가"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 5,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
             "impactCode": "A6",
             "impactName": "환경",
             "grade": "주의",
@@ -12414,26 +12168,6 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "경남",
-        "sigungu": "창녕",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "우기수 도의원 의정보고회 성료…“지속 가능한 창녕, 더 큰 걸음 내딛...",
-            "representativeLink": "https://www.asiatoday.co.kr/view.php?key=20260211010004260",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 5,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -12697,7 +12431,7 @@
             "representativeLink": "https://www.kyongbuk.co.kr/news/articleView.html?idxno=4063320",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 3,
+            "continuityCount": 2,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -12847,7 +12581,7 @@
               "산불"
             ],
             "relevanceFlag": false,
-            "continuityCount": 4,
+            "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -12998,7 +12732,7 @@
             "relevanceFlag": false,
             "continuityCount": 6,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13154,7 +12888,7 @@
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13265,7 +12999,7 @@
             "relevanceFlag": false,
             "continuityCount": 4,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13318,7 +13052,7 @@
             "relevanceFlag": false,
             "continuityCount": 12,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13389,7 +13123,7 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 32,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -13447,7 +13181,7 @@
               "산불"
             ],
             "relevanceFlag": false,
-            "continuityCount": 18,
+            "continuityCount": 17,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -13461,9 +13195,9 @@
             "representativeLink": "https://www.nongmin.com/article/20260204500425",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 18,
+            "continuityCount": 17,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13499,7 +13233,7 @@
             "relevanceFlag": false,
             "continuityCount": 13,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13588,7 +13322,7 @@
             "relevanceFlag": false,
             "continuityCount": 28,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -13848,13 +13582,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 7,
-            "representativeTitle": "서영학, 여수시장 예비후보 등록… \"나라는 이재명, 여수는 서영학\"",
-            "representativeLink": "https://www.mhns.co.kr/news/articleView.html?idxno=739750",
+            "representativeTitle": "얼마 만에 비?...여수 1월 강수량 '0mm'",
+            "representativeLink": "https://ysmbc.co.kr/NewsArticle/1506496",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 2,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -14077,7 +13811,7 @@
             "relevanceFlag": false,
             "continuityCount": 12,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -14284,7 +14018,7 @@
             "relevanceFlag": false,
             "continuityCount": 4,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -14436,7 +14170,7 @@
             "relevanceFlag": false,
             "continuityCount": 17,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -14985,8 +14719,7 @@
             "representativeTitle": "'농번기 일손 걱정 끝'… 음성군, '인력 보급 작전' 조기 가동",
             "representativeLink": "https://www.ccdn.co.kr/news/articleView.html?idxno=1061672",
             "keywords": [
-              "농번기",
-              "영농"
+              "농번기"
             ],
             "relevanceFlag": false,
             "continuityCount": 4,
@@ -15098,8 +14831,8 @@
   },
   {
     "reportYm": "2026-03",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 887,
+    "generatedAt": "2026-09-02T20:51:42",
+    "articleCount": 880,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -15203,7 +14936,6 @@
             "representativeLink": "https://www.farmnmarket.com/news/article.html?no=25896",
             "keywords": [
               "용수",
-              "식수",
               "저수지",
               "취수"
             ],
@@ -15263,7 +14995,7 @@
             "relevanceFlag": false,
             "continuityCount": 26,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -15353,8 +15085,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 28,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -15746,7 +15478,7 @@
             "relevanceFlag": false,
             "continuityCount": 5,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -15861,7 +15593,7 @@
             "relevanceFlag": false,
             "continuityCount": 14,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -16097,22 +15829,6 @@
         "sido": "경기",
         "sigungu": "안산",
         "impactFields": [
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "장기수 천안시장 예비후보 \"농업·농촌 대전환\" 공약 발표",
-            "representativeLink": "https://www.ccdailynews.com/news/articleView.html?idxno=2405971",
-            "keywords": [
-              "수확"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 2,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
           {
             "impactCode": "A5",
             "impactName": "산업",
@@ -16509,7 +16225,7 @@
             "relevanceFlag": false,
             "continuityCount": 34,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -16663,11 +16379,10 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 4,
-            "representativeTitle": "최재원 산청군수 예비후보 \"덕산댐 건설로 물을 자원화하겠다\"",
-            "representativeLink": "https://www.newsfreezone.co.kr/news/articleView.html?idxno=677902",
+            "representativeTitle": "지리산산청샘물 지하수 사용 증량에 지역주민 반발 거세...취수 문제 불...",
+            "representativeLink": "https://www.greened.kr/news/articleView.html?idxno=338711",
             "keywords": [
               "댐",
-              "식수",
               "취수"
             ],
             "relevanceFlag": false,
@@ -16743,8 +16458,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 4,
-            "representativeTitle": "지방 공급가뭄 속 단비…창원·내포 신축 분양",
-            "representativeLink": "https://www.dailian.co.kr/news/view/1620417/?sc=Naver",
+            "representativeTitle": "[주말ON- 옥영숙의 내돈내산 시인의 한끼] (23) 창원 소계동 ‘두레박 아...",
+            "representativeLink": "http://www.knnews.co.kr/news/articleView.php?idxno=1484023",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 5,
@@ -16807,7 +16522,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -16884,29 +16599,12 @@
             "representativeLink": "https://www.startuptoday.co.kr/news/articleView.html?idxno=593773",
             "keywords": [
               "급수",
-              "댐",
               "용수"
             ],
             "relevanceFlag": false,
             "continuityCount": 40,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
-          },
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "신효광 경북도의원 지방선거 출마 선언…농어업 경쟁력·지역경제 활성...",
-            "representativeLink": "https://www.kyongbuk.co.kr/news/articleView.html?idxno=4066390",
-            "keywords": [
-              "관정"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 40,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
           },
           {
             "impactCode": "A6",
@@ -16936,7 +16634,7 @@
             "relevanceFlag": false,
             "continuityCount": 40,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -16954,7 +16652,7 @@
             "representativeLink": "https://www.seoul.co.kr/news/economy/estate/2026/03/04/20260304031001?wlog_tag3=naver",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 4,
+            "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -17068,7 +16766,7 @@
               "농가"
             ],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -17082,7 +16780,7 @@
             "representativeLink": "https://www.kbmaeil.com/article/20260330500052",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -17270,13 +16968,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 5,
-            "representativeTitle": "영주시의회 손성호 의원, '2026 지방의정대상' 수상…경북 기초의원 중...",
-            "representativeLink": "https://news.tf.co.kr/read/national/2298569.htm",
+            "representativeTitle": "영주시, 남부지역 상습가뭄 해소 위해 대책위원회 가동",
+            "representativeLink": "https://www.idaegu.co.kr/news/articleView.html?idxno=540397",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17621,7 +17319,7 @@
             "relevanceFlag": false,
             "continuityCount": 5,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17675,7 +17373,7 @@
             "relevanceFlag": false,
             "continuityCount": 13,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17739,12 +17437,12 @@
             "grade": "심각",
             "gradeFinalized": true,
             "articleCount": 73,
-            "representativeTitle": "서울 '입주 가뭄' 덮친다…향후 4년 공급량 '반토막'에 신축 귀하신 몸",
-            "representativeLink": "https://www.thefairnews.co.kr/news/articleView.html?idxno=70711",
+            "representativeTitle": "서울 집값 상승세 꺾였다…4월 중순 전 '절세 매물' 노려라",
+            "representativeLink": "https://www.hankyung.com/article/2026031129921",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 33,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -17798,7 +17496,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17821,7 +17519,7 @@
               "식수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 19,
+            "continuityCount": 18,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           },
@@ -17837,7 +17535,7 @@
               "공장"
             ],
             "relevanceFlag": false,
-            "continuityCount": 19,
+            "continuityCount": 18,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
           },
@@ -17851,9 +17549,9 @@
             "representativeLink": "https://www.newsis.com/view/NISX20260311_0003543311",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 19,
+            "continuityCount": 18,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17892,8 +17590,7 @@
             "keywords": [
               "용수",
               "급수",
-              "저수지",
-              "댐"
+              "저수지"
             ],
             "relevanceFlag": false,
             "continuityCount": 29,
@@ -17938,13 +17635,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 8,
-            "representativeTitle": "[6·3지방선거 현장]민형배 \"홍수·가뭄 동시 대응…전남광주 '물순환도...",
-            "representativeLink": "https://www.namdonews.com/news/articleView.html?idxno=904794",
+            "representativeTitle": "40년 만에 '한 지붕'…광주·전남 통합시대 7월 개막",
+            "representativeLink": "https://www.newsis.com/view/NISX20260301_0003531085",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 29,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -17970,20 +17667,6 @@
             "continuityCount": 7,
             "gradeLowerBound": 6.0,
             "nextGradeLowerBound": null
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 2,
-            "representativeTitle": "[IB토마토]IPO 1위 KB증권, ECM 공백 장기화…기업 발굴 전략 시험대",
-            "representativeLink": "http://www.newstomato.com/ReadNews.aspx?no=1293791&inflow=N",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 7,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -18082,23 +17765,6 @@
             "representativeLink": "http://www.hansbiz.co.kr/news/articleView.html?idxno=825732",
             "keywords": [
               "저수지"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "\"농촌 일손 가뭄에 단비\"~나주시, 외국인 계절근로자 1,100명 본격 투입",
-            "representativeLink": "https://www.wikitree.co.kr/articles/1127888",
-            "keywords": [
-              "농가",
-              "영농"
             ],
             "relevanceFlag": false,
             "continuityCount": 6,
@@ -18230,8 +17896,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "'에너지 가뭄' 속 단비…UAE 원유 200만 배럴 여수 입고",
-            "representativeLink": "https://www.newsgn.com/news/articleView.html?idxno=542512",
+            "representativeTitle": "아람코, 홍해 통해 원유 1200만배럴 에쓰오일에 보내",
+            "representativeLink": "https://www.hankyung.com/article/2026032059251",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 3,
@@ -18300,7 +17966,7 @@
             "relevanceFlag": false,
             "continuityCount": 21,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -18399,7 +18065,7 @@
             "relevanceFlag": false,
             "continuityCount": 13,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -18443,22 +18109,6 @@
         "sido": "전북",
         "sigungu": "김제",
         "impactFields": [
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "농기계 빌릴때도 오픈 런?…영농철 앞둔 농기계임대사업 ‘가뭄에 단비...",
-            "representativeLink": "https://www.jjan.kr/article/20260320500010",
-            "keywords": [
-              "영농"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 4,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
           {
             "impactCode": "A8",
             "impactName": "기타",
@@ -18716,7 +18366,7 @@
           {
             "impactCode": "A8",
             "impactName": "기타",
-            "grade": "경계",
+            "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 23,
             "representativeTitle": "궤네기또는 불효자인가 영웅인가",
@@ -18724,8 +18374,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 18,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 5.0,
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -19048,22 +18698,6 @@
         "sigungu": "아산",
         "impactFields": [
           {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "'가뭄에 단비' 러시아산 나프타 도입…5월 셧다운 공포는 여전",
-            "representativeLink": "https://www.nocutnews.co.kr/news/6494318?utm_source=naver&utm_medium=article&utm_campaign=20260401061126",
-            "keywords": [
-              "고사"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "주의",
@@ -19075,7 +18709,7 @@
             "relevanceFlag": false,
             "continuityCount": 6,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -19149,7 +18783,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -19396,7 +19030,7 @@
             "relevanceFlag": false,
             "continuityCount": 5,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -19526,8 +19160,8 @@
   },
   {
     "reportYm": "2026-04",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 771,
+    "generatedAt": "2026-09-02T20:51:43",
+    "articleCount": 761,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -19688,7 +19322,7 @@
             "relevanceFlag": false,
             "continuityCount": 27,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -19708,8 +19342,7 @@
               "급수",
               "용수",
               "저수지",
-              "댐",
-              "식수"
+              "댐"
             ],
             "relevanceFlag": false,
             "continuityCount": 29,
@@ -19760,8 +19393,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 29,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -19832,29 +19465,13 @@
         "sigungu": "속초",
         "impactFields": [
           {
-            "impactCode": "A3",
-            "impactName": "축산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "김철수 민주당 속초시장 예비후보 선거사무소 개소",
-            "representativeLink": "https://www.kado.net/news/articleView.html?idxno=2047466",
-            "keywords": [
-              "축사"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 14,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "김철수 민주당 속초시장 후보, 선거사무소 개소",
-            "representativeLink": "https://www.kwnews.co.kr/page/view/2026042850155000000",
+            "representativeTitle": "석달 기다린 '황금어장' 대문어 품에 안은 어민 함박웃음",
+            "representativeLink": "https://www.kado.net/news/articleView.html?idxno=2043828",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 14,
@@ -20163,7 +19780,7 @@
             "relevanceFlag": false,
             "continuityCount": 15,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -20171,23 +19788,6 @@
         "sido": "경기",
         "sigungu": "가평",
         "impactFields": [
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "가평군, 농촌 일손 가뭄에 '단비'… 캄보디아 계절근로자 대폭 확대",
-            "representativeLink": "http://www.breaknews.com/1199220",
-            "keywords": [
-              "농가",
-              "농번기"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 4,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
           {
             "impactCode": "A8",
             "impactName": "기타",
@@ -20257,7 +19857,7 @@
               "용수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 3,
+            "continuityCount": 2,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           }
@@ -20273,8 +19873,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "‘재개발·재건축 2조’ 명암(明暗)…지방선거 앞둔 성남시 딜레마 [오...",
-            "representativeLink": "https://www.segye.com/newsView/20260414525209?OutUrl=naver",
+            "representativeTitle": "재건축 '돈 가뭄' 뚫는다…성남시 2조 원 지원",
+            "representativeLink": "https://news.tvchosun.com/site/data/html_dir/2026/04/20/2026042090061.html",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 3,
@@ -20379,7 +19979,7 @@
             "representativeLink": "https://nownews.seoul.co.kr/news/newsView.php?id=20260402601008&wlog_tag3=naver",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 3,
+            "continuityCount": 2,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -20623,20 +20223,6 @@
             "continuityCount": 11,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "‘경선 치열’ 민주·‘후보 가뭄’ 국힘…경기 서부 향방은",
-            "representativeLink": "https://www.hani.co.kr/arti/area/capital/1252315.html",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 11,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -20979,7 +20565,7 @@
               "파종"
             ],
             "relevanceFlag": false,
-            "continuityCount": 6,
+            "continuityCount": 5,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -20989,22 +20575,6 @@
         "sido": "경남",
         "sigungu": "창원",
         "impactFields": [
-          {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "‘공급 가뭄’ 창원 분양가 상승 지속",
-            "representativeLink": "https://www.knnews.co.kr/news/articleView.php?idxno=1539556",
-            "keywords": [
-              "어가"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
           {
             "impactCode": "A8",
             "impactName": "기타",
@@ -21135,7 +20705,7 @@
               "농가"
             ],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -21152,7 +20722,7 @@
               "축산"
             ],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
           },
@@ -21168,7 +20738,7 @@
               "생계"
             ],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
           },
@@ -21182,9 +20752,9 @@
             "representativeLink": "https://www.kyongbuk.co.kr/news/articleView.html?idxno=4069389",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 5,
+            "continuityCount": 4,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -21289,8 +20859,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "1분기 지방 아파트 분양 17년 만에 최저…공급 절벽",
-            "representativeLink": "https://www.newsis.com/view/NISX20260415_0003592043",
+            "representativeTitle": "구미 실수요자들, '두산위브더제니스 구미' 재등장",
+            "representativeLink": "https://www.ksilbo.co.kr/news/articleView.html?idxno=1053455",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 6,
@@ -21339,20 +20909,6 @@
             "continuityCount": 28,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "안동 신축 아파트 공급 가뭄 속 옥동 '더샵 안동더퍼스트' 493가구 공급",
-            "representativeLink": "http://www.fnnews.com/news/202604101104529933",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 28,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -21389,7 +20945,7 @@
             "relevanceFlag": false,
             "continuityCount": 17,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -21551,22 +21107,6 @@
         "sigungu": "칠곡",
         "impactFields": [
           {
-            "impactCode": "A1",
-            "impactName": "물 공급",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "국가유공자의 사명감… 칠곡군의회 3번째 도전 이정태 예비후보",
-            "representativeLink": "https://www.kbmaeil.com/article/20260420500313",
-            "keywords": [
-              "용수"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 2,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "관심",
@@ -21624,22 +21164,6 @@
             "nextGradeLowerBound": 3.0
           },
           {
-            "impactCode": "A3",
-            "impactName": "축산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[6·3 지방선거] 김부겸, \"대구 다시 뛰게 만들겠다\"…'희망캠프' 개소식...",
-            "representativeLink": "https://www.polinews.co.kr/news/articleView.html?idxno=729576",
-            "keywords": [
-              "축사"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 19,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "주의",
@@ -21651,7 +21175,7 @@
             "relevanceFlag": false,
             "continuityCount": 19,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -21687,7 +21211,7 @@
             "relevanceFlag": false,
             "continuityCount": 6,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -21805,12 +21329,12 @@
             "grade": "심각",
             "gradeFinalized": true,
             "articleCount": 95,
-            "representativeTitle": "대출 규제·전세난 겹쳐…서울 강북권 아파트값 첫 11억 돌파",
-            "representativeLink": "https://www.newspim.com/news/view/20260413000025",
+            "representativeTitle": "전세 매물 44% 급감·규제 영향…서울 곳곳 '신고가' 확산",
+            "representativeLink": "https://www.news1.kr/realestate/general/6148394",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 34,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -21860,8 +21384,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "최민호 세종시장 예비후보, '세종보 선언' 발표…\"물로 세종 미래 연다...",
-            "representativeLink": "https://cc.newdaily.co.kr/site/data/html/2026/04/07/2026040700113.html",
+            "representativeTitle": "‘세종 국책연구단지 제2연구청사’ 곧 발주…건축 기술형 ‘단비’",
+            "representativeLink": "https://www.dnews.co.kr/uhtml/view.jsp?idxno=202604291035096600081",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 8,
@@ -21890,7 +21414,7 @@
               "급수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 20,
+            "continuityCount": 19,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           },
@@ -21904,7 +21428,7 @@
             "representativeLink": "https://www.ksilbo.co.kr/news/articleView.html?idxno=1055189",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 20,
+            "continuityCount": 19,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -21981,7 +21505,7 @@
             "relevanceFlag": false,
             "continuityCount": 30,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -22174,8 +21698,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "[6·3지방선거 현장]국민의힘 양혜령, 전남광주특별시의원 출마 선언",
-            "representativeLink": "https://www.namdonews.com/news/articleView.html?idxno=909045",
+            "representativeTitle": "국민의힘 양혜령, 전남광주통합특별시의원 북구1 선거구 출마",
+            "representativeLink": "https://www.nocutnews.co.kr/news/6510275?utm_source=naver&utm_medium=article&utm_campaign=20260429033931",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 15,
@@ -22210,8 +21734,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "'가뭄에 단비' 원유 100만배럴 왔다…GS칼텍스 부두 입항",
-            "representativeLink": "https://www.newsis.com/view/NISX20260408_0003582613",
+            "representativeTitle": "“대체원유 1억 1800만배럴 확보… 평시 80%” [美·이란 불안한 휴전]",
+            "representativeLink": "https://www.segye.com/newsView/20260414520354?OutUrl=naver",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 4,
@@ -22869,7 +22393,7 @@
             "relevanceFlag": false,
             "continuityCount": 19,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -22960,7 +22484,7 @@
             "relevanceFlag": false,
             "continuityCount": 30,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -22985,20 +22509,6 @@
             "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "이건용 예비후보 \"공천 잣대 제각각, 이의 제기\"",
-            "representativeLink": "https://www.goodmorningcc.com/news/articleView.html?idxno=444218",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -23106,28 +22616,6 @@
             "continuityCount": 4,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "충남",
-        "sigungu": "당진",
-        "impactFields": [
-          {
-            "impactCode": "A1",
-            "impactName": "물 공급",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 2,
-            "representativeTitle": "[당진시의회 시의원 나선거구(당진2동·정미·대호지) 예비후보자·출마...",
-            "representativeLink": "http://www.djtimes.co.kr/news/articleView.html?idxno=111483",
-            "keywords": [
-              "용수"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 12,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
           }
         ]
       },
@@ -23758,8 +23246,8 @@
   },
   {
     "reportYm": "2026-05",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 748,
+    "generatedAt": "2026-09-02T20:51:44",
+    "articleCount": 740,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -23920,8 +23408,8 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 28,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -23940,11 +23428,11 @@
             "keywords": [
               "용수",
               "댐",
-              "저수지",
               "취수",
               "단수",
               "상수도",
               "식수",
+              "저수지",
               "급수"
             ],
             "relevanceFlag": false,
@@ -23995,7 +23483,7 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 30,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -24010,8 +23498,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "우상호 강원도지사 후보 \"속초, 세계적 관광단지로 발전시키겠다\" 유세",
-            "representativeLink": "https://www.gukjenews.com/news/articleView.html?idxno=3592447",
+            "representativeTitle": "우상호 “평화 정착되면 북한 갈마~DMZ~설악 잇는 세계적 관광 코스 열릴...",
+            "representativeLink": "https://www.pressian.com/pages/articles/2026052617070350443?utm_source=naver&utm_medium=search",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 15,
@@ -24105,7 +23593,7 @@
             "relevanceFlag": false,
             "continuityCount": 12,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -24189,20 +23677,6 @@
             "continuityCount": 25,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[지선 현장] 장동혁, 춘천 유세서 李대통령 직격 \"선거중립 위반은 탄핵...",
-            "representativeLink": "https://www.dailian.co.kr/news/view/1650549/?sc=Naver",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 25,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -24328,8 +23802,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 4,
-            "representativeTitle": "화천군 고유가 피해지원금 1차 93.6% 지급…‘가뭄에 단비’",
-            "representativeLink": "https://www.kukinews.com/article/view/kuk202605130098",
+            "representativeTitle": "화천군, 평년 절반 수준 강수량에 가뭄 비상 대응",
+            "representativeLink": "https://www.kwnews.co.kr/page/view/2026051650034200000",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 6,
@@ -24403,7 +23877,7 @@
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -24443,7 +23917,7 @@
             "representativeLink": "https://www.donga.com/news/Opinion/article/all/20260514/133927355/2",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 4,
+            "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -24578,7 +24052,7 @@
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -25075,26 +24549,6 @@
       },
       {
         "sido": "경남",
-        "sigungu": "진주",
-        "impactFields": [
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "\"소외된 코스닥 흙속의 진주 찾는다\"… IBK기업은행, 'K-밸류업' 구원투...",
-            "representativeLink": "http://www.biztribune.co.kr/news/articleView.html?idxno=353611",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 9,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
-          }
-        ]
-      },
-      {
-        "sido": "경남",
         "sigungu": "창원",
         "impactFields": [
           {
@@ -25309,7 +24763,7 @@
             "relevanceFlag": false,
             "continuityCount": 42,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -25331,23 +24785,9 @@
               "영농"
             ],
             "relevanceFlag": false,
-            "continuityCount": 6,
+            "continuityCount": 5,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "‘4년만의 새 아파트’ 신축 가뭄 경산에 ‘경산 상방공원 호반써밋’ ...",
-            "representativeLink": "https://sports.khan.co.kr/article/202605210900003?pt=nv",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -25423,20 +24863,6 @@
             "continuityCount": 8,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[6.3 지방선거]\"신도심 확장보다 원도심 살린다\"",
-            "representativeLink": "http://www.jeollailbo.com/news/articleView.html?idxno=799717",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 8,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -25494,7 +24920,7 @@
               "농번기"
             ],
             "relevanceFlag": false,
-            "continuityCount": 6,
+            "continuityCount": 5,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -25508,7 +24934,7 @@
             "representativeLink": "https://www.dailian.co.kr/news/view/1647874/?sc=Naver",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 6,
+            "continuityCount": 5,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -25518,25 +24944,6 @@
         "sido": "경북",
         "sigungu": "문경",
         "impactFields": [
-          {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "김학홍 문경시장 예비후보, 농·축산 농가소득 2배 추진",
-            "representativeLink": "https://www.hidomin.com/news/articleView.html?idxno=703771",
-            "keywords": [
-              "관정",
-              "농가",
-              "배추",
-              "양파"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 5,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
           {
             "impactCode": "A8",
             "impactName": "기타",
@@ -26007,7 +25414,7 @@
             "relevanceFlag": false,
             "continuityCount": 20,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26044,7 +25451,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26097,7 +25504,7 @@
             "relevanceFlag": false,
             "continuityCount": 15,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26164,12 +25571,12 @@
             "grade": "심각",
             "gradeFinalized": true,
             "articleCount": 66,
-            "representativeTitle": "공급 부진 속 세제 강화…지선 이후 장특공·보유세 조정 ‘뇌관’",
-            "representativeLink": "https://www.ekn.kr/web/view.php?key=20260522024394555",
+            "representativeTitle": "세금·대출 이중고…‘중산층 주거 이동 마비’ 현실화 하나",
+            "representativeLink": "https://economist.co.kr/article/view/ecn202604280075",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 35,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -26178,22 +25585,6 @@
         "sido": "세종",
         "sigungu": "",
         "impactFields": [
-          {
-            "impactCode": "A1",
-            "impactName": "물 공급",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[기획 특집] 6.3 지방선거 세종특별자치시장 후보에게 묻는다",
-            "representativeLink": "https://www.pressian.com/pages/articles/2026051322005060568?utm_source=naver&utm_medium=search",
-            "keywords": [
-              "용수"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 9,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
           {
             "impactCode": "A2",
             "impactName": "농업",
@@ -26232,13 +25623,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 9,
-            "representativeTitle": "치솟는 세종 전셋값…입주 물량 ‘가뭄’에 실수요자 부담 커진다",
-            "representativeLink": "https://www.etoday.co.kr/news/view/2587350",
+            "representativeTitle": "\"소주병에 웬 QR코드…\" 찍고 들어가니 상담사가? 초록병에서 큐알을 찾...",
+            "representativeLink": "https://www.ytn.co.kr/_ln/0103_202605221033268550",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 9,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26255,11 +25646,10 @@
             "representativeTitle": "라오스 근로자, 일손부족 울산 과수농가에 단비",
             "representativeLink": "https://www.ksilbo.co.kr/news/articleView.html?idxno=1056844",
             "keywords": [
-              "농가",
-              "영농"
+              "농가"
             ],
             "relevanceFlag": false,
-            "continuityCount": 21,
+            "continuityCount": 20,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -26273,7 +25663,7 @@
             "representativeLink": "https://www.iusm.co.kr/news/articleView.html?idxno=1062573",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 21,
+            "continuityCount": 20,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -26283,22 +25673,6 @@
         "sido": "인천",
         "sigungu": "",
         "impactFields": [
-          {
-            "impactCode": "A3",
-            "impactName": "축산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "이단비 국힘 부평구청장 예비후보 “차준택 구청장 3선 저지”",
-            "representativeLink": "https://www.kyeongin.com/article/1763176",
-            "keywords": [
-              "축사"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 16,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
           {
             "impactCode": "A6",
             "impactName": "환경",
@@ -26321,13 +25695,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 6,
-            "representativeTitle": "[건설톡] LH 민참 재가동…업계 ‘가뭄에 단비’ 기대",
-            "representativeLink": "https://www.dnews.co.kr/uhtml/view.jsp?idxno=202605291624255280495",
+            "representativeTitle": "이스라엘 하늘길 다시 열린다… 엘알항공, 내년 3월 텔아비브 직항 취항",
+            "representativeLink": "https://www.news1.kr/industry/hotel-tourism/6162971",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26381,7 +25755,7 @@
             "relevanceFlag": false,
             "continuityCount": 31,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -26974,7 +26348,7 @@
             "relevanceFlag": false,
             "continuityCount": 20,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -27202,7 +26576,7 @@
               "용수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 13,
+            "continuityCount": 12,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -27221,7 +26595,7 @@
               "벼"
             ],
             "relevanceFlag": false,
-            "continuityCount": 13,
+            "continuityCount": 12,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -27484,7 +26858,7 @@
             "relevanceFlag": false,
             "continuityCount": 9,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -27546,20 +26920,6 @@
             "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "김영빈 변호사, 공주·부여·청양 국회의원 보궐선거 예비후보 등록",
-            "representativeLink": "https://www.goodmorningcc.com/news/articleView.html?idxno=445973",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 6,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -27894,8 +27254,8 @@
   },
   {
     "reportYm": "2026-06",
-    "generatedAt": "2026-08-30T23:46:05",
-    "articleCount": 718,
+    "generatedAt": "2026-09-02T20:51:45",
+    "articleCount": 711,
     "detectedSidoCount": 16,
     "nationwide": [
       {
@@ -28056,7 +27416,7 @@
             "relevanceFlag": false,
             "continuityCount": 29,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -28126,13 +27486,13 @@
             "grade": "경계",
             "gradeFinalized": true,
             "articleCount": 46,
-            "representativeTitle": "민주당 10곳·국힘 7곳 확정… '강릉 대이변' 속 민심 요동",
-            "representativeLink": "https://www.kado.net/news/articleView.html?idxno=2053935",
+            "representativeTitle": "강릉 최종투표율 '63.3%'…'콘크리트 보수'냐 '변화 향한 열망'이냐(종합...",
+            "representativeLink": "https://www.news1.kr/local/kangwon/6186351",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 31,
-            "gradeLowerBound": 23.0,
-            "nextGradeLowerBound": 51.0
+            "gradeLowerBound": 25.0,
+            "nextGradeLowerBound": 60.0
           }
         ]
       },
@@ -28271,20 +27631,6 @@
             "continuityCount": 26,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[6·3 강원 지선] 강원특별자치도지사에 우상호 후보 당선 등 더불어민...",
-            "representativeLink": "https://gw.newdaily.co.kr/site/data/html/2026/06/04/2026060400190.html",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 26,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -28374,7 +27720,7 @@
             "relevanceFlag": false,
             "continuityCount": 17,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -28472,7 +27818,7 @@
             "relevanceFlag": false,
             "continuityCount": 5,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -28503,8 +27849,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "넥슨, 2500억 펀드 출범… K게임 스타트업 키운다",
-            "representativeLink": "https://www.segye.com/newsView/20260623514934?OutUrl=naver",
+            "representativeTitle": "분양가 상한제에 DSR 제외까지…분당 권역 신혼희망타운 1400가구 나온다",
+            "representativeLink": "http://www.ttlnews.com/news/articleView.html?idxno=3119074",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 5,
@@ -28605,8 +27951,8 @@
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 2,
-            "representativeTitle": "입주가뭄에 반도체 호황까지…경기 남부·충청권 신축 아파트 몸값 높아...",
-            "representativeLink": "http://www.biztribune.co.kr/news/articleView.html?idxno=354608",
+            "representativeTitle": "주거비 부담·전월세 시장 불안에 '탈임대' 현상 '뚜렷'",
+            "representativeLink": "http://www.enewstoday.co.kr/news/articleView.html?idxno=2439618",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 5,
@@ -28631,7 +27977,7 @@
               "농가"
             ],
             "relevanceFlag": false,
-            "continuityCount": 4,
+            "continuityCount": 3,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -29062,7 +28408,7 @@
             "relevanceFlag": false,
             "continuityCount": 6,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -29084,7 +28430,7 @@
               "저수지"
             ],
             "relevanceFlag": false,
-            "continuityCount": 10,
+            "continuityCount": 9,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -29101,7 +28447,7 @@
               "수확"
             ],
             "relevanceFlag": false,
-            "continuityCount": 10,
+            "continuityCount": 9,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 6.0
           },
@@ -29117,7 +28463,7 @@
               "갈등"
             ],
             "relevanceFlag": false,
-            "continuityCount": 10,
+            "continuityCount": 9,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 2.0
           },
@@ -29131,7 +28477,7 @@
             "representativeLink": "http://www.gndomin.com/news/articleView.html?idxno=478363",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 10,
+            "continuityCount": 9,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -29294,7 +28640,7 @@
               "생태계"
             ],
             "relevanceFlag": false,
-            "continuityCount": 7,
+            "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -29346,11 +28692,10 @@
             "grade": "경계",
             "gradeFinalized": true,
             "articleCount": 4,
-            "representativeTitle": "이남철 고령군수 당선인 \"군민 '삶의 질 향상'에 중점 둘 것\"",
-            "representativeLink": "https://www.news1.kr/local/daegu-gyeongbuk/6202754",
+            "representativeTitle": "[기고] '생활 속 안전문화'가 재난을 줄인다",
+            "representativeLink": "https://www.jbnews.com/news/articleView.html?idxno=1506061",
             "keywords": [
               "농가",
-              "영농",
               "농작물"
             ],
             "relevanceFlag": false,
@@ -29411,7 +28756,7 @@
               "밭"
             ],
             "relevanceFlag": false,
-            "continuityCount": 7,
+            "continuityCount": 6,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           }
@@ -29447,8 +28792,6 @@
             "representativeTitle": "배움과 도전, 지역 발전까지…경북 곳곳서 이어진 성과와 활력",
             "representativeLink": "https://www.ekn.kr/web/view.php?key=20260623026015648",
             "keywords": [
-              "농가",
-              "수확",
               "고추",
               "농작물",
               "파종",
@@ -29519,29 +28862,13 @@
             "nextGradeLowerBound": 3.0
           },
           {
-            "impactCode": "A6",
-            "impactName": "환경",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "헌정사상 최초 '녹색 후보' 허승규 당선...\"거대양당 벽 뚫고 틔운 풀뿌...",
-            "representativeLink": "https://www.greened.kr/news/articleView.html?idxno=341910",
-            "keywords": [
-              "산불"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 30,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "관심",
             "gradeFinalized": true,
             "articleCount": 3,
-            "representativeTitle": "'가뭄에 단비' 녹색당 창당 이래 첫 의원… 안동 허승규 당선",
-            "representativeLink": "https://www.pressian.com/pages/articles/2026060411104773823?utm_source=naver&utm_medium=search",
+            "representativeTitle": "[패트롤] 김형동 의원- 안동시-예천군-백두대간수목원",
+            "representativeLink": "https://www.ekn.kr/web/view.php?key=20260619028254684",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 30,
@@ -29922,7 +29249,7 @@
             "relevanceFlag": false,
             "continuityCount": 21,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -29963,20 +29290,6 @@
             "continuityCount": 8,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "하반기 MMORPG 대전 본격화…넷마블·스마일게이트·컴투스 출격",
-            "representativeLink": "https://www.cstimes.com/news/articleView.html?idxno=709250",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 8,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -30041,13 +29354,13 @@
             "grade": "주의",
             "gradeFinalized": true,
             "articleCount": 14,
-            "representativeTitle": "부산디지털자산거래소 비단, 국내 첫 커피 생두 기반 디지털상품 'e커피...",
-            "representativeLink": "https://www.khgames.co.kr/news/articleView.html?idxno=305685",
+            "representativeTitle": "비 많이 온다더니…부산·김해 등 7곳 '약한 가뭄' 주의보",
+            "representativeLink": "https://www.nc.press/news/articleView.html?idxno=617619",
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -30094,22 +29407,6 @@
             "nextGradeLowerBound": 3.0
           },
           {
-            "impactCode": "A7",
-            "impactName": "사회경제",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "\"강남 국평 전세가가 20억?\" 왜 이토록 불붙나 봤더니…구조적 '3대 악재...",
-            "representativeLink": "https://www.thepublic.kr/news/articleView.html?idxno=307975",
-            "keywords": [
-              "갈등"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 36,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "심각",
@@ -30120,7 +29417,7 @@
             "keywords": [],
             "relevanceFlag": false,
             "continuityCount": 36,
-            "gradeLowerBound": 51.0,
+            "gradeLowerBound": 60.0,
             "nextGradeLowerBound": null
           }
         ]
@@ -30193,7 +29490,7 @@
             "relevanceFlag": false,
             "continuityCount": 10,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -30214,7 +29511,7 @@
               "식수"
             ],
             "relevanceFlag": false,
-            "continuityCount": 22,
+            "continuityCount": 21,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -30231,7 +29528,7 @@
               "오염"
             ],
             "relevanceFlag": false,
-            "continuityCount": 22,
+            "continuityCount": 21,
             "gradeLowerBound": 3.0,
             "nextGradeLowerBound": 10.0
           },
@@ -30245,9 +29542,9 @@
             "representativeLink": "https://www.ulsanpress.net/news/articleView.html?idxno=576944",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 22,
+            "continuityCount": 21,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -30255,22 +29552,6 @@
         "sido": "인천",
         "sigungu": "",
         "impactFields": [
-          {
-            "impactCode": "A4",
-            "impactName": "수산업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[6·3 지선] 각자의 바람 담아 한 표…더 나은 인천 향한 기대",
-            "representativeLink": "https://www.incheonilbo.com/news/articleView.html?idxno=1324357",
-            "keywords": [
-              "어업"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 17,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 2.0
-          },
           {
             "impactCode": "A6",
             "impactName": "환경",
@@ -30299,7 +29580,7 @@
             "relevanceFlag": false,
             "continuityCount": 17,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -30645,22 +29926,6 @@
             "nextGradeLowerBound": 3.0
           },
           {
-            "impactCode": "A2",
-            "impactName": "농업",
-            "grade": "주의",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "[당선인에게 듣는다]사순문 장흥군수 \"예산 1조 시대·RE100 유치로 소멸...",
-            "representativeLink": "https://www.namdonews.com/news/articleView.html?idxno=914341",
-            "keywords": [
-              "농가"
-            ],
-            "relevanceFlag": false,
-            "continuityCount": 5,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 3.0
-          },
-          {
             "impactCode": "A8",
             "impactName": "기타",
             "grade": "관심",
@@ -30818,7 +30083,7 @@
             "relevanceFlag": false,
             "continuityCount": 11,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -30892,7 +30157,7 @@
             "relevanceFlag": false,
             "continuityCount": 7,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -31207,7 +30472,7 @@
             "relevanceFlag": false,
             "continuityCount": 21,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -31263,7 +30528,7 @@
             "relevanceFlag": false,
             "continuityCount": 32,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -31380,7 +30645,7 @@
               "저수지"
             ],
             "relevanceFlag": false,
-            "continuityCount": 14,
+            "continuityCount": 13,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
           },
@@ -31394,7 +30659,7 @@
             "representativeLink": "https://www.ngonews.kr/news/articleView.html?idxno=231188",
             "keywords": [],
             "relevanceFlag": false,
-            "continuityCount": 14,
+            "continuityCount": 13,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 5.0
           }
@@ -31547,7 +30812,7 @@
             "relevanceFlag": false,
             "continuityCount": 9,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -31636,7 +30901,7 @@
             "relevanceFlag": false,
             "continuityCount": 10,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
@@ -31732,20 +30997,6 @@
             "continuityCount": 7,
             "gradeLowerBound": 1.0,
             "nextGradeLowerBound": 3.0
-          },
-          {
-            "impactCode": "A8",
-            "impactName": "기타",
-            "grade": "관심",
-            "gradeFinalized": true,
-            "articleCount": 1,
-            "representativeTitle": "한여름 ‘가뭄에 단비’… 기본소득이 바꾼 농어촌 풍경",
-            "representativeLink": "https://www.kmib.co.kr/article/view.asp?arcid=1780563302&code=11151100&cp=nv",
-            "keywords": [],
-            "relevanceFlag": false,
-            "continuityCount": 7,
-            "gradeLowerBound": 1.0,
-            "nextGradeLowerBound": 5.0
           }
         ]
       },
@@ -31962,7 +31213,7 @@
             "relevanceFlag": false,
             "continuityCount": 16,
             "gradeLowerBound": 5.0,
-            "nextGradeLowerBound": 23.0
+            "nextGradeLowerBound": 25.0
           }
         ]
       },
