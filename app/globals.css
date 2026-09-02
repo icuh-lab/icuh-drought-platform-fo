@@ -357,8 +357,6 @@ button { cursor: pointer; }
 .pin.on { opacity: 1; background: var(--brand-soft); border-color: var(--brand); }
 .pin b { width: 52px; }
 .pin span { color: var(--ink-2); }
-.source-list { padding-left: 18px; color: var(--ink-2); }
-.source-list small { display: block; color: var(--ink-3); margin-top: 2px; }
 .api-grid { display: grid; grid-template-columns: 240px 1fr 310px; gap: 14px; }
 .catalog { padding: 8px; display: grid; gap: 5px; }
 .catalog button { text-align: left; border: 1px solid var(--line); background: var(--surface-2); padding: 9px; }

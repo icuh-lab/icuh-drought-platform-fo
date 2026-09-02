@@ -434,7 +434,6 @@ function Dashboard() {
     () => reportApi.details[selectedReportId] ?? activeReports.find((report) => report.reportYm === selectedReportId) ?? activeReports[0] ?? droughtReportFallback[0],
     [activeReports, reportApi.details, selectedReportId]
   );
-  const selectedReportAllFields = selectedReport.regions.flatMap((region) => region.impactFields);
   const selectedReportRegionGroups = useMemo(() => {
     const groups = new Map<string, DroughtRegionSection[]>();
     selectedReport.regions.forEach((region) => {
@@ -456,10 +455,6 @@ function Dashboard() {
       return next;
     });
   }
-  const selectedReportReferenceLinks = selectedReportAllFields.filter(
-    (field): field is typeof field & { representativeLink: string; representativeTitle: string } =>
-      field.representativeLink !== null && field.representativeTitle !== null
-  );
   const activeFireRisk = fireRiskApi.items ?? fireRisk;
   const activeFreshFoodGauge = freshFoodApi.gauge;
   const highestFireRisk = activeFireRisk.reduce((highest, current) => current.value > highest.value ? current : highest, activeFireRisk[0]);
@@ -1213,20 +1208,6 @@ function Dashboard() {
                       </div>
                     );
                   })}
-
-                  {selectedReportReferenceLinks.length > 0 && (
-                    <>
-                      <h3>참고기사 링크 모음</h3>
-                      <ul className="source-list">
-                        {selectedReportReferenceLinks.map((field, index) => (
-                          <li key={`${field.impactCode}-${index}`}>
-                            <a href={field.representativeLink} target="_blank" rel="noreferrer">{field.representativeTitle}</a>
-                            <small>{field.impactName}</small>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
                 </>
               )}
             </article>
