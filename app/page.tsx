@@ -826,7 +826,7 @@ function Dashboard() {
   return (
     <>
 
-      {view !== "reports" && view !== "api" && (
+      {view !== "reports" && view !== "detail" && view !== "api" && (
         <>
           <div className="fbar">
             <div className="fbar-in">
